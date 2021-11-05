@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "musicbros"
+version = "0.1.0"
+description = "CLI for managing the Musicbros audio file archive"
+authors = ["Ben Rosen <benjamin.j.rosen@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.scripts]
+musicbros = "musicbros.main:app"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+typer = {extras = ["all"], version = "^0.4.0"}
+tinytag = "^1.6.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+black = "^21.10b0"
+isort = "^5.10.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+experimental_string_processing = true
+
+[tool.isort]
+profile = "black"
