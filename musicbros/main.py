@@ -1,8 +1,8 @@
 from typer import Option, Typer, confirm, echo
 
-from .config import write_config_options
-from .helpers import import_complete_albums, import_error_albums, print_config_values
-from .strip_bracket_years import strip_bracket_years as strip_bracket_years_function
+from .config import print_config_values, write_config_options
+from .import_new import import_complete_albums, import_error_albums
+from .strip_bracket_years import strip_bracket_years
 
 app = Typer(help="CLI for managing the Musicbros audio file archive")
 
@@ -24,16 +24,16 @@ def import_new(strip_years: bool = Option(False, "--strip-years")):
     echo("Importing newly added albums...")
     imports, errors, bulk_fix_albums = import_complete_albums()
     if imports and strip_years:
-        strip_bracket_years_function()
+        strip_bracket_years()
     elif errors:
         print("No new albums to import.")
         if confirm("Would you like to import all albums anyway?"):
             import_error_albums(bulk_fix_albums)
             if strip_years:
-                strip_bracket_years_function()
+                strip_bracket_years()
 
 
 @app.command()
 def strip_years():
     """Remove bracketed years from album field"""
-    strip_bracket_years_function()
+    strip_bracket_years()

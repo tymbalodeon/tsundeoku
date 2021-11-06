@@ -3,6 +3,8 @@ from pathlib import Path
 
 from typer import confirm, echo, prompt
 
+from .helpers import color
+
 CONFIG_DIRECTORY = Path.home() / ".config"
 CONFIG_FILE = CONFIG_DIRECTORY / "musicbros.ini"
 CONFIG_SECTION = "musicbros"
@@ -66,3 +68,8 @@ def confirm_create_config():
 
 def get_musicbros_config():
     return get_config_options() if CONFIG_FILE.is_file() else confirm_create_config()
+
+
+def print_config_values():
+    for option, value in get_config_options():
+        echo(f"{color(option.replace('_', ' ').upper())}: {value}")
