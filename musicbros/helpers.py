@@ -79,45 +79,49 @@ def is_already_imported(album):
 
 
 def import_or_get_errors(album):
-    skipped = False
     imported = False
     error = None
     if is_already_imported(album):
         skipped = True
-        return skipped, imported, error
-    tracks = get_audio_files()
-    track_count = len(tracks)
-    track_total, message = get_track_total(tracks)
-    quote_character = get_single_or_double_quote(album)
-    if not tracks:
-        error = (
-            "Folder is empty or audio is in wav format (please wait for sync or"
-            f" resolve manually): '{album}'"
-        )
-    elif message == "conflicting":
-        error = (
-            f'Possible multi-disc album detected (please resolve manually): "{album}"'
-        )
-    elif message == "missing":
-        error = (
-            "Album does not contain a track total number"
-            f' (please resolve manually): "{album}"'
-        )
-    elif track_count == track_total:
-        if quote_character:
-            system(f"beet import {quote_character}{album}{quote_character}")
-            imported = True
-        else:
-            error = f'Annoyingly named directory (please resolve manually): "{album}"'
-    elif track_count > track_total:
-        error = (
-            f'Possible multi-disc album detected (please resolve manually): "{album}"'
-        )
     else:
-        error = (
-            "Missing tracks (please wait for sync or resolve"
-            f' manually): "{album}"\n\tTrack total: {track_total}'
-        )
+        skipped = False
+        tracks = get_audio_files()
+        track_count = len(tracks)
+        track_total, message = get_track_total(tracks)
+        quote_character = get_single_or_double_quote(album)
+        if not tracks:
+            error = (
+                "Folder is empty or audio is in wav format (please wait for sync or"
+                f" resolve manually): '{album}'"
+            )
+        elif message == "conflicting":
+            error = (
+                "Possible multi-disc album detected (please resolve manually):"
+                f' "{album}"'
+            )
+        elif message == "missing":
+            error = (
+                "Album does not contain a track total number"
+                f' (please resolve manually): "{album}"'
+            )
+        elif track_count == track_total:
+            if quote_character:
+                system(f"beet import {quote_character}{album}{quote_character}")
+                imported = True
+            else:
+                error = (
+                    f'Annoyingly named directory (please resolve manually): "{album}"'
+                )
+        elif track_count > track_total:
+            error = (
+                "Possible multi-disc album detected (please resolve manually):"
+                f' "{album}"'
+            )
+        else:
+            error = (
+                "Missing tracks (please wait for sync or resolve"
+                f' manually): "{album}"\n\tTrack total: {track_total}'
+            )
     return skipped, imported, error
 
 

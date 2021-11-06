@@ -2,62 +2,61 @@ from os import path, remove, system
 from pathlib import Path
 from re import escape, sub
 
+from typer import echo
+
 dirname = path.dirname(__file__)
-TEMP_NAME = Path(dirname) / "beets_tag_reformatter_temp.txt"
+TEMP_FILE = Path(dirname) / ".beets_tag_reformatter_temp"
 
 
-def get_album_flag(album):
-    return "-a" if album else ""
+def get_album_operation_flag(operate_on_albums):
+    return "-a" if operate_on_albums else ""
 
 
-def get_prompt_flag(prompt):
-    return "" if prompt else "-y"
+def beet_ls(operate_on_albums, query_tag, query, update_tag):
+    system(
+        f"beet ls {get_album_operation_flag(operate_on_albums)}"
+        f" \"{query_tag}::{query}\" -f '${update_tag}' >> {TEMP_FILE}"
+    )
+    with open(TEMP_FILE) as tags:
+        tags = tags.read().split("\n")[:-1]
+    remove(TEMP_FILE)
+    return tags
 
 
-def get_beets_list_command(album, query_tag, query, reformat_tag, to_file=False):
-    to_file_command = f" >> {TEMP_NAME}"
+def beet_modify(confirm, operate_on_albums, tag, old, new):
     return (
-        f"beet ls {get_album_flag(album)} \"{query_tag}::{query}\" -f '${reformat_tag}'"
-        f"{to_file_command if to_file else ''}"
+        "beet"
+        f" modify{' ' if confirm else ' -y '}{get_album_operation_flag(operate_on_albums)}"
+        f' "{tag}::^{old}$" {tag}="{new}"'
     )
 
 
-def get_beets_modify_command(prompt, album, reformat_tag, old, new):
-    return (
-        f"beet modify {get_prompt_flag(prompt)} {get_album_flag(album)}"
-        f' "{reformat_tag}::^{old}$" {reformat_tag}="{new}"'
-    )
-
-
-def get_items():
-    with open(TEMP_NAME) as raw_results:
-        return raw_results.read().split("\n")[:-1]
-
-
-def rewrite_tag(find, replace, tracks, prompt, album, reformat_tag):
-    for old_tag in tracks:
-        new_tag = sub(find, replace, old_tag)
-        old_escaped = (
-            escape(old_tag)
-            .replace("\\", "\\\\")
-            .replace('"', r"\"")
-            .replace(":", r"\:")
+def update_tag(find, replace, tags, confirm, operate_on_albums, tag):
+    for tag in tags:
+        updated_tag = sub(find, replace, tag)
+        escaped_tag = (
+            escape(tag).replace("\\", "\\\\").replace('"', r"\"").replace(":", r"\:")
         )
-        system(
-            get_beets_modify_command(prompt, album, reformat_tag, old_escaped, new_tag)
-        )
+        system(beet_modify(confirm, operate_on_albums, tag, escaped_tag, updated_tag))
 
 
-def beets_reformat(query, query_tag, reformat_tag, find, replace, album, prompt):
-    system(get_beets_list_command(album, query_tag, query, reformat_tag))
-    results = get_items()
-    if not len(results):
-        print("All albums formatted correctly.")
-    else:
-        rewrite_tag(find, replace, results, prompt, album, reformat_tag)
-    remove(TEMP_NAME)
+def update_album_tags(
+    query, query_tag, update_tag, find, replace, operate_on_albums, confirm
+):
+    tags = beet_ls(operate_on_albums, query_tag, query, update_tag)
+    update_tag(
+        find, replace, tags, confirm, operate_on_albums, update_tag
+    ) if tags else echo("All albums formatted correctly.")
 
 
 def strip_bracket_years():
-    print("Removing bracketed years from album fields...")
-    beets_reformat("\s\[\d{4}\]", "album", "album", "\s\[\d{4}\]", "", True, False)
+    echo("Removing bracketed years from album fields...")
+    update_album_tags(
+        query=r"\s\[\d{4}\]",
+        query_tag="album",
+        update_tag="album",
+        find=r"\s\[\d{4}\]",
+        replace="",
+        operate_on_albums=True,
+        confirm=False,
+    )
