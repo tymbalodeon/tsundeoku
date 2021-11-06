@@ -1,30 +1,90 @@
+from typer import confirm, prompt, echo
 from os import walk
 from glob import glob
 import pickle
 from tinytag import TinyTag
+from pathlib import Path
+from configparser import ConfigParser
 
-SHARED_DIRECTORY = "/Users/rrosen/Dropbox/Ralph-MichaelC/"
-PICKLE_FILE = "/Users/rrosen/.config/beets/state.pickle"
-SKIP_DIRECTORIES = (
-    "/Users/rrosen/Dropbox/Ralph-MichaelC/ZZ-ALBUM COVER ART--DO NOT DELETE"
-)
+CONFIG_DIRECTORY = Path.home() / ".config"
+CONFIG_FILE = CONFIG_DIRECTORY / "musicbros.ini"
+CONFIG_SECTION = "musicbros"
 
 
-def get_imported_albums(path):
-    with open(path, "rb") as raw_pickle:
+def get_config_option(option):
+    config = ConfigParser()
+    config.read(CONFIG_FILE)
+    return config.get(CONFIG_SECTION, option)
+
+
+def get_config_options():
+    config = ConfigParser()
+    config.read(CONFIG_FILE)
+    return tuple(
+        config.get(CONFIG_SECTION, option) for option in config.options(CONFIG_SECTION)
+    )
+
+
+def write_config_options(first_time=False):
+    if not CONFIG_DIRECTORY.exists():
+        Path.mkdir(CONFIG_DIRECTORY, parents=True)
+
+    def get_new_value(option):
+        confirm_message = f"Would you like to update the {option} path?"
+        prompt_message = f"Please provide your {option} path"
+        is_updating = True if first_time else confirm(confirm_message)
+        return prompt(prompt_message) if is_updating else ""
+
+    new_values = [
+        (option, get_new_value(option))
+        for option in ["SHARED DIRECTORY", "PICKLE FILE", "SKIP DIRECTORIES"]
+    ]
+
+    config = ConfigParser()
+    if first_time:
+        config[CONFIG_SECTION] = dict()
+    else:
+        config.read(CONFIG_FILE)
+    for option, value in new_values:
+        if value:
+            option = option.replace(" ", "_")
+            config[CONFIG_SECTION][option] = value
+    with open(CONFIG_FILE, "w") as config_file:
+        config.write(config_file)
+    return get_config_options()
+
+
+def print_create_config_message():
+    echo(
+        f"A config file is required. Please create one at {CONFIG_FILE} and try again."
+    )
+
+
+def confirm_create_config():
+    return (
+        write_config_options(first_time=True)
+        if confirm("Config file not found. Would you like to create one now?")
+        else print_create_config_message()
+    )
+
+
+def get_musicbros_config():
+    return get_config_options() if CONFIG_FILE.is_file() else confirm_create_config()
+
+
+def get_imported_albums():
+    with open(get_config_option("pickle_file"), "rb") as raw_pickle:
         unpickled = pickle.load(raw_pickle)["taghistory"]
         albums = {album[0].decode() for album in unpickled}
     return albums
 
 
-IMPORTED_ALBUMS = get_imported_albums(PICKLE_FILE)
-
-
-def get_album_dirs(directory):
-    return [root for root, dirs, files in walk(directory) if files and not dirs]
-
-
-NEW_ALBUMS = get_album_dirs(SHARED_DIRECTORY)
+def get_album_dirs():
+    return [
+        root
+        for root, dirs, files in walk(get_config_option("shared_directory"))
+        if files and not dirs
+    ]
 
 
 def get_audio_files():
@@ -99,7 +159,7 @@ def import_or_get_errors(album):
                     skipped = True
             else:
                 if not IMPORTED:
-                    os.system(f"beet import {QUOTE}{album}{QUOTE}")
+                    system(f"beet import {QUOTE}{album}{QUOTE}")
                     imports = True
                 else:
                     skipped = True
@@ -158,8 +218,9 @@ def import_complete_albums(albums):
     final_imports = False
     returns_errors = False
     bulk_fix_albums = list()
+    skip_directories = get_config_option("skip_directories")
     for album in albums:
-        if SKIP_DIRECTORIES in album:
+        if skip_directories in album:
             continue
         else:
             errors, skipped, imports, error_albums = import_or_get_errors(album)
