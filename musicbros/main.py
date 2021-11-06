@@ -9,7 +9,10 @@ app = Typer(help="CLI for managing the Musicbros audio file archive")
 
 @app.command()
 def config(update: bool = Option(False, "--update")):
-    """Create (if config doesn't exist) or optionally update, and display config values"""
+    """
+    Create (if config doesn't exist) or optionally update, and display config
+    values
+    """
     if update:
         write_config_options()
     print_config_values()

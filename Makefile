@@ -12,13 +12,13 @@ black: ## Format code
 build: ## Build the CLI and isntall it in your global pip packages
 	poetry build && pip install $(WHEEL) --force-reinstall
 
-flake8: ## Lint code
-	$(POETRY) flake8 ./
+check: format ## Check for problems
+	$(PRE_COMMIT) -a
 
-format: isort black flake8 mypy ## Format and lint code
+flake: ## Lint code
+	$(POETRY) pflake8 ./
 
-freeze: ## Freeze the dependencies to the requirements.txt file
-	poetry export -f $(REQUIREMENTS) --output $(REQUIREMENTS)
+format: isort black ## Format code
 
 help: ## Display the help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -27,7 +27,7 @@ isort: ## Sort imports
 	$(POETRY) isort ./
 
 mypy: ## Type-check code
-	$(POETRY) $(PRE_COMMIT) mypy -a
+	$(PRE_COMMIT) mypy -a
 
 try: ## Try a command using the current state of the files without building
 ifdef args

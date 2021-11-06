@@ -26,8 +26,9 @@ def beet_ls(operate_on_albums, query_tag, query, update_tag):
 def beet_modify(confirm, operate_on_albums, tag, old, new):
     return (
         "beet"
-        f" modify{' ' if confirm else ' -y '}{get_album_operation_flag(operate_on_albums)}"
-        f' "{tag}::^{old}$" {tag}="{new}"'
+        f" modify{' ' if confirm else ' -y '}"
+        f'{get_album_operation_flag(operate_on_albums)} "{tag}::^{old}$"'
+        f' {tag}="{new}"'
     )
 
 

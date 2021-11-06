@@ -17,13 +17,19 @@ tinytag = "^1.6.0"
 pytest = "^5.2"
 black = "^21.10b0"
 isort = "^5.10.0"
+pre-commit = "^2.15.0"
+pyproject-flake8 = "^0.0.1-alpha.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.isort]
+profile = "black"
+
 [tool.black]
 experimental_string_processing = true
 
-[tool.isort]
-profile = "black"
+[tool.flake8]
+max-line-length = 88
+extend-ignore = "E203"
