@@ -2,11 +2,12 @@ from os import system
 
 from typer import Option, Typer, confirm, echo
 
+from .config import write_config_options
 from .helpers import (
     get_album_dirs,
     import_complete_albums,
+    print_config_values,
     set_quote,
-    get_config_options,
 )
 from .strip_bracket_years import strip_bracket_years as strip_bracket_years_function
 
@@ -21,14 +22,11 @@ def import_error_albums(albums):
 
 
 @app.command()
-def strip_years():
-    strip_bracket_years_function()
-
-
-@app.command()
-def config():
-    for value in get_config_options():
-        echo(value)
+def config(update: bool = Option(False, "--update")):
+    """Create (if config doesn't exist) or optionally update, and display config values"""
+    if update:
+        write_config_options()
+    print_config_values()
 
 
 @app.command()
@@ -48,3 +46,9 @@ def import_new(strip_years: bool = Option(False, "--strip-years")):
         )
         if import_all:
             import_error_albums(bulk_fix_albums)
+
+
+@app.command()
+def strip_years():
+    """Remove bracketed years from album field"""
+    strip_bracket_years_function()
