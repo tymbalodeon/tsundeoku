@@ -1,11 +1,10 @@
-from os import path, remove, system
-from pathlib import Path
+from os import remove, system
 from re import escape, sub
+from .config import get_config_directory
 
 from typer import echo
 
-dirname = path.dirname(__file__)
-TEMP_FILE = Path(dirname) / ".beets_tag_reformatter_temp"
+TEMP_FILE = get_config_directory() / ".beets_tag_reformatter_temp"
 
 
 def get_album_operation_flag(operate_on_albums):

@@ -5,10 +5,20 @@ from typer import confirm, echo, prompt
 
 from .helpers import color
 
-CONFIG_DIRECTORY = Path.home() / ".config"
+CONFIG_DIRECTORY = Path.home() / ".config" / "musicbros"
 CONFIG_FILE = CONFIG_DIRECTORY / "musicbros.ini"
 CONFIG_SECTION = "musicbros"
 CONFIG_OPTIONS = ["SHARED DIRECTORY", "PICKLE FILE", "SKIP DIRECTORIES"]
+
+
+def create_config_directory():
+    if not CONFIG_DIRECTORY.exists():
+        Path.mkdir(CONFIG_DIRECTORY, parents=True)
+
+
+def get_config_directory():
+    create_config_directory()
+    return CONFIG_DIRECTORY
 
 
 def get_config_option(option):
@@ -27,8 +37,7 @@ def get_config_options():
 
 
 def write_config_options(first_time=False):
-    if not CONFIG_DIRECTORY.exists():
-        Path.mkdir(CONFIG_DIRECTORY, parents=True)
+    create_config_directory()
 
     def get_new_value(option):
         confirm_message = f"Would you like to update the {option} path?"
@@ -71,5 +80,7 @@ def get_musicbros_config():
 
 
 def print_config_values():
-    for option, value in get_config_options():
-        echo(f"{color(option.replace('_', ' ').upper())}: {value}")
+    config = get_musicbros_config()
+    if config:
+        for option, value in config:
+            echo(f"{color(option.replace('_', ' ').upper())}: {value}")
