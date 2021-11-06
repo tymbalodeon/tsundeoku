@@ -103,6 +103,8 @@ def import_complete_albums():
     imports = False
     bulk_fix_albums = list()
     for album in get_album_directories():
+        if get_config_option("skip_directories") in album:
+            continue
         if is_already_imported(album):
             skipped_count += 1
             continue
