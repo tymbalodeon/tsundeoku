@@ -1,4 +1,4 @@
-import os
+from os import walk
 from glob import glob
 import pickle
 from tinytag import TinyTag
@@ -21,7 +21,7 @@ IMPORTED_ALBUMS = get_imported_albums(PICKLE_FILE)
 
 
 def get_album_dirs(directory):
-    return [root for root, dirs, files in os.walk(directory) if files and not dirs]
+    return [root for root, dirs, files in walk(directory) if files and not dirs]
 
 
 NEW_ALBUMS = get_album_dirs(SHARED_DIRECTORY)
