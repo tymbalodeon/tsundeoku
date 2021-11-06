@@ -21,8 +21,7 @@ def config(update: bool = Option(False, "--update")):
 @app.command()
 def import_new(strip_years: bool = Option(False, "--strip-years")):
     """
-    Copy newly added audio files from Dropbox to your music library location via
-    beets
+    Copy newly added audio files from your shared folder to your music library
     """
     echo("Importing newly added albums...")
     imports, errors, bulk_fix_albums = import_complete_albums()
