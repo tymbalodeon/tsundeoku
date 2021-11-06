@@ -76,17 +76,23 @@ def get_import_error_message(album, error_key):
     return f"{ERRORS[error_key]}: {album}"
 
 
+def import_album(album, ignore_error=True):
+    quote_character = get_single_or_double_quote(album)
+    if ignore_error or quote_character:
+        system(f"beet import {quote_character}{album}{quote_character}")
+        return True
+    else:
+        return False
+
+
 def import_or_get_errors(album, tracks, import_all=False):
     imported = False
     error_key = None
     track_count = len(tracks)
     track_total, message = get_track_total(tracks)
     if import_all or track_count == track_total:
-        quote_character = get_single_or_double_quote(album)
-        if quote_character:
-            system(f"beet import {quote_character}{album}{quote_character}")
-            imported = True
-        else:
+        error = import_album(album, ignore_error=False)
+        if error:
             error_key = "escape_error"
     elif message:
         error_key = message
@@ -122,9 +128,3 @@ def import_complete_albums():
     for error in errors:
         color(error, echo=True)
     return imports, errors, bulk_fix_albums
-
-
-def import_error_albums(albums):
-    for album in albums:
-        quote_character = get_single_or_double_quote(album)
-        system(f"beet import {quote_character}{album}{quote_character}")
