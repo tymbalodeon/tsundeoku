@@ -8,6 +8,20 @@ from .config import get_config_option
 from .helpers import color
 
 AUDIO_FILE_TYPES = (".mp3", ".m4a", ".flac")
+ERRORS = {
+    "no_tracks": (
+        f"Folder is empty or audio is in wav format (please wait for sync or"
+        f" resolve manually)"
+    ),
+    "conflicting_track_totals": (
+        f"Possible multi-disc album detected (please resolve manually)"
+    ),
+    "missing_track_total": (
+        f"Album does not contain a track total number (please resolve manually)"
+    ),
+    "escape_error": f"Annoyingly named directory (please resolve manually)",
+    "missing_tracks": f"Annoyingly named directory (please resolve manually)",
+}
 
 
 def get_imported_albums():
@@ -37,9 +51,9 @@ def get_track_total(tracks):
     message = None
     track_totals = {TinyTag.get(track).track_total for track in tracks}
     if not track_totals:
-        message = "missing"
+        message = "missing_track_total"
     elif len(track_totals) > 1:
-        message = "conflicting"
+        message = "conflicting_track_totals"
     else:
         track_total = int(next(iter(track_totals)))
     return track_total, message
@@ -58,51 +72,29 @@ def is_already_imported(album):
     return album in get_imported_albums()
 
 
-def import_or_get_errors(album):
+def get_import_error_message(album, error_key):
+    return f"{ERRORS[error_key]}: {album}"
+
+
+def import_or_get_errors(album, tracks, import_all=False):
     imported = False
-    error = None
-    if is_already_imported(album):
-        skipped = True
-    else:
-        skipped = False
-        tracks = get_audio_files()
-        track_count = len(tracks)
-        track_total, message = get_track_total(tracks)
+    error_key = None
+    track_count = len(tracks)
+    track_total, message = get_track_total(tracks)
+    if import_all or track_count == track_total:
         quote_character = get_single_or_double_quote(album)
-        if not tracks:
-            error = (
-                "Folder is empty or audio is in wav format (please wait for sync or"
-                f" resolve manually): '{album}'"
-            )
-        elif message == "conflicting":
-            error = (
-                "Possible multi-disc album detected (please resolve manually):"
-                f' "{album}"'
-            )
-        elif message == "missing":
-            error = (
-                "Album does not contain a track total number"
-                f' (please resolve manually): "{album}"'
-            )
-        elif track_count == track_total:
-            if quote_character:
-                system(f"beet import {quote_character}{album}{quote_character}")
-                imported = True
-            else:
-                error = (
-                    f'Annoyingly named directory (please resolve manually): "{album}"'
-                )
-        elif track_count > track_total:
-            error = (
-                "Possible multi-disc album detected (please resolve manually):"
-                f' "{album}"'
-            )
+        if quote_character:
+            system(f"beet import {quote_character}{album}{quote_character}")
+            imported = True
         else:
-            error = (
-                "Missing tracks (please wait for sync or resolve"
-                f' manually): "{album}"\n\tTrack total: {track_total}'
-            )
-    return skipped, imported, error
+            error_key = "escape_error"
+    elif message:
+        error_key = message
+    elif track_count > track_total:
+        error_key = "conflicting_track_totals"
+    else:
+        error_key = "missing_tracks"
+    return imported, get_import_error_message(album, error_key)
 
 
 def import_complete_albums():
@@ -110,19 +102,20 @@ def import_complete_albums():
     skipped_count = 0
     imports = False
     bulk_fix_albums = list()
-    skip_directories = get_config_option("skip_directories")
     for album in get_album_directories():
-        if skip_directories in album:
+        if is_already_imported(album):
+            skipped_count += 1
             continue
-        else:
-            skipped, imported, error = import_or_get_errors(album)
-            if imported:
-                imports = True
-            if skipped:
-                skipped_count += 1
-            if error:
-                errors.append(error)
-                bulk_fix_albums.append(album)
+        tracks = get_audio_files()
+        if not tracks:
+            errors.append(get_import_error_message(album, "no_tracks"))
+            continue
+        imported, error = import_or_get_errors(album, tracks)
+        if imported:
+            imports = True
+        if error:
+            errors.append(error)
+            bulk_fix_albums.append(album)
     print(f"{skipped_count} albums skipped.")
     for error in errors:
         color(error, echo=True)
