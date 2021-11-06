@@ -6,6 +6,7 @@ from typer import confirm, echo, prompt
 CONFIG_DIRECTORY = Path.home() / ".config"
 CONFIG_FILE = CONFIG_DIRECTORY / "musicbros.ini"
 CONFIG_SECTION = "musicbros"
+CONFIG_OPTIONS = ["SHARED DIRECTORY", "PICKLE FILE", "SKIP DIRECTORIES"]
 
 
 def get_config_option(option):
@@ -17,10 +18,10 @@ def get_config_option(option):
 def get_config_options():
     config = ConfigParser()
     config.read(CONFIG_FILE)
-    return tuple(
+    return [
         (option, config.get(CONFIG_SECTION, option))
         for option in config.options(CONFIG_SECTION)
-    )
+    ]
 
 
 def write_config_options(first_time=False):
@@ -33,10 +34,7 @@ def write_config_options(first_time=False):
         is_updating = True if first_time else confirm(confirm_message)
         return prompt(prompt_message) if is_updating else ""
 
-    new_values = [
-        (option, get_new_value(option))
-        for option in ["SHARED DIRECTORY", "PICKLE FILE", "SKIP DIRECTORIES"]
-    ]
+    new_values = [(option, get_new_value(option)) for option in CONFIG_OPTIONS]
 
     config = ConfigParser()
     if first_time:
