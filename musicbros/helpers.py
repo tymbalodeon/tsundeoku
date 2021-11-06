@@ -1,46 +1,38 @@
-"""track level incremental import"""
-
 import os
+from glob import glob
 import pickle
 from tinytag import TinyTag
 
-INCOMING_FOLDER = "/Users/rrosen/Dropbox/Ralph-MichaelC/"
+SHARED_DIRECTORY = "/Users/rrosen/Dropbox/Ralph-MichaelC/"
 PICKLE_FILE = "/Users/rrosen/.config/beets/state.pickle"
-WARNING = "\033[93m"
-ENDC = "\033[0m"
+SKIP_DIRECTORIES = (
+    "/Users/rrosen/Dropbox/Ralph-MichaelC/ZZ-ALBUM COVER ART--DO NOT DELETE"
+)
 
 
-def unpickle_to_set(path):
-    raw = open(path, "rb")
-    unpickle = pickle.load(raw)
-    unpickle = unpickle["taghistory"]
-    albums = set()
-    for album in unpickle:
-        albums.add(album[0].decode())
-    raw.close()
+def get_imported_albums(path):
+    with open(path, "rb") as raw_pickle:
+        unpickled = pickle.load(raw_pickle)["taghistory"]
+        albums = {album[0].decode() for album in unpickled}
     return albums
 
 
-IMPORTED_ALBUMS = unpickle_to_set(PICKLE_FILE)
+IMPORTED_ALBUMS = get_imported_albums(PICKLE_FILE)
 
 
-def get_album_dirs(path):
-    albums = list()
-    for root, dirs, files in os.walk(INCOMING_FOLDER):
-        if files and not dirs:
-            albums.append(root)
-    return albums
+def get_album_dirs(directory):
+    return [root for root, dirs, files in os.walk(directory) if files and not dirs]
 
 
-NEW_ALBUMS = get_album_dirs(INCOMING_FOLDER)
+NEW_ALBUMS = get_album_dirs(SHARED_DIRECTORY)
 
 
-def is_audio_file(file):
-    return file.lower().endswith((".mp3", ".m4a", ".flac"))
-
-
-def is_image_file(file):
-    return file.lower().endswith((".jpeg", ".jpg", ".pdf", ".docx"))
+def get_audio_files():
+    audio_file_types = (".mp3", ".m4a", ".flac")
+    audio_files = list()
+    for file_type in audio_file_types:
+        audio_files.extend(glob(file_type))
+    return audio_files
 
 
 def get_track_total(album, track):
@@ -54,21 +46,14 @@ def get_track_total(album, track):
 
 def check_track_totals(album, tracks):
     total = 0
-    contains_audio = False
     for track in tracks:
-        if is_audio_file(track):
-            contains_audio = True
-            track_total = get_track_total(album, track)
-            if not track_total:
-                return -3
-            elif total == 0:
-                total = track_total
-            elif total != track_total:
-                return -1
-    if not contains_audio:
-        for track in tracks:
-            if not is_image_file(track):
-                return -2
+        track_total = get_track_total(album, track)
+        if not track_total:
+            return -3
+        elif total == 0:
+            total = track_total
+        elif total != track_total:
+            return -1
     return total
 
 
@@ -85,10 +70,7 @@ def set_quote(album):
 
 
 def is_already_imported(album):
-    if album in IMPORTED_ALBUMS:
-        return True
-    else:
-        return False
+    return album in IMPORTED_ALBUMS
 
 
 def import_or_get_errors(album):
@@ -96,78 +78,77 @@ def import_or_get_errors(album):
     albums = list()
     skipped = False
     imports = False
-    for root, dirs, files in os.walk(album):
-        AUDIO_FILES = [track for track in files if is_audio_file(track)]
-        RESULT = check_track_totals(album, files)
-        QUOTE = set_quote(album)
-        IMPORTED = is_already_imported(album)
-        if len(AUDIO_FILES) == 0:
-            errors.append(
-                f"\n{WARNING}- Folder is empty or audio is in wav format (please wait"
-                f' for sync or resolve manually): {ENDC}"{album}"'
-            )
-        elif RESULT >= 0:
-            if len(AUDIO_FILES) == RESULT:
-                if not QUOTE:
-                    if not IMPORTED:
-                        errors.append(
-                            f"\n{WARNING}- Annoyingly named directory (please resolve"
-                            f' manually): {ENDC}"{album}"'
-                        )
-                    else:
-                        skipped = True
-                else:
-                    if not IMPORTED:
-                        os.system(f"beet import {QUOTE}{album}{QUOTE}")
-                        imports = True
-                    else:
-                        skipped = True
-            elif len(AUDIO_FILES) > RESULT:
+    audio_files = get_audio_files()
+    RESULT = check_track_totals(album, audio_files)
+    QUOTE = set_quote(album)
+    IMPORTED = is_already_imported(album)
+    if len(audio_files) == 0:
+        errors.append(
+            "\n- Folder is empty or audio is in wav format (please wait"
+            f' for sync or resolve manually): "{album}"'
+        )
+    elif RESULT >= 0:
+        if len(audio_files) == RESULT:
+            if not QUOTE:
                 if not IMPORTED:
                     errors.append(
-                        f"\n{WARNING}- Possible multi-disc album detected (please"
-                        f' resolve manually): {ENDC}"{album}"'
+                        "\n- Annoyingly named directory (please resolve"
+                        f' manually): "{album}"'
                     )
-                    albums.append(album)
                 else:
                     skipped = True
             else:
                 if not IMPORTED:
-                    errors.append(
-                        f"\n{WARNING}- Missing tracks (please wait for sync or resolve"
-                        f' manually): {ENDC}"{album}"\n\tTrack total: {RESULT}'
-                    )
-                    albums.append(album)
+                    os.system(f"beet import {QUOTE}{album}{QUOTE}")
+                    imports = True
                 else:
                     skipped = True
+        elif len(audio_files) > RESULT:
+            if not IMPORTED:
+                errors.append(
+                    "\n- Possible multi-disc album detected (please"
+                    f' resolve manually): "{album}"'
+                )
+                albums.append(album)
+            else:
+                skipped = True
         else:
-            if RESULT == -1:
-                if not IMPORTED:
-                    errors.append(
-                        f"\n{WARNING}- Possible multi-disc album detected (please"
-                        f' resolve manually): {ENDC}"{album}"'
-                    )
-                    albums.append(album)
-                else:
-                    skipped = True
-            elif RESULT == -2:
-                if not IMPORTED:
-                    errors.append(
-                        f"\n{WARNING}- Filetype(s) not recognized (please resolve"
-                        f' manually): {ENDC}"{album}"'
-                    )
-                    albums.append(album)
-                else:
-                    skipped = True
-            elif RESULT == -3:
-                if not IMPORTED:
-                    errors.append(
-                        f"\n{WARNING}- Album does not contain a track total number"
-                        f' (please resolve manually): {ENDC}"{album}"'
-                    )
-                    albums.append(album)
-                else:
-                    skipped = True
+            if not IMPORTED:
+                errors.append(
+                    "\n- Missing tracks (please wait for sync or resolve"
+                    f' manually): "{album}"\n\tTrack total: {RESULT}'
+                )
+                albums.append(album)
+            else:
+                skipped = True
+    else:
+        if RESULT == -1:
+            if not IMPORTED:
+                errors.append(
+                    "\n- Possible multi-disc album detected (please"
+                    f' resolve manually): "{album}"'
+                )
+                albums.append(album)
+            else:
+                skipped = True
+        elif RESULT == -2:
+            if not IMPORTED:
+                errors.append(
+                    "\n- Filetype(s) not recognized (please resolve"
+                    f' manually): "{album}"'
+                )
+                albums.append(album)
+            else:
+                skipped = True
+        elif RESULT == -3:
+            if not IMPORTED:
+                errors.append(
+                    "\n- Album does not contain a track total number"
+                    f' (please resolve manually): "{album}"'
+                )
+                albums.append(album)
+            else:
+                skipped = True
     return errors, skipped, imports, albums
 
 
@@ -178,9 +159,9 @@ def import_complete_albums(albums):
     returns_errors = False
     bulk_fix_albums = list()
     for album in albums:
-        if not album.startswith(
-            "/Users/rrosen/Dropbox/Ralph-MichaelC/ZZ-ALBUM COVER ART--DO NOT DELETE"
-        ):
+        if SKIP_DIRECTORIES in album:
+            continue
+        else:
             errors, skipped, imports, error_albums = import_or_get_errors(album)
             if imports:
                 final_imports = True
@@ -197,6 +178,3 @@ def import_complete_albums(albums):
             print(error)
         returns_errors = True
     return final_imports, returns_errors, bulk_fix_albums
-
-
-#!/usr/bin/env python3

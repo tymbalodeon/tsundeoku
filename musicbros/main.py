@@ -24,7 +24,10 @@ def strip_with_message():
 
 @app.command()
 def new():
-    """Copy newly added audio files from Dropbox to your music library location via beets"""
+    """
+    Copy newly added audio files from Dropbox to your music library location via
+    beets
+    """
     echo("Importing new albums...")
     new_imports, errors, bulk_fix_albums = import_complete_albums(NEW_ALBUMS)
     if new_imports:
