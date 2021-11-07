@@ -5,7 +5,7 @@ from pathlib import Path
 from tinytag import TinyTag
 from typer import echo
 
-from .config import get_config_option
+from .config import get_config_option, get_skip_directories
 from .helpers import color
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.m4a", "*.flac")
@@ -116,8 +116,9 @@ def import_albums(albums, import_all=False):
     importable_error_albums = list()
     for album in albums:
         if not import_all:
-            if get_config_option("skip_directories") in album:
-                continue
+            for directory in get_skip_directories():
+                if directory in album:
+                    continue
             if is_already_imported(album):
                 skipped_count += 1
                 continue

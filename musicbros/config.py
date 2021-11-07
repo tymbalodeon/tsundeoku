@@ -36,6 +36,13 @@ def get_config_options():
     ]
 
 
+def get_skip_directories():
+    config = ConfigParser()
+    config.read(CONFIG_FILE)
+    skip_directories = get_config_option("skip_directories")
+    return [directory for directory in skip_directories.split(",")]
+
+
 def write_config_options(first_time=False):
     create_config_directory()
 
