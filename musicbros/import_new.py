@@ -87,6 +87,7 @@ def get_import_error_message(album, error_key):
 
 def beet_import(album):
     quote_character = get_single_or_double_quote(album)
+    album = album.replace("$", r"\$")
     if quote_character:
         system(f"beet import {quote_character}{album}{quote_character}")
         return True
@@ -95,21 +96,17 @@ def beet_import(album):
 
 
 def import_album(album, tracks, import_all):
-    imported = False
-    error_key = None
     track_count = len(tracks)
     track_total, message = get_track_total(tracks)
     if import_all or track_count == track_total:
-        error = beet_import(album)
-        if error:
-            error_key = "escape_error"
+        error = None if beet_import(album) else "escape_error"
     elif message:
-        error_key = message
+        error = message
     elif isinstance(track_total, int) and track_count > track_total:
-        error_key = "conflicting_track_totals"
+        error = "conflicting_track_totals"
     else:
-        error_key = "missing_tracks"
-    return imported, error_key
+        error = "missing_tracks"
+    return error
 
 
 def import_albums(albums, import_all=False):
@@ -130,13 +127,13 @@ def import_albums(albums, import_all=False):
                 get_import_error_message(album, "no_tracks")
             )
             continue
-        imported, error_key = import_album(album, tracks, import_all)
-        if imported:
-            imports = True
-        if error_key:
-            errors[error_key].append(get_import_error_message(album, error_key))
-            if error_key in IMPORTABLE_ERROR_KEYS:
+        error = import_album(album, tracks, import_all)
+        if error:
+            errors[error].append(get_import_error_message(album, error))
+            if error in IMPORTABLE_ERROR_KEYS:
                 importable_error_albums.append(album)
+        else:
+            imports = True
     if not import_all:
         echo(f"{skipped_count} albums skipped.")
     for key, error_list in errors.items():
