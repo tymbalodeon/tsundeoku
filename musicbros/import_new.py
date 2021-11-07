@@ -68,13 +68,11 @@ def get_track_total(tracks):
     return track_total, message
 
 
-def get_single_or_double_quote(album):
-    if "'" in album and '"' in album:
-        return None
-    elif '"' in album:
-        return "'"
-    else:
-        return '"'
+def is_skipped_directory(album):
+    for directory in get_skip_directories():
+        if directory in album:
+            return True
+    return False
 
 
 def is_already_imported(album):
@@ -83,6 +81,15 @@ def is_already_imported(album):
 
 def get_import_error_message(album, error_key):
     return f"{ERRORS[error_key]}: {color(album, 'cyan')}"
+
+
+def get_single_or_double_quote(album):
+    if "'" in album and '"' in album:
+        return None
+    elif '"' in album:
+        return "'"
+    else:
+        return '"'
 
 
 def beet_import(album):
@@ -116,9 +123,8 @@ def import_albums(albums, import_all=False):
     importable_error_albums = list()
     for album in albums:
         if not import_all:
-            for directory in get_skip_directories():
-                if directory in album:
-                    continue
+            if is_skipped_directory(album):
+                continue
             if is_already_imported(album):
                 skipped_count += 1
                 continue

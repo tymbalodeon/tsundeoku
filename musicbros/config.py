@@ -8,7 +8,7 @@ from .helpers import color
 CONFIG_DIRECTORY = Path.home() / ".config" / "musicbros"
 CONFIG_FILE = CONFIG_DIRECTORY / "musicbros.ini"
 CONFIG_SECTION = "musicbros"
-CONFIG_OPTIONS = ["SHARED DIRECTORY", "PICKLE FILE", "SKIP DIRECTORIES"]
+CONFIG_OPTIONS = ["shared_directory", "pickle_file", "skip_directories"]
 
 
 def create_config_directory():
@@ -43,25 +43,43 @@ def get_skip_directories():
     return [directory for directory in skip_directories.split(",")]
 
 
+def get_new_config_vlue(option, first_time):
+    is_updating = False
+    clear = False
+    skip_directories_option = option == CONFIG_OPTIONS[2]
+    option_display = option.replace("_", " ").upper()
+    confirm_message = f"Would you like to update the {option_display} value?"
+    if skip_directories_option and not first_time:
+        is_updating = confirm(confirm_message)
+        if is_updating:
+            clear = confirm(f"Would you like to CLEAR the existing list?")
+            if clear:
+                is_updating = confirm("Would you like to ADD a new value?")
+    prompt_message = f"Please provide your {option_display} value"
+    is_updating = True if is_updating or first_time else confirm(confirm_message)
+    if skip_directories_option:
+        if clear:
+            new_value = prompt(prompt_message) if is_updating else ""
+        else:
+            existing_list = get_config_option(option)
+            new_value = f"{existing_list},{prompt(prompt_message)}"
+    else:
+        new_value = prompt(prompt_message) if is_updating else None
+    return new_value
+
+
 def write_config_options(first_time=False):
     create_config_directory()
-
-    def get_new_value(option):
-        confirm_message = f"Would you like to update the {option} path?"
-        prompt_message = f"Please provide your {option} path"
-        is_updating = True if first_time else confirm(confirm_message)
-        return prompt(prompt_message) if is_updating else ""
-
-    new_values = [(option, get_new_value(option)) for option in CONFIG_OPTIONS]
-
+    new_values = [
+        (option, get_new_config_vlue(option, first_time)) for option in CONFIG_OPTIONS
+    ]
     config = ConfigParser()
     if first_time:
         config[CONFIG_SECTION] = dict()
     else:
         config.read(CONFIG_FILE)
     for option, value in new_values:
-        if value:
-            option = option.replace(" ", "_")
+        if value is not None:
             config[CONFIG_SECTION][option] = value
     with open(CONFIG_FILE, "w") as config_file:
         config.write(config_file)
