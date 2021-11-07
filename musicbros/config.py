@@ -43,29 +43,33 @@ def get_skip_directories():
     return [directory for directory in skip_directories.split(",")]
 
 
+def get_new_value(option, option_display, adding):
+    prompt_message = f"Please provide your {option_display} value"
+    return (
+        f"{get_config_option(option)},{prompt(prompt_message)}"
+        if adding
+        else prompt(prompt_message)
+    )
+
+
 def get_new_config_vlue(option, first_time):
-    is_updating = False
     clear = False
-    skip_directories_option = option == CONFIG_OPTIONS[2]
+    adding = True
+    list_option = option != CONFIG_OPTIONS[1]
     option_display = option.replace("_", " ").upper()
     confirm_message = f"Would you like to update the {option_display} value?"
-    if skip_directories_option and not first_time:
-        is_updating = confirm(confirm_message)
-        if is_updating:
-            clear = confirm(f"Would you like to CLEAR the existing list?")
-            if clear:
-                is_updating = confirm("Would you like to ADD a new value?")
-    prompt_message = f"Please provide your {option_display} value"
-    is_updating = True if is_updating or first_time else confirm(confirm_message)
-    if skip_directories_option:
-        if clear:
-            new_value = prompt(prompt_message) if is_updating else ""
-        else:
-            existing_list = get_config_option(option)
-            new_value = f"{existing_list},{prompt(prompt_message)}"
-    else:
-        new_value = prompt(prompt_message) if is_updating else None
-    return new_value
+    updating = True if first_time else confirm(confirm_message)
+    if (
+        not first_time
+        and updating
+        and list_option
+        and confirm(f"Would you like to CLEAR the existing list?")
+    ):
+        clear = True
+        updating = adding = confirm("Would you like to ADD a new value?")
+    empty_value = "" if clear else None
+
+    return get_new_value(option, option_display, adding) if updating else empty_value
 
 
 def write_config_options(first_time=False):
