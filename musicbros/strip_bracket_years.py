@@ -11,10 +11,10 @@ def get_album_operation_flag(operate_on_albums):
     return "-a" if operate_on_albums else ""
 
 
-def beet_ls(operate_on_albums, query_tag, query, update_tag):
+def beet_ls(operate_on_albums, query_tag, query, replace_tag):
     system(
         f"beet ls {get_album_operation_flag(operate_on_albums)}"
-        f" \"{query_tag}::{query}\" -f '${update_tag}' >> {TEMP_FILE}"
+        f" \"{query_tag}::{query}\" -f '${replace_tag}' >> {TEMP_FILE}"
     )
     with open(TEMP_FILE) as tags:
         tags = tags.read().split("\n")[:-1]
@@ -33,19 +33,19 @@ def beet_modify(confirm, operate_on_albums, tag, old, new):
 
 def update_tag(find, replace, tags, confirm, operate_on_albums, tag):
     for tag in tags:
-        updated_tag = sub(find, replace, tag)
+        replaced_tag = sub(find, replace, tag)
         escaped_tag = (
             escape(tag).replace("\\", "\\\\").replace('"', r"\"").replace(":", r"\:")
         )
-        system(beet_modify(confirm, operate_on_albums, tag, escaped_tag, updated_tag))
+        system(beet_modify(confirm, operate_on_albums, tag, escaped_tag, replaced_tag))
 
 
 def update_album_tags(
-    query, query_tag, update_tag, find, replace, operate_on_albums, confirm
+    query, query_tag, replace_tag, find, replace, operate_on_albums, confirm
 ):
-    tags = beet_ls(operate_on_albums, query_tag, query, update_tag)
+    tags = beet_ls(operate_on_albums, query_tag, query, replace_tag)
     update_tag(
-        find, replace, tags, confirm, operate_on_albums, update_tag
+        find, replace, tags, confirm, operate_on_albums, replace_tag
     ) if tags else echo("All albums formatted correctly.")
 
 
@@ -54,7 +54,7 @@ def strip_bracket_years():
     update_album_tags(
         query=r"\s\[\d{4}\]",
         query_tag="album",
-        update_tag="album",
+        replace_tag="album",
         find=r"\s\[\d{4}\]",
         replace="",
         operate_on_albums=True,
