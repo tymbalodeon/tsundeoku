@@ -33,6 +33,51 @@ docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=4.6)", "pytest-flake8", "pytest-cov", "pytest-black (>=0.3.7)", "pytest-mypy", "pytest-checkdocs (>=2.4)", "pytest-enabler (>=1.0.1)"]
 
 [[package]]
+name = "beets"
+version = "1.5.0"
+description = "music tagger and library organizer"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+confuse = ">=1.0.0"
+jellyfish = "*"
+mediafile = ">=0.2.0"
+munkres = ">=1.0.0"
+musicbrainzngs = ">=0.4"
+pyyaml = "*"
+six = ">=1.9"
+unidecode = "*"
+
+[package.extras]
+absubmit = ["requests"]
+beatport = ["requests-oauthlib (>=0.6.1)"]
+bpd = ["pygobject"]
+chroma = ["pyacoustid"]
+discogs = ["python3-discogs-client"]
+embedart = ["pillow"]
+embyupdate = ["requests"]
+fetchart = ["requests", "pillow"]
+gmusic = ["gmusicapi"]
+import = ["rarfile"]
+kodiupdate = ["requests"]
+lastgenre = ["pylast"]
+lastimport = ["pylast"]
+lint = ["flake8", "flake8-coding", "flake8-docstrings", "flake8-future-import", "pep8-naming"]
+lyrics = ["requests", "beautifulsoup4", "langdetect"]
+metasync = ["dbus-python"]
+mpdstats = ["python-mpd2 (>=0.4.2)"]
+plexupdate = ["requests"]
+reflink = ["reflink"]
+replaygain = ["pygobject"]
+scrub = ["mutagen (>=1.33)"]
+sonosupdate = ["soco"]
+test = ["beautifulsoup4", "coverage", "flask", "mock", "pylast", "pytest", "python-mpd2", "pyxdg", "responses (>=0.3.0)", "requests-oauthlib", "reflink", "rarfile", "python3-discogs-client", "py7zr"]
+thumbnails = ["pyxdg", "pillow"]
+web = ["flask", "flask-cors"]
+
+[[package]]
 name = "black"
 version = "21.10b0"
 description = "The uncompromising code formatter."
@@ -85,6 +130,20 @@ description = "Cross-platform colored terminal text."
 category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+
+[[package]]
+name = "confuse"
+version = "1.6.0"
+description = "Painless YAML configuration."
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4"
+
+[package.dependencies]
+pyyaml = "*"
+
+[package.extras]
+test = ["pathlib"]
 
 [[package]]
 name = "distlib"
@@ -145,6 +204,14 @@ colors = ["colorama (>=0.4.3,<0.5.0)"]
 plugins = ["setuptools"]
 
 [[package]]
+name = "jellyfish"
+version = "0.8.9"
+description = "a library for doing approximate and phonetic matching of strings."
+category = "main"
+optional = false
+python-versions = ">3.5"
+
+[[package]]
 name = "mccabe"
 version = "0.6.1"
 description = "McCabe checker, plugin for flake8"
@@ -153,12 +220,51 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "mediafile"
+version = "0.8.1"
+description = "Handles low-level interfacing for files' tags. Wraps Mutagen to"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+mutagen = ">=1.45"
+six = ">=1.9"
+
+[package.extras]
+test = ["tox"]
+
+[[package]]
 name = "more-itertools"
 version = "8.10.0"
 description = "More routines for operating on iterables, beyond itertools"
 category = "dev"
 optional = false
 python-versions = ">=3.5"
+
+[[package]]
+name = "munkres"
+version = "1.1.4"
+description = "Munkres (Hungarian) algorithm for the Assignment Problem"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "musicbrainzngs"
+version = "0.7.1"
+description = "Python bindings for the MusicBrainz NGS and the Cover Art Archive webservices"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[[package]]
+name = "mutagen"
+version = "1.45.1"
+description = "read and write audio tags for many formats"
+category = "main"
+optional = false
+python-versions = ">=3.5, <4"
 
 [[package]]
 name = "mypy-extensions"
@@ -304,7 +410,7 @@ testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "requests", "xm
 name = "pyyaml"
 version = "6.0"
 description = "YAML parser and emitter for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -328,7 +434,7 @@ python-versions = "!=3.0,!=3.1,!=3.2,!=3.3,>=2.6"
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 
@@ -387,6 +493,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "unidecode"
+version = "1.3.2"
+description = "ASCII transliterations of Unicode text"
+category = "main"
+optional = false
+python-versions = ">=3.5"
+
+[[package]]
 name = "virtualenv"
 version = "20.10.0"
 description = "Virtual Python Environment builder"
@@ -416,7 +530,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "abf5501682fbfa8d8b2268004360d957443cc8a5935a5fa4d71e657bfca29d72"
+content-hash = "39a43900b3da51c164b6e444b7cd20fdebf09f11ddafb99cf744c171f07d348d"
 
 [metadata.files]
 atomicwrites = [
@@ -430,6 +544,9 @@ attrs = [
 "backports.entry-points-selectable" = [
     {file = "backports.entry_points_selectable-1.1.0-py2.py3-none-any.whl", hash = "sha256:a6d9a871cde5e15b4c4a53e3d43ba890cc6861ec1332c9c2428c92f977192acc"},
     {file = "backports.entry_points_selectable-1.1.0.tar.gz", hash = "sha256:988468260ec1c196dab6ae1149260e2f5472c9110334e5d51adcb77867361f6a"},
+]
+beets = [
+    {file = "beets-1.5.0.tar.gz", hash = "sha256:887f7bbac0fc14c49469e50d406fd216f914a27acf3818c6503c223f9825342b"},
 ]
 black = [
     {file = "black-21.10b0-py3-none-any.whl", hash = "sha256:6eb7448da9143ee65b856a5f3676b7dda98ad9abe0f87fce8c59291f15e82a5b"},
@@ -446,6 +563,10 @@ click = [
 colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
+]
+confuse = [
+    {file = "confuse-1.6.0-py2.py3-none-any.whl", hash = "sha256:82137fae8aab189901f16ed9155268e34ec8673f13db0ad331ab670528ceb999"},
+    {file = "confuse-1.6.0.tar.gz", hash = "sha256:d60104c0b2a708041ac27487fa6ee69bd37d910549659c7ba92f52cbe2ced4dc"},
 ]
 distlib = [
     {file = "distlib-0.3.3-py2.py3-none-any.whl", hash = "sha256:c8b54e8454e5bf6237cc84c20e8264c3e991e824ef27e8f1e81049867d861e31"},
@@ -467,13 +588,47 @@ isort = [
     {file = "isort-5.10.0-py3-none-any.whl", hash = "sha256:1a18ccace2ed8910bd9458b74a3ecbafd7b2f581301b0ab65cfdd4338272d76f"},
     {file = "isort-5.10.0.tar.gz", hash = "sha256:e52ff6d38012b131628cf0f26c51e7bd3a7c81592eefe3ac71411e692f1b9345"},
 ]
+jellyfish = [
+    {file = "jellyfish-0.8.9-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:a3b3a31762b8c1286241ddd8a01c61d34df647d805bb5f659b8d6936612265d3"},
+    {file = "jellyfish-0.8.9-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:bb4b2e1886f96b5721a1cbf2f2c22e8fe94af9688aec8e29945c11ab8f129a02"},
+    {file = "jellyfish-0.8.9-cp310-cp310-win_amd64.whl", hash = "sha256:b1fd092e60e06115da2f4ab754ba11df7740d5bfe19021c73616b456240315c8"},
+    {file = "jellyfish-0.8.9-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:13696b496dee907e86bc1966acaa53a85d3ac893221caa9fe020630cb49c0c4d"},
+    {file = "jellyfish-0.8.9-cp36-cp36m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9dd016d3731d90231a5f1874a91b05c4fea12de1fba1e7830484b1f30d78de4c"},
+    {file = "jellyfish-0.8.9-cp36-cp36m-win_amd64.whl", hash = "sha256:beebadb1602ef407b94d9b31914fd7e4e260e6e62e09865276f59cff1278a7e8"},
+    {file = "jellyfish-0.8.9-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:77837d9156d34af8056cbf05818506549da3e585179ec8217ea32d9f5e2ad578"},
+    {file = "jellyfish-0.8.9-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:2340c137a03dd3e64ed3eb5d60b7353c162bed80d7cd8bcb3c5e9053d325d724"},
+    {file = "jellyfish-0.8.9-cp37-cp37m-win_amd64.whl", hash = "sha256:a9ba695c97a8c3dc0b08d44503a137a12a2e6ce3cf02d4d77f1831aa4a5f7218"},
+    {file = "jellyfish-0.8.9-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:f218e8a004d8748f251923019d7979a7f83accc95b3a5f1d656d543b8f5b5291"},
+    {file = "jellyfish-0.8.9-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5997559270da8df1566d3a19cfa89b7585c9da5aa60010bb925247e482c73afe"},
+    {file = "jellyfish-0.8.9-cp38-cp38-win_amd64.whl", hash = "sha256:9965ebaecba43c709ad4b93cd1e7cb0c0c452d58a339459e0d69c4b57e81f84d"},
+    {file = "jellyfish-0.8.9-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:3ad030b96f7d459daa97da249ca68d74ed261367b58e9af1f02c7bded7ed8e45"},
+    {file = "jellyfish-0.8.9-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:bb30a07adf110d6f7d03d6bd531b1947134b1517ef45147f1329c9715ab4b9ce"},
+    {file = "jellyfish-0.8.9-cp39-cp39-win_amd64.whl", hash = "sha256:92d69421ed39d4036ea82d7a726300b1e016368cf5f31c3b209887390165d30e"},
+    {file = "jellyfish-0.8.9.tar.gz", hash = "sha256:90d25e8f5971ebbcf56f216ff5bb65d6466572b78908c88c47ab588d4ea436c2"},
+]
 mccabe = [
     {file = "mccabe-0.6.1-py2.py3-none-any.whl", hash = "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42"},
     {file = "mccabe-0.6.1.tar.gz", hash = "sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f"},
 ]
+mediafile = [
+    {file = "mediafile-0.8.1-py3-none-any.whl", hash = "sha256:e013980e8f33bd22bf5f2fa4733b75bc02e0e9f7eedce2aec305accee6e0707b"},
+    {file = "mediafile-0.8.1.tar.gz", hash = "sha256:878ccc378b77f2d6c175abea135ea25631f28c722e01e1a051924d962ebea165"},
+]
 more-itertools = [
     {file = "more-itertools-8.10.0.tar.gz", hash = "sha256:1debcabeb1df793814859d64a81ad7cb10504c24349368ccf214c664c474f41f"},
     {file = "more_itertools-8.10.0-py3-none-any.whl", hash = "sha256:56ddac45541718ba332db05f464bebfb0768110111affd27f66e0051f276fa43"},
+]
+munkres = [
+    {file = "munkres-1.1.4-py2.py3-none-any.whl", hash = "sha256:6b01867d4a8480d865aea2326e4b8f7c46431e9e55b4a2e32d989307d7bced2a"},
+    {file = "munkres-1.1.4.tar.gz", hash = "sha256:fc44bf3c3979dada4b6b633ddeeb8ffbe8388ee9409e4d4e8310c2da1792db03"},
+]
+musicbrainzngs = [
+    {file = "musicbrainzngs-0.7.1-py2.py3-none-any.whl", hash = "sha256:e841a8f975104c0a72290b09f59326050194081a5ae62ee512f41915090e1a10"},
+    {file = "musicbrainzngs-0.7.1.tar.gz", hash = "sha256:ab1c0100fd0b305852e65f2ed4113c6de12e68afd55186987b8ed97e0f98e627"},
+]
+mutagen = [
+    {file = "mutagen-1.45.1-py3-none-any.whl", hash = "sha256:9c9f243fcec7f410f138cb12c21c84c64fde4195481a30c9bfb05b5f003adfed"},
+    {file = "mutagen-1.45.1.tar.gz", hash = "sha256:6397602efb3c2d7baebd2166ed85731ae1c1d475abca22090b7141ff5034b3e1"},
 ]
 mypy-extensions = [
     {file = "mypy_extensions-0.4.3-py2.py3-none-any.whl", hash = "sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d"},
@@ -640,6 +795,10 @@ typing-extensions = [
     {file = "typing_extensions-3.10.0.2-py2-none-any.whl", hash = "sha256:d8226d10bc02a29bcc81df19a26e56a9647f8b0a6d4a83924139f4a8b01f17b7"},
     {file = "typing_extensions-3.10.0.2-py3-none-any.whl", hash = "sha256:f1d25edafde516b146ecd0613dabcc61409817af4766fbbcfb8d1ad4ec441a34"},
     {file = "typing_extensions-3.10.0.2.tar.gz", hash = "sha256:49f75d16ff11f1cd258e1b988ccff82a3ca5570217d7ad8c5f48205dd99a677e"},
+]
+unidecode = [
+    {file = "Unidecode-1.3.2-py3-none-any.whl", hash = "sha256:215fe33c9d1c889fa823ccb66df91b02524eb8cc8c9c80f9c5b8129754d27829"},
+    {file = "Unidecode-1.3.2.tar.gz", hash = "sha256:669898c1528912bcf07f9819dc60df18d057f7528271e31f8ec28cc88ef27504"},
 ]
 virtualenv = [
     {file = "virtualenv-20.10.0-py2.py3-none-any.whl", hash = "sha256:4b02e52a624336eece99c96e3ab7111f469c24ba226a53ec474e8e787b365814"},
