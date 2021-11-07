@@ -27,9 +27,13 @@ def import_new(strip_years: bool = Option(False, "--strip-years")):
     imports, errors, importable_error_albums = import_albums(get_album_directories())
     if imports and strip_years:
         strip_bracket_years()
-    if errors and confirm("Would you like to import all albums anyway?"):
+    if (
+        errors
+        and importable_error_albums
+        and confirm("Would you like to import all albums anyway?")
+    ):
         imports, errors, importable_error_albums = import_albums(
-            importable_error_albums
+            importable_error_albums, import_all=True
         )
         if imports and strip_years:
             strip_bracket_years()

@@ -17,7 +17,9 @@ ERRORS = {
     "missing_track_total": (
         f"Album does not contain a track total number (please resolve manually)"
     ),
-    "missing_tracks": f"Annoyingly named directory (please resolve manually)",
+    "missing_tracks": (
+        f"Missing tracks (please wait for album to finish syncing or resolve manually)"
+    ),
     "no_tracks": (
         f"Folder is empty or audio is in wav format (please wait for sync or"
         f" resolve manually)"
@@ -80,7 +82,7 @@ def is_already_imported(album):
 
 
 def get_import_error_message(album, error_key):
-    return f"{ERRORS[error_key]}: {album}"
+    return f"{ERRORS[error_key]}: {color(album, 'cyan')}"
 
 
 def beet_import(album):
@@ -92,12 +94,12 @@ def beet_import(album):
         return False
 
 
-def import_album(album, tracks):
+def import_album(album, tracks, import_all):
     imported = False
     error_key = None
     track_count = len(tracks)
     track_total, message = get_track_total(tracks)
-    if track_count == track_total:
+    if import_all or track_count == track_total:
         error = beet_import(album)
         if error:
             error_key = "escape_error"
@@ -111,7 +113,7 @@ def import_album(album, tracks):
 
 
 def import_albums(albums, import_all=False):
-    errors = list()
+    errors = {key: list() for key in ERRORS.keys()}
     imports = False
     skipped_count = 0
     importable_error_albums = list()
@@ -124,17 +126,22 @@ def import_albums(albums, import_all=False):
                 continue
         tracks = get_tracks(album)
         if not tracks:
-            errors.append(get_import_error_message(album, "no_tracks"))
+            errors["missing_tracks"].append(
+                get_import_error_message(album, "no_tracks")
+            )
             continue
-        imported, error_key = import_album(album, tracks)
+        imported, error_key = import_album(album, tracks, import_all)
         if imported:
             imports = True
         if error_key:
-            errors.append(get_import_error_message(album, error_key))
+            errors[error_key].append(get_import_error_message(album, error_key))
             if error_key in IMPORTABLE_ERROR_KEYS:
                 importable_error_albums.append(album)
     if not import_all:
         echo(f"{skipped_count} albums skipped.")
-    for error in errors:
-        color(error, echo=True)
+    for key, error_list in errors.items():
+        if error_list:
+            color(key.replace("_", " ").upper(), echo=True)
+            for error in error_list:
+                echo(f"\t{error}")
     return imports, errors, importable_error_albums
