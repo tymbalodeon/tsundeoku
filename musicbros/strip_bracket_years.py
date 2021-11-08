@@ -1,31 +1,30 @@
 from re import escape, sub
-from subprocess import PIPE, run
+from subprocess import run
 
+from beets.ui import _configure, _open_library
 from typer import echo
+
+
+def list_items(
+    query_tag,
+    query,
+    operate_on_albums,
+    format_tag="",
+    lib=_open_library(_configure({})),
+):
+    query_string = f"'{query_tag}::{query}'"
+    albums = list()
+    if operate_on_albums:
+        for operate_on_albums in lib.albums(query_string):
+            albums.append(format(operate_on_albums, format_tag))
+    else:
+        for item in lib.items(query_string):
+            albums.append(format(item, format_tag))
+    return albums
 
 
 def get_album_operation_flag(operate_on_albums):
     return "-a" if operate_on_albums else ""
-
-
-def beet_ls(operate_on_albums, query_tag, query, format_tag):
-    tags = (
-        run(
-            [
-                "beet",
-                "ls",
-                operate_on_albums,
-                f'"{query_tag}::{query}"',
-                "-f",
-                f"'${format_tag}'",
-            ],
-            stdout=PIPE,
-        )
-        .stdout.decode("utf-8")
-        .split("\n")
-    )
-    tags = [tag for tag in tags if tag]
-    return tags
 
 
 def beet_modify(confirm, operate_on_albums, modify_tag, found, replacement):
@@ -34,7 +33,7 @@ def beet_modify(confirm, operate_on_albums, modify_tag, found, replacement):
             "beet",
             "modify",
             "" if confirm else "-y",
-            operate_on_albums,
+            get_album_operation_flag(operate_on_albums),
             f'"{modify_tag}::^{found}$"',
             f'{modify_tag}="{replacement}"',
         ]
@@ -58,8 +57,7 @@ def update_album_tags(
     operate_on_albums,
     confirm,
 ):
-    operate_on_albums = get_album_operation_flag(operate_on_albums)
-    tags = beet_ls(operate_on_albums, query_tag, query_regex, modify_tag)
+    tags = list_items(query_tag, query_regex, operate_on_albums, modify_tag)
     update_tag(
         find_regex, replacement, tags, confirm, operate_on_albums, modify_tag
     ) if tags else echo("No albums to update.")
