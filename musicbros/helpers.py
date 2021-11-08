@@ -12,6 +12,5 @@ COLORS = {
 
 
 def color(text, color="yellow", echo=False):
-    if isinstance(text, int):
-        text = f"{text:,}"
+    text = f"{text:,}" if isinstance(text, int) else str(text)
     return secho(text, fg=COLORS[color]) if echo else style(text, fg=COLORS[color])
