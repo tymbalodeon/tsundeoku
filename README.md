@@ -9,7 +9,7 @@ creating any problems in the beets library.
 
 Track metadata can be changed to suit the user's preferences. For personal use,
 I have included a default option to strip bracketed years (in the format:
-"[YYYY]") from all album fields.
+"[YYYY]") from all album tags.
 
 # Installation
 
@@ -22,4 +22,4 @@ Run `make build` to install the `musicbros` command in your shell.
   shared folder and beets pickle file: `musicbros config` (or `musicbros config --update`)
 - To import new audio files from your shared folder to your music library:
   `musicbros import-new` (and optionally `musicbros import-new --strip-years`)
-- To strip bracketed years from the audio tracks' album fields: `musicbros strip-years`
+- To strip bracketed years from the audio tracks' album tags: `musicbros strip-years`

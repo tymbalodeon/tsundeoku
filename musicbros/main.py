@@ -41,5 +41,5 @@ def import_new(strip_years: bool = Option(False, "--strip-years")):
 
 @app.command()
 def strip_years():
-    """Remove bracketed years from album field"""
+    """Remove bracketed years from album tags"""
     strip_bracket_years()

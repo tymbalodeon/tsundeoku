@@ -64,7 +64,7 @@ def update_album_tags(
 
 
 def strip_bracket_years():
-    echo('Removing bracketed years from all albums\' "album" tag...')
+    echo('Removing bracketed years from all "album" tags...')
     update_album_tags(
         query_regex=r"\s\[\d{4}\]",
         query_tag="album",
