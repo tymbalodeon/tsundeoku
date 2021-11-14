@@ -5,30 +5,23 @@ from pathlib import Path
 from tinytag import TinyTag
 from typer import echo
 
-from .config import get_config_option, get_skip_directories
+from .config import get_config_option, get_ignored_directories
 from .helpers import color
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.m4a", "*.flac")
 ERRORS = {
-    "escape_error": f"Annoyingly named directory (please resolve manually)",
-    "conflicting_track_totals": (
-        f"Possible multi-disc album detected (please resolve manually)"
-    ),
-    "missing_track_total": (
-        f"Album does not contain a track total number (please resolve manually)"
-    ),
-    "missing_tracks": (
-        f"Missing tracks (please wait for album to finish syncing or resolve manually)"
-    ),
-    "no_tracks": (
-        f"Folder is empty or audio is in wav format (please wait for sync or"
-        f" resolve manually)"
-    ),
+    "escape_error": "Error parsing path name",
+    "conflicting_track_totals": "Album tracks include more than one track total number",
+    "missing_track_total": "Album does not contain a track total number",
+    "missing_tracks": "Album is missing tracks",
+    "no_tracks": "Folder does not contain supported audio files",
+    "wav_files": "Album is in wav format",
 }
 IMPORTABLE_ERROR_KEYS = [
     "conflicting_track_totals",
     "missing_track_total",
     "missing_tracks",
+    "wav_files",
 ]
 
 
@@ -54,6 +47,10 @@ def get_tracks(album):
     return audio_files
 
 
+def get_wav_tracks(album):
+    return bool(Path(album).glob("*.wav"))
+
+
 def get_track_total(tracks):
     track_total = 0
     message = None
@@ -68,8 +65,8 @@ def get_track_total(tracks):
     return track_total, message
 
 
-def is_skipped_directory(album):
-    for directory in get_skip_directories():
+def is_ignored_directory(album):
+    for directory in get_ignored_directories():
         if directory in album:
             return True
     return False
@@ -102,6 +99,10 @@ def beet_import(album):
         return False
 
 
+def import_wav_files(album):
+    system(f"open -a '{get_config_option('music_player')}' '{album}'")
+
+
 def import_album(album, tracks, import_all):
     track_count = len(tracks)
     track_total, message = get_track_total(tracks)
@@ -119,28 +120,37 @@ def import_album(album, tracks, import_all):
 def import_albums(albums, import_all=False):
     errors = {key: list() for key in ERRORS.keys()}
     imports = False
+    wav_imports = 0
     skipped_count = 0
     importable_error_albums = list()
     for album in albums:
         if not import_all:
-            if is_skipped_directory(album):
+            if is_ignored_directory(album):
                 continue
             if is_already_imported(album):
                 skipped_count += 1
                 continue
         tracks = get_tracks(album)
-        if not tracks:
-            errors["missing_tracks"].append(
-                get_import_error_message(album, "no_tracks")
-            )
-            continue
-        error = import_album(album, tracks, import_all)
-        if error:
-            errors[error].append(get_import_error_message(album, error))
-            if error in IMPORTABLE_ERROR_KEYS:
+        wav_tracks = get_wav_tracks(album)
+        if tracks:
+            error = import_album(album, tracks, import_all)
+            if error:
+                errors[error].append(get_import_error_message(album, error))
+                if error in IMPORTABLE_ERROR_KEYS:
+                    importable_error_albums.append(album)
+            else:
+                imports = True
+        if wav_tracks:
+            if import_all:
+                import_wav_files(album)
+                wav_imports += 1
+            else:
+                errors["wav_files"].append(get_import_error_message(album, "wav_files"))
                 importable_error_albums.append(album)
-        else:
-            imports = True
+        if not tracks and not wav_tracks:
+            errors["no_tracks"].append(get_import_error_message(album, "no_tracks"))
+    if wav_imports:
+        echo(f"Imported {wav_imports} albums in WAV format.")
     if not import_all:
         echo(f"{skipped_count} albums skipped.")
     for key, error_list in errors.items():

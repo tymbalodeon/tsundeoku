@@ -8,17 +8,17 @@ from .helpers import color
 CONFIG_DIRECTORY = Path.home() / ".config" / "musicbros"
 CONFIG_FILE = CONFIG_DIRECTORY / "musicbros.ini"
 CONFIG_SECTION = "musicbros"
-CONFIG_OPTIONS = ["shared_directory", "pickle_file", "skip_directories"]
+CONFIG_OPTIONS = [
+    "shared_directory",
+    "pickle_file",
+    "ignored_directories",
+    "music_player",
+]
 
 
 def create_config_directory():
     if not CONFIG_DIRECTORY.exists():
         Path.mkdir(CONFIG_DIRECTORY, parents=True)
-
-
-def get_config_directory():
-    create_config_directory()
-    return CONFIG_DIRECTORY
 
 
 def get_config_option(option):
@@ -36,11 +36,11 @@ def get_config_options():
     ]
 
 
-def get_skip_directories():
+def get_ignored_directories():
     config = ConfigParser()
     config.read(CONFIG_FILE)
-    skip_directories = get_config_option("skip_directories")
-    return [directory for directory in skip_directories.split(",")]
+    ignored_directories = get_config_option("ignored_directories")
+    return [directory for directory in ignored_directories.split(",")]
 
 
 def get_new_value(option, option_display, replacing):
