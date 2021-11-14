@@ -9,17 +9,11 @@ def list_items(
     query_tag,
     query,
     operate_on_albums,
-    format_tag="",
     lib=_open_library(_configure({})),
 ):
     query_string = f"'{query_tag}::{query}'"
-    albums = list()
-    if operate_on_albums:
-        for operate_on_albums in lib.albums(query_string):
-            albums.append(format(operate_on_albums, format_tag))
-    else:
-        for item in lib.items(query_string):
-            albums.append(format(item, format_tag))
+    items = lib.albums(query_string) if operate_on_albums else lib.items(query_string)
+    albums = [item.get(query_tag) for item in items]
     return albums
 
 
@@ -34,8 +28,8 @@ def beet_modify(confirm, operate_on_albums, modify_tag, found, replacement):
             "modify",
             "" if confirm else "-y",
             get_album_operation_flag(operate_on_albums),
-            f'"{modify_tag}::^{found}$"',
-            f'{modify_tag}="{replacement}"',
+            f"{modify_tag}::^{found}$",
+            f"{modify_tag}={replacement}",
         ]
     )
 
@@ -57,7 +51,7 @@ def update_album_tags(
     operate_on_albums,
     confirm,
 ):
-    tags = list_items(query_tag, query_regex, operate_on_albums, modify_tag)
+    tags = list_items(query_tag, query_regex, operate_on_albums)
     update_tag(
         find_regex, replacement, tags, confirm, operate_on_albums, modify_tag
     ) if tags else echo("No albums to update.")
