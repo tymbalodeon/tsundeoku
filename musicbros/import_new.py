@@ -8,7 +8,7 @@ from typer import echo
 from .config import get_config_option, get_ignored_directories
 from .helpers import color
 
-AUDIO_FILE_TYPES = ("*.mp3", "*.m4a", "*.flac")
+AUDIO_FILE_TYPES = ("*.mp3", "*.m4a", "*.flac", "*.aif*")
 ERRORS = {
     "escape_error": "Error parsing path name",
     "conflicting_track_totals": "Album tracks include more than one track total number",
