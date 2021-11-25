@@ -48,7 +48,7 @@ def get_tracks(album):
 
 
 def get_wav_tracks(album):
-    return bool(Path(album).glob("*.wav"))
+    return bool([track for track in Path(album).glob("*.wav")])
 
 
 def get_track_total(tracks):
