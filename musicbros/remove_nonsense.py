@@ -57,15 +57,15 @@ def update_tags(
     ) if tags else echo("No albums to update.")
 
 
-def replace_tags(message, find, replace):
+def replace_tags(message, find, replace, tag, operate_on_albums):
     echo(message)
     update_tags(
         query_regex=find,
-        query_tag="album",
-        modify_tag="album",
+        query_tag=tag,
+        modify_tag=tag,
         find_regex=find,
         replacement=replace,
-        operate_on_albums=True,
+        operate_on_albums=operate_on_albums,
         confirm=False,
     )
 
@@ -74,18 +74,24 @@ strip_bracket_years = (
     'Removing bracketed years from all "album" tags...',
     r"\s\[\d{4}\]",
     "",
+    "album",
+    True,
 )
 
 replace_recs_with_recordings = (
     'Replacing "Rec.s" with "Recordings" in all "album" tags...',
     r"\bRec\.s\b",
     "Recordings",
+    "album",
+    True,
 )
 
 strip_solo_instruments = (
     'Removing "solo" instrument brackets from all "artist" tags...',
     r"\s\[solo.+\]",
     "",
+    "artist",
+    False,
 )
 
 
@@ -95,5 +101,5 @@ def remove_nonsense_main():
         replace_recs_with_recordings,
         strip_solo_instruments,
     ]:
-        message, find, replace = action
-        replace_tags(message, find, replace)
+        message, find, replace, tag, operate_on_albums = action
+        replace_tags(message, find, replace, tag, operate_on_albums)
