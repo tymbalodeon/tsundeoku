@@ -57,46 +57,43 @@ def update_tags(
     ) if tags else echo("No albums to update.")
 
 
-def strip_bracket_years():
-    echo('Removing bracketed years from all "album" tags...')
+def replace_tags(message, find, replace):
+    echo(message)
     update_tags(
-        query_regex=r"\s\[\d{4}\]",
+        query_regex=find,
         query_tag="album",
         modify_tag="album",
-        find_regex=r"\s\[\d{4}\]",
-        replacement="",
+        find_regex=find,
+        replacement=replace,
         operate_on_albums=True,
         confirm=False,
     )
 
 
-def replace_recs_with_recordings():
-    echo('Replacing "Rec.s" with "Recordings" in all "album" tags...')
-    update_tags(
-        query_regex=r"\bRec\.s\b",
-        query_tag="album",
-        modify_tag="album",
-        find_regex=r"\bRec\.s\b",
-        replacement="Recordings",
-        operate_on_albums=True,
-        confirm=False,
-    )
+strip_bracket_years = (
+    'Removing bracketed years from all "album" tags...',
+    r"\s\[\d{4}\]",
+    "",
+)
 
+replace_recs_with_recordings = (
+    'Replacing "Rec.s" with "Recordings" in all "album" tags...',
+    r"\bRec\.s\b",
+    "Recordings",
+)
 
-def strip_bracket_solo_instruments():
-    echo('Removing "solo" instrument brackets from all "artist" tags...')
-    update_tags(
-        query_regex=r"\s\[solo.+\]",
-        query_tag="album",
-        modify_tag="album",
-        find_regex=r"\s\[solo.+\]",
-        replacement="",
-        operate_on_albums=True,
-        confirm=False,
-    )
+strip_solo_instruments = (
+    'Removing "solo" instrument brackets from all "artist" tags...',
+    r"\s\[solo.+\]",
+    "",
+)
 
 
 def remove_nonsense_main():
-    strip_bracket_years()
-    replace_recs_with_recordings()
-    strip_bracket_solo_instruments()
+    for action in [
+        strip_bracket_years,
+        replace_recs_with_recordings,
+        strip_solo_instruments,
+    ]:
+        message, find, replace = action
+        replace_tags(message, find, replace)
