@@ -2,7 +2,7 @@ from typer import Option, Typer, confirm, echo
 
 from .config import print_config_values, write_config_options
 from .import_new import get_album_directories, import_albums
-from .strip_bracket_years import strip_bracket_years
+from .remove_nonsense import remove_nonsense_main
 
 app = Typer(help="CLI for managing the Musicbros audio file archive")
 
@@ -19,14 +19,14 @@ def config(update: bool = Option(False, "--update")):
 
 
 @app.command()
-def import_new(strip_years: bool = Option(False, "--strip-years")):
+def import_new(remove_nonsense: bool = Option(False, "--remove-nonsense")):
     """
     Copy newly added audio files from your shared folder to your music library
     """
     echo("Importing newly added albums...")
     imports, errors, importable_error_albums = import_albums(get_album_directories())
-    if imports and strip_years:
-        strip_bracket_years()
+    if imports and remove_nonsense:
+        remove_nonsense_main()
     if (
         errors
         and importable_error_albums
@@ -35,11 +35,11 @@ def import_new(strip_years: bool = Option(False, "--strip-years")):
         imports, errors, importable_error_albums = import_albums(
             importable_error_albums, import_all=True
         )
-        if imports and strip_years:
-            strip_bracket_years()
+        if imports and remove_nonsense:
+            remove_nonsense_main()
 
 
 @app.command()
-def strip_years():
-    """Remove bracketed years from album tags"""
-    strip_bracket_years()
+def remove_nonsense():
+    """Remove nonsense from tags"""
+    remove_nonsense_main()

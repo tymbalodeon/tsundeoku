@@ -42,7 +42,7 @@ def update_tag(find_regex, replacement, tags, confirm, operate_on_albums, modify
         )
 
 
-def update_album_tags(
+def update_tags(
     query_regex,
     query_tag,
     modify_tag,
@@ -59,7 +59,7 @@ def update_album_tags(
 
 def strip_bracket_years():
     echo('Removing bracketed years from all "album" tags...')
-    update_album_tags(
+    update_tags(
         query_regex=r"\s\[\d{4}\]",
         query_tag="album",
         modify_tag="album",
@@ -68,3 +68,35 @@ def strip_bracket_years():
         operate_on_albums=True,
         confirm=False,
     )
+
+
+def replace_recs_with_recordings():
+    echo('Replacing "Rec.s" with "Recordings" in all "album" tags...')
+    update_tags(
+        query_regex=r"\bRec\.s\b",
+        query_tag="album",
+        modify_tag="album",
+        find_regex=r"\bRec\.s\b",
+        replacement="Recordings",
+        operate_on_albums=True,
+        confirm=False,
+    )
+
+
+def strip_bracket_solo_instruments():
+    echo('Removing "solo" instrument brackets from all "artist" tags...')
+    update_tags(
+        query_regex=r"\s\[solo.+\]",
+        query_tag="album",
+        modify_tag="album",
+        find_regex=r"\s\[solo.+\]",
+        replacement="",
+        operate_on_albums=True,
+        confirm=False,
+    )
+
+
+def remove_nonsense_main():
+    strip_bracket_years()
+    replace_recs_with_recordings()
+    strip_bracket_solo_instruments()
