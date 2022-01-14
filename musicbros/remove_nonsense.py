@@ -3,6 +3,7 @@ from subprocess import run
 
 from beets.ui import _configure, _open_library
 from typer import echo
+from .helpers import BRACKET_YEAR_REGEX
 
 
 def list_items(
@@ -72,7 +73,7 @@ def replace_tags(message, find, replace, tag, operate_on_albums):
 
 strip_bracket_years = (
     'Removing bracketed years from all "album" tags...',
-    r"\s\[\d{4}\]",
+    BRACKET_YEAR_REGEX,
     "",
     "album",
     True,

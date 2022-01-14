@@ -19,12 +19,17 @@ def config(update: bool = Option(False, "--update")):
 
 
 @app.command()
-def import_new(remove_nonsense: bool = Option(False, "--remove-nonsense")):
+def import_new(
+    remove_nonsense: bool = Option(True, "--remove-nonsense"),
+    confirm_update_year: bool = Option(False, "--confirm-update-year"),
+):
     """
     Copy newly added audio files from your shared folder to your music library
     """
     echo("Importing newly added albums...")
-    imports, errors, importable_error_albums = import_albums(get_album_directories())
+    imports, errors, importable_error_albums = import_albums(
+        get_album_directories(), confirm_update_year
+    )
     if imports and remove_nonsense:
         remove_nonsense_main()
     if (
@@ -33,7 +38,7 @@ def import_new(remove_nonsense: bool = Option(False, "--remove-nonsense")):
         and confirm("Would you like to import all albums anyway?")
     ):
         imports, errors, importable_error_albums = import_albums(
-            importable_error_albums, import_all=True
+            importable_error_albums, confirm_update_year, import_all=True
         )
         if imports and remove_nonsense:
             remove_nonsense_main()

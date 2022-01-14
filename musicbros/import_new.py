@@ -1,12 +1,14 @@
 import pickle
 from os import system, walk
 from pathlib import Path
+from re import search
+from subprocess import run
 
 from tinytag import TinyTag
 from typer import echo
 
 from .config import get_config_option, get_ignored_directories
-from .helpers import color
+from .helpers import BRACKET_YEAR_REGEX, color
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.m4a", "*.flac", "*.aif*")
 ERRORS = {
@@ -52,10 +54,9 @@ def get_wav_tracks(album):
 
 
 def get_track_total(tracks):
-    track_total = 0
     message = None
     track_totals = {TinyTag.get(track).track_total for track in tracks}
-    track_total = next(iter(track_totals))
+    track_total = next(iter(track_totals), None)
     if len(track_totals) > 1:
         message = "conflicting_track_totals"
     elif not track_total:
@@ -103,11 +104,50 @@ def import_wav_files(album):
     system(f"open -a '{get_config_option('music_player')}' '{album}'")
 
 
-def import_album(album, tracks, import_all):
+def check_year(tracks):
+    album = ""
+    message = "fixable year"
+    years = {TinyTag.get(track).year for track in tracks}
+    year = next(iter(years), None)
+    if len(years) > 1:
+        message = "multiple_years"
+    else:
+        album = next(iter({TinyTag.get(track).album for track in tracks}), "")
+        found = search(BRACKET_YEAR_REGEX, album)
+        if not found:
+            message = "missing_bracket_year"
+        else:
+            bracket_year = "".join(
+                [character for character in found.group() if character.isnumeric()]
+            )
+            if not bracket_year:
+                message = "missing_bracket_year"
+            else:
+                year = bracket_year
+    return year, album, message
+
+
+def update_year(album_title, new_year, confirm):
+    run(
+        [
+            "beet",
+            "modify",
+            "" if confirm else "-y",
+            "-a",
+            f"album::^{album_title}$",
+            f"year={new_year}",
+        ]
+    )
+
+
+def import_album(album, tracks, import_all, confirm_update_year):
     track_count = len(tracks)
     track_total, message = get_track_total(tracks)
     if import_all or track_count == track_total:
+        year, album_title, message = check_year(tracks)
         error = None if beet_import(album) else "escape_error"
+        if not error and message == "fixable year" and year and album_title:
+            update_year(tracks, album_title, confirm_update_year)
     elif message:
         error = message
     elif isinstance(track_total, int) and track_count > track_total:
@@ -117,7 +157,7 @@ def import_album(album, tracks, import_all):
     return error
 
 
-def import_albums(albums, import_all=False):
+def import_albums(albums, confirm_update_year, import_all=False):
     errors = {key: list() for key in ERRORS.keys()}
     imports = False
     wav_imports = 0
@@ -133,7 +173,7 @@ def import_albums(albums, import_all=False):
         tracks = get_tracks(album)
         wav_tracks = get_wav_tracks(album)
         if tracks:
-            error = import_album(album, tracks, import_all)
+            error = import_album(album, tracks, import_all, confirm_update_year)
             if error:
                 errors[error].append(get_import_error_message(album, error))
                 if error in IMPORTABLE_ERROR_KEYS:
