@@ -109,3 +109,8 @@ def print_config_values():
     if config:
         for option, value in config:
             echo(f"{color(option.replace('_', ' ').upper())}: {value}")
+
+
+PICKLE_FILE = get_config_option("pickle_file")
+SHARED_DIRECTORY = get_config_option("shared_directory")
+MUSIC_PLAYER = get_config_option("music_player")

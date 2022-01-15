@@ -7,7 +7,7 @@ from subprocess import run
 from tinytag import TinyTag
 from typer import echo
 
-from .config import get_config_option, get_ignored_directories
+from .config import MUSIC_PLAYER, PICKLE_FILE, SHARED_DIRECTORY, get_ignored_directories
 from .helpers import BRACKET_YEAR_REGEX, color
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.m4a", "*.flac", "*.aif*")
@@ -28,18 +28,14 @@ IMPORTABLE_ERROR_KEYS = [
 
 
 def get_imported_albums():
-    with open(get_config_option("pickle_file"), "rb") as raw_pickle:
+    with open(PICKLE_FILE, "rb") as raw_pickle:
         unpickled = pickle.load(raw_pickle)["taghistory"]
         albums = {album[0].decode() for album in unpickled}
     return albums
 
 
 def get_album_directories():
-    return [
-        root
-        for root, dirs, files in walk(get_config_option("shared_directory"))
-        if files and not dirs
-    ]
+    return [root for root, dirs, files in walk(SHARED_DIRECTORY) if files and not dirs]
 
 
 def get_tracks(album):
@@ -101,7 +97,7 @@ def beet_import(album):
 
 
 def import_wav_files(album):
-    system(f"open -a '{get_config_option('music_player')}' '{album}'")
+    system(f"open -a '{MUSIC_PLAYER}' '{album}'")
 
 
 def check_year(tracks):
@@ -147,7 +143,7 @@ def import_album(album, tracks, import_all, confirm_update_year):
         year, album_title, year_message = check_year(tracks)
         error = None if beet_import(album) else "escape_error"
         if not error and year_message == "fixable year" and year and album_title:
-            update_year(tracks, album_title, confirm_update_year)
+            update_year(album_title, year, confirm_update_year)
     elif track_message:
         error = track_message
     elif isinstance(track_total, int) and track_count > track_total:
