@@ -102,6 +102,7 @@ def import_wav_files(album):
 
 def check_year(tracks):
     album = ""
+    album_artist = ""
     message = "fixable year"
     years = {TinyTag.get(track).year for track in tracks}
     year = next(iter(years), None)
@@ -120,16 +121,20 @@ def check_year(tracks):
                 message = "missing_bracket_year"
             else:
                 year = bracket_year
-    return year, album, message
+                album_artist = next(
+                    iter({TinyTag.get(track).albumartist for track in tracks}), ""
+                )
+    return year, album, album_artist, message
 
 
-def update_year(album_title, new_year, confirm):
+def update_year(album_title, album_artist, new_year, confirm):
     run(
         [
             "beet",
             "modify",
             "" if confirm else "-y",
             "-a",
+            f"albumartist::^{album_artist}$",
             f"album::^{album_title}$",
             f"year={new_year}",
         ]
@@ -140,10 +145,10 @@ def import_album(album, tracks, import_all, confirm_update_year):
     track_count = len(tracks)
     track_total, track_message = get_track_total(tracks)
     if import_all or track_count == track_total:
-        year, album_title, year_message = check_year(tracks)
+        year, album_title, album_artist, year_message = check_year(tracks)
         error = None if beet_import(album) else "escape_error"
         if not error and year_message == "fixable year" and year and album_title:
-            update_year(album_title, year, confirm_update_year)
+            update_year(album_title, album_artist, year, confirm_update_year)
     elif track_message:
         error = track_message
     elif isinstance(track_total, int) and track_count > track_total:
