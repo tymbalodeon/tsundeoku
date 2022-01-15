@@ -142,14 +142,14 @@ def update_year(album_title, new_year, confirm):
 
 def import_album(album, tracks, import_all, confirm_update_year):
     track_count = len(tracks)
-    track_total, message = get_track_total(tracks)
+    track_total, track_message = get_track_total(tracks)
     if import_all or track_count == track_total:
-        year, album_title, message = check_year(tracks)
+        year, album_title, year_message = check_year(tracks)
         error = None if beet_import(album) else "escape_error"
-        if not error and message == "fixable year" and year and album_title:
+        if not error and year_message == "fixable year" and year and album_title:
             update_year(tracks, album_title, confirm_update_year)
-    elif message:
-        error = message
+    elif track_message:
+        error = track_message
     elif isinstance(track_total, int) and track_count > track_total:
         error = "conflicting_track_totals"
     else:
