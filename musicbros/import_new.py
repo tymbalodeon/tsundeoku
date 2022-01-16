@@ -114,7 +114,8 @@ def check_year(tracks):
                 [character for character in found.group() if character.isnumeric()]
             )
             if bracket_year and confirm(
-                f"Use bracket year ({bracket_year}) instead of year ({year})?"
+                f"Use bracket year ({bracket_year}) instead of year ({year}) for album:"
+                f" {album}?"
             ):
                 year = bracket_year
                 album_artist = next(
