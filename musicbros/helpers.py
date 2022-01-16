@@ -1,6 +1,7 @@
 from typer import colors, secho, style
 
 BRACKET_YEAR_REGEX = r"\s\[\d{4}\]"
+BRACKET_DISC_REGEX = r"\s\[(d|D)is(c|k)\s\d+\]"
 COLORS = {
     "blue": colors.BLUE,
     "cyan": colors.CYAN,

@@ -8,7 +8,7 @@ from tinytag import TinyTag
 from typer import confirm, echo
 
 from .config import IGNORED_DIRECTORIES, MUSIC_PLAYER, PICKLE_FILE, SHARED_DIRECTORY
-from .helpers import BRACKET_YEAR_REGEX, color
+from .helpers import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, color
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.m4a", "*.flac", "*.aif*")
 ERRORS = {
@@ -121,10 +121,49 @@ def check_year(tracks):
                 album_artist = next(
                     iter({TinyTag.get(track).albumartist for track in tracks}), ""
                 )
+                fixable_year = True
     return year, album, album_artist, fixable_year
 
 
-def update_year(album_title, album_artist, new_year):
+def check_disc(tracks):
+    album = ""
+    album_artist = ""
+    fixable_disc = False
+    discs = {TinyTag.get(track).year for track in tracks}
+    disc = next(iter(discs), None)
+    disc_total = ""
+    album = next(iter({TinyTag.get(track).album for track in tracks}), "")
+    found = search(BRACKET_DISC_REGEX, album)
+    if found:
+        bracket_disc = "".join(
+            [character for character in found.group() if character.isnumeric()]
+        )
+        if bracket_disc and confirm(
+            f"Use bracket disc ({bracket_disc}) instead of disc ({disc}) for album:"
+            f" {album}?"
+        ):
+            disc = bracket_disc
+            album_artist = next(
+                iter({TinyTag.get(track).albumartist for track in tracks}), ""
+            )
+            fixable_disc = True
+    elif not disc:
+        disc_totals = {TinyTag.get(track).disc_total for track in tracks}
+        disc_total = next(iter(disc_totals), None)
+        if not disc_total and confirm(
+            "Apply disc and disc total value of 1/1 to album with missing disc and"
+            f" disc total: {album}?"
+        ):
+            disc = "1"
+            disc_total = "1"
+            album_artist = next(
+                iter({TinyTag.get(track).albumartist for track in tracks}), ""
+            )
+            fixable_disc = True
+    return disc, disc_total, album, album_artist, fixable_disc
+
+
+def update_field(album_title, album_artist, field, new_value):
     run(
         [
             "beet",
@@ -133,7 +172,7 @@ def update_year(album_title, album_artist, new_year):
             "-a",
             f"albumartist::^{album_artist}$",
             f"album::^{album_title}$",
-            f"year={new_year}",
+            f"{field}={new_value}",
         ]
     )
 
@@ -143,10 +182,18 @@ def import_album(album, tracks, import_all, as_is):
     track_total, track_message = get_track_total(tracks)
     if import_all or track_count == track_total:
         error = None if beet_import(album) else "escape_error"
-        if not as_is:
+        if not as_is and not error:
             year, album_title, album_artist, fixable_year = check_year(tracks)
-            if not error and fixable_year and year and album_title:
-                update_year(album_title, album_artist, year)
+            if fixable_year and year and album_title:
+                update_field(album_title, album_artist, "year", year)
+            disc, disc_total, album_title, album_artist, fixable_disc = check_disc(
+                tracks
+            )
+            if fixable_disc and album_title:
+                if disc:
+                    update_field(album_title, album_artist, "disc", disc)
+                if disc_total:
+                    update_field(album_title, album_artist, "disctotal", disc_total)
     elif track_message:
         error = track_message
     elif isinstance(track_total, int) and track_count > track_total:
