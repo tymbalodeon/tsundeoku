@@ -114,3 +114,4 @@ def print_config_values():
 PICKLE_FILE = get_config_option("pickle_file")
 SHARED_DIRECTORY = get_config_option("shared_directory")
 MUSIC_PLAYER = get_config_option("music_player")
+IGNORED_DIRECTORIES = get_ignored_directories()

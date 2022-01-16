@@ -7,7 +7,7 @@ from subprocess import run
 from tinytag import TinyTag
 from typer import confirm, echo
 
-from .config import MUSIC_PLAYER, PICKLE_FILE, SHARED_DIRECTORY, get_ignored_directories
+from .config import IGNORED_DIRECTORIES, MUSIC_PLAYER, PICKLE_FILE, SHARED_DIRECTORY
 from .helpers import BRACKET_YEAR_REGEX, color
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.m4a", "*.flac", "*.aif*")
@@ -63,7 +63,7 @@ def get_track_total(tracks):
 
 
 def is_ignored_directory(album):
-    for directory in get_ignored_directories():
+    for directory in IGNORED_DIRECTORIES:
         if directory in album:
             return True
     return False
