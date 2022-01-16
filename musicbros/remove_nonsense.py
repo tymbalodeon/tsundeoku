@@ -3,8 +3,8 @@ from subprocess import run
 
 from beets.ui import _configure, _open_library
 from typer import echo
-from .helpers import BRACKET_YEAR_REGEX
 
+from .helpers import BRACKET_YEAR_REGEX
 
 ACTIONS = [
     (
@@ -56,20 +56,18 @@ def beet_modify(confirm, operate_on_albums, modify_tag, found, replacement):
     )
 
 
-def replace_tags(message, find, replace, tag, operate_on_albums):
-    echo(message)
-    tags = [
-        (escape(tag), sub(find, replace, tag))
-        for tag in list_items(tag, find, operate_on_albums)
-    ]
-    if tags:
-        for found_value, replacement_value in tags:
-            beet_modify(False, operate_on_albums, tag, found_value, replacement_value)
-        else:
-            echo("No albums to update.")
-
-
 def remove_nonsense_main():
     for action in ACTIONS:
         message, find, replace, tag, operate_on_albums = action
-        replace_tags(message, find, replace, tag, operate_on_albums)
+        echo(message)
+        tags = [
+            (escape(tag), sub(find, replace, tag))
+            for tag in list_items(tag, find, operate_on_albums)
+        ]
+        if tags:
+            for found_value, replacement_value in tags:
+                beet_modify(
+                    False, operate_on_albums, tag, found_value, replacement_value
+                )
+            else:
+                echo("No albums to update.")
