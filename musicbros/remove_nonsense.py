@@ -1,10 +1,9 @@
 from re import escape, sub
 from subprocess import run
 
-from beets.ui import _configure, _open_library
 from typer import echo
 
-from .helpers import BRACKET_YEAR_REGEX
+from .helpers import BRACKET_YEAR_REGEX, LIBRARY
 
 ACTIONS = [
     (
@@ -35,12 +34,15 @@ def list_items(
     query_tag,
     query,
     operate_on_albums,
-    lib=_open_library(_configure({})),
+    library=LIBRARY,
 ):
     query_string = f"'{query_tag}::{query}'"
-    items = lib.albums(query_string) if operate_on_albums else lib.items(query_string)
-    albums = [item.get(query_tag) for item in items]
-    return albums
+    albums_or_items = (
+        library.albums(query_string)
+        if operate_on_albums
+        else library.items(query_string)
+    )
+    return [album_or_item.get(query_tag) for album_or_item in albums_or_items]
 
 
 def beet_modify(confirm, operate_on_albums, modify_tag, found, replacement):
