@@ -103,32 +103,23 @@ def import_wav_files(album):
 def check_year(tracks):
     album = ""
     album_artist = ""
-    fixable_year = True
+    fixable_year = False
     years = {TinyTag.get(track).year for track in tracks}
     year = next(iter(years), None)
-    if len(years) > 1:
-        fixable_year = False
-    else:
+    if len(years) == 1:
         album = next(iter({TinyTag.get(track).album for track in tracks}), "")
         found = search(BRACKET_YEAR_REGEX, album)
-        if not found:
-            fixable_year = False
-        else:
+        if found:
             bracket_year = "".join(
                 [character for character in found.group() if character.isnumeric()]
             )
-            if not bracket_year:
-                fixable_year = False
-            else:
-                if confirm(
-                    f"Use bracket year ({bracket_year}) instead of year ({year})?"
-                ):
-                    year = bracket_year
-                    album_artist = next(
-                        iter({TinyTag.get(track).albumartist for track in tracks}), ""
-                    )
-                else:
-                    fixable_year = False
+            if bracket_year and confirm(
+                f"Use bracket year ({bracket_year}) instead of year ({year})?"
+            ):
+                year = bracket_year
+                album_artist = next(
+                    iter({TinyTag.get(track).albumartist for track in tracks}), ""
+                )
     return year, album, album_artist, fixable_year
 
 
