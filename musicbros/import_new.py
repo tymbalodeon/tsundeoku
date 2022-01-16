@@ -5,7 +5,7 @@ from re import search
 from subprocess import run
 
 from tinytag import TinyTag
-from typer import echo, confirm
+from typer import confirm, echo
 
 from .config import MUSIC_PLAYER, PICKLE_FILE, SHARED_DIRECTORY, get_ignored_directories
 from .helpers import BRACKET_YEAR_REGEX, color
@@ -124,12 +124,12 @@ def check_year(tracks):
     return year, album, album_artist, fixable_year
 
 
-def update_year(album_title, album_artist, new_year, confirm):
+def update_year(album_title, album_artist, new_year):
     run(
         [
             "beet",
             "modify",
-            "" if confirm else "-y",
+            "-y",
             "-a",
             f"albumartist::^{album_artist}$",
             f"album::^{album_title}$",
@@ -138,14 +138,15 @@ def update_year(album_title, album_artist, new_year, confirm):
     )
 
 
-def import_album(album, tracks, import_all, confirm_update_year):
+def import_album(album, tracks, import_all, as_is):
     track_count = len(tracks)
     track_total, track_message = get_track_total(tracks)
     if import_all or track_count == track_total:
-        year, album_title, album_artist, fixable_year = check_year(tracks)
         error = None if beet_import(album) else "escape_error"
-        if not error and fixable_year and year and album_title:
-            update_year(album_title, album_artist, year, confirm_update_year)
+        if not as_is:
+            year, album_title, album_artist, fixable_year = check_year(tracks)
+            if not error and fixable_year and year and album_title:
+                update_year(album_title, album_artist, year)
     elif track_message:
         error = track_message
     elif isinstance(track_total, int) and track_count > track_total:
@@ -155,7 +156,7 @@ def import_album(album, tracks, import_all, confirm_update_year):
     return error
 
 
-def import_albums(albums, confirm_update_year, import_all=False):
+def import_albums(albums, as_is, import_all=False):
     errors = {key: list() for key in ERRORS.keys()}
     imports = False
     wav_imports = 0
@@ -171,7 +172,7 @@ def import_albums(albums, confirm_update_year, import_all=False):
         tracks = get_tracks(album)
         wav_tracks = get_wav_tracks(album)
         if tracks:
-            error = import_album(album, tracks, import_all, confirm_update_year)
+            error = import_album(album, tracks, import_all, as_is)
             if error:
                 errors[error].append(get_import_error_message(album, error))
                 if error in IMPORTABLE_ERROR_KEYS:
