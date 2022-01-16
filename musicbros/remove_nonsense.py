@@ -20,7 +20,7 @@ ACTIONS = [
         True,
     ),
     (
-        'Removing "solo" instrument brackets from all "artist" tags...',
+        'Removing bracketed solo instrument indications from all "artist" tags...',
         r"\s\[solo.+\]",
         "",
         "artist",
