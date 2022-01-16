@@ -3,6 +3,7 @@ from os import system, walk
 from pathlib import Path
 from re import search
 
+from beets.importer import history_add
 from tinytag import TinyTag
 from typer import confirm, echo
 
@@ -29,8 +30,10 @@ IMPORTABLE_ERROR_KEYS = [
 def get_imported_albums():
     with open(PICKLE_FILE, "rb") as raw_pickle:
         unpickled = pickle.load(raw_pickle)["taghistory"]
-        albums = {album[0].decode() for album in unpickled}
-    return albums
+        return {album[0].decode() for album in unpickled}
+
+
+IMPORTED_ALBUMS = get_imported_albums()
 
 
 def get_album_directories():
@@ -69,7 +72,7 @@ def is_ignored_directory(album):
 
 
 def is_already_imported(album):
-    return album in get_imported_albums()
+    return album in IMPORTED_ALBUMS
 
 
 def get_import_error_message(album, error_key):
@@ -231,6 +234,7 @@ def import_albums(albums, as_is, import_all=False):
         if wav_tracks:
             if import_all:
                 import_wav_files(album)
+                history_add([album.encode()])
                 wav_imports += 1
             else:
                 errors["wav_files"].append(get_import_error_message(album, "wav_files"))
@@ -238,7 +242,10 @@ def import_albums(albums, as_is, import_all=False):
         if not tracks and not wav_tracks:
             errors["no_tracks"].append(get_import_error_message(album, "no_tracks"))
     if wav_imports:
-        echo(f"Imported {wav_imports} albums in WAV format.")
+        echo(
+            f"Imported {wav_imports} {'album' if wav_imports == 1 else 'albums'} in WAV"
+            " format."
+        )
     if not import_all:
         echo(f"{skipped_count} albums skipped.")
     for key, error_list in errors.items():
