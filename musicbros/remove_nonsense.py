@@ -1,9 +1,8 @@
 from re import escape, sub
-from subprocess import run
 
 from typer import echo
 
-from .helpers import BRACKET_YEAR_REGEX, LIBRARY
+from .helpers import BRACKET_YEAR_REGEX, LIBRARY, modify_tracks
 
 ACTIONS = [
     (
@@ -45,19 +44,6 @@ def list_items(
     return [album_or_item.get(query_tag) for album_or_item in albums_or_items]
 
 
-def beet_modify(confirm, operate_on_albums, modify_tag, found, replacement):
-    run(
-        [
-            "beet",
-            "modify",
-            "" if confirm else "-y",
-            "-a" if operate_on_albums else "",
-            f"{modify_tag}::^{found}$",
-            f"{modify_tag}={replacement}",
-        ]
-    )
-
-
 def remove_nonsense_main():
     for action in ACTIONS:
         message, find, replace, tag, operate_on_albums = action
@@ -68,8 +54,10 @@ def remove_nonsense_main():
         ]
         if tags:
             for found_value, replacement_value in tags:
-                beet_modify(
-                    False, operate_on_albums, tag, found_value, replacement_value
-                )
+                query = [
+                    f"{tag}::^{found_value}$",
+                    f"{tag}={replacement_value}",
+                ]
+                modify_tracks(query, operate_on_albums, False)
             else:
                 echo("No albums to update.")

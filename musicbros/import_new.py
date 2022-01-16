@@ -2,13 +2,12 @@ import pickle
 from os import system, walk
 from pathlib import Path
 from re import search
-from subprocess import run
 
 from tinytag import TinyTag
 from typer import confirm, echo
 
 from .config import IGNORED_DIRECTORIES, MUSIC_PLAYER, PICKLE_FILE, SHARED_DIRECTORY
-from .helpers import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, color
+from .helpers import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, color, modify_tracks
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.m4a", "*.flac", "*.aif*")
 ERRORS = {
@@ -163,18 +162,15 @@ def check_disc(tracks):
     return disc, disc_total, album, album_artist, fixable_disc
 
 
-def update_field(album_title, album_artist, field, new_value):
-    run(
-        [
-            "beet",
-            "modify",
-            "-y",
-            "-a",
-            f"albumartist::^{album_artist}$",
-            f"album::^{album_title}$",
-            f"{field}={new_value}",
-        ]
-    )
+def get_modify_tracks_query(album_artist, album_title):
+    return [
+        f"albumartist::^{album_artist}$",
+        f"album::^{album_title}$",
+    ]
+
+
+def get_modify_tracks_modification(field, new_value):
+    return [f"{field}={new_value}"]
 
 
 def import_album(album, tracks, import_all, as_is):
@@ -184,16 +180,22 @@ def import_album(album, tracks, import_all, as_is):
         error = None if beet_import(album) else "escape_error"
         if not as_is and not error:
             year, album_title, album_artist, fixable_year = check_year(tracks)
+            query = get_modify_tracks_query(album_artist, album_title)
             if fixable_year and year and album_title:
-                update_field(album_title, album_artist, "year", year)
+                modification = get_modify_tracks_modification("year", year)
+                modify_tracks(query + modification, True, False)
             disc, disc_total, album_title, album_artist, fixable_disc = check_disc(
                 tracks
             )
             if fixable_disc and album_title:
                 if disc:
-                    update_field(album_title, album_artist, "disc", disc)
+                    modification = get_modify_tracks_modification("disc", disc)
+                    modify_tracks(query + modification, True, False)
                 if disc_total:
-                    update_field(album_title, album_artist, "disctotal", disc_total)
+                    modification = get_modify_tracks_modification(
+                        "disctotal", disc_total
+                    )
+                    modify_tracks(query + modification, True, False)
     elif track_message:
         error = track_message
     elif isinstance(track_total, int) and track_count > track_total:
