@@ -7,10 +7,9 @@ from beets.importer import history_add
 from tinytag import TinyTag
 from typer import confirm, echo
 
-from musicbros.musicbros.remove_nonsense import ACTIONS, remove_nonsense
-
 from .config import IGNORED_DIRECTORIES, MUSIC_PLAYER, PICKLE_FILE, SHARED_DIRECTORY
 from .helpers import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, color, modify_tracks
+from .remove_nonsense import ACTIONS, remove_nonsense
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.m4a", "*.flac", "*.aif*")
 ERRORS = {
