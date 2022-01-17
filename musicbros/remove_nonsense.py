@@ -2,12 +2,19 @@ from re import escape, sub
 
 from typer import echo
 
-from .helpers import BRACKET_YEAR_REGEX, LIBRARY, modify_tracks
+from .helpers import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, LIBRARY, modify_tracks
 
 ACTIONS = [
     (
         'Removing bracketed years from all "album" tags...',
         BRACKET_YEAR_REGEX,
+        "",
+        "album",
+        True,
+    ),
+    (
+        'Removing bracketed discs from all "album" tags...',
+        BRACKET_DISC_REGEX,
         "",
         "album",
         True,
@@ -44,20 +51,24 @@ def list_items(
     return [album_or_item.get(query_tag) for album_or_item in albums_or_items]
 
 
+def remove_nonsense(action):
+    message, find, replace, tag, operate_on_albums = action
+    echo(message)
+    tags = [
+        (escape(tag), sub(find, replace, tag))
+        for tag in list_items(tag, find, operate_on_albums)
+    ]
+    if tags:
+        for found_value, replacement_value in tags:
+            query = [
+                f"{tag}::^{found_value}$",
+                f"{tag}={replacement_value}",
+            ]
+            modify_tracks(query, operate_on_albums, False)
+        else:
+            echo("No albums to update.")
+
+
 def remove_nonsense_main():
     for action in ACTIONS:
-        message, find, replace, tag, operate_on_albums = action
-        echo(message)
-        tags = [
-            (escape(tag), sub(find, replace, tag))
-            for tag in list_items(tag, find, operate_on_albums)
-        ]
-        if tags:
-            for found_value, replacement_value in tags:
-                query = [
-                    f"{tag}::^{found_value}$",
-                    f"{tag}={replacement_value}",
-                ]
-                modify_tracks(query, operate_on_albums, False)
-            else:
-                echo("No albums to update.")
+        remove_nonsense(action)

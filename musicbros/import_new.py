@@ -7,6 +7,8 @@ from beets.importer import history_add
 from tinytag import TinyTag
 from typer import confirm, echo
 
+from musicbros.musicbros.remove_nonsense import ACTIONS, remove_nonsense
+
 from .config import IGNORED_DIRECTORIES, MUSIC_PLAYER, PICKLE_FILE, SHARED_DIRECTORY
 from .helpers import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, color, modify_tracks
 
@@ -133,13 +135,9 @@ def check_year(tracks, album):
             if found
             else ""
         )
-        if (
-            bracket_year
-            and bracket_year != year
-            and confirm(
-                f"Use bracket year [{bracket_year}] instead of year ({year}) for album:"
-                f" {album}?"
-            )
+        if bracket_year != year and confirm(
+            f"Use bracket year [{bracket_year}] instead of year ({year}) for album:"
+            f" {album}?"
         ):
             year = bracket_year
             fixable_year = True
@@ -148,6 +146,7 @@ def check_year(tracks, album):
 
 def check_disc(tracks, album):
     fixable_disc = False
+    remove_bracket_disc = False
     discs = {TinyTag.get(track).disc for track in tracks}
     disc = next(iter(discs), None)
     disc_total = ""
@@ -157,13 +156,9 @@ def check_disc(tracks, album):
         if found
         else ""
     )
-    if (
-        bracket_disc
-        and bracket_disc != disc
-        and confirm(
-            f"Use bracket disc [{bracket_disc}] instead of disc ({disc}) for album:"
-            f" {album}?"
-        )
+    if bracket_disc != disc and confirm(
+        f"Use bracket disc [{bracket_disc}] instead of disc ({disc}) for album:"
+        f" {album}?"
     ):
         disc = bracket_disc
         fixable_disc = True
@@ -177,7 +172,9 @@ def check_disc(tracks, album):
             disc = "1"
             disc_total = "1"
             fixable_disc = True
-    return disc, disc_total, fixable_disc
+    elif bracket_disc == disc:
+        remove_bracket_disc = True
+    return disc, disc_total, fixable_disc, remove_bracket_disc
 
 
 def get_modify_tracks_query(artist, field, album_title):
@@ -194,7 +191,6 @@ def import_album(album, tracks, import_all, as_is):
     track_total, track_message = get_track_total(tracks)
     if import_all or track_count == track_total:
         error = None if beet_import(album) else "escape_error"
-        error = None
         if not as_is and not error:
             album_title = get_album_title(tracks)
             year, fixable_year = check_year(tracks, album_title)
@@ -203,7 +199,9 @@ def import_album(album, tracks, import_all, as_is):
             if fixable_year and year and album_title:
                 modification = get_modify_tracks_modification("year", year)
                 modify_tracks(query + modification, True, False)
-            disc, disc_total, fixable_disc = check_disc(tracks, album_title)
+            disc, disc_total, fixable_disc, remove_bracket_disc = check_disc(
+                tracks, album_title
+            )
             if fixable_disc and album_title:
                 if disc:
                     modification = get_modify_tracks_modification("disc", disc)
@@ -213,6 +211,9 @@ def import_album(album, tracks, import_all, as_is):
                         "disctotal", disc_total
                     )
                     modify_tracks(query + modification, True, False)
+            if fixable_disc or remove_bracket_disc:
+                remove_bracket_discs_action = ACTIONS[1]
+                remove_nonsense(remove_bracket_discs_action)
     elif track_message:
         error = track_message
     elif isinstance(track_total, int) and track_count > track_total:
