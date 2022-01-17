@@ -131,7 +131,7 @@ def check_disc(tracks):
     album = ""
     album_artist = ""
     fixable_disc = False
-    discs = {TinyTag.get(track).year for track in tracks}
+    discs = {TinyTag.get(track).disc for track in tracks}
     disc = next(iter(discs), None)
     disc_total = ""
     album = next(iter({TinyTag.get(track).album for track in tracks}), "")
