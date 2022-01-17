@@ -1,7 +1,7 @@
 from beets import config
 from beets.ui import UserError, _configure, _open_library, decargs
 from beets.ui.commands import modify_items, modify_parse_args
-from typer import colors, secho, style
+from typer import colors, echo, secho, style
 
 LIBRARY = _open_library(_configure({}))
 BRACKET_YEAR_REGEX = r"\s\[\d{4}\]"
@@ -12,16 +12,19 @@ def modify_tracks(args, album, confirm, library=LIBRARY):
     query, modifications, deletions = modify_parse_args(decargs(args))
     if not modifications and not deletions:
         raise UserError("no modifications specified")
-    modify_items(
-        library,
-        modifications,
-        deletions,
-        query,
-        config["import"]["write"].get(bool),
-        config["import"]["move"].get(bool) or config["import"]["copy"].get(bool),
-        album,
-        confirm,
-    )
+    try:
+        modify_items(
+            library,
+            modifications,
+            deletions,
+            query,
+            config["import"]["write"].get(bool),
+            config["import"]["move"].get(bool) or config["import"]["copy"].get(bool),
+            album,
+            confirm,
+        )
+    except Exception:
+        echo("No matching albums found.")
 
 
 COLORS = {

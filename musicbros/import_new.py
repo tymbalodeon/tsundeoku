@@ -102,74 +102,87 @@ def import_wav_files(album):
     system(f"open -a '{MUSIC_PLAYER}' '{album}'")
 
 
-def check_year(tracks):
-    album = ""
-    album_artist = ""
+def get_album_title(tracks):
+    return next(iter({TinyTag.get(track).album for track in tracks}), "")
+
+
+def get_artist_and_field(tracks):
+    field = "albumartist"
+    artist = ""
+    try:
+        artist = next(iter({TinyTag.get(track).albumartist for track in tracks}))
+    except Exception:
+        artists = {TinyTag.get(track).artist for track in tracks}
+        if len(artists) > 1:
+            field = None
+        else:
+            artist = next(iter(artists), "")
+            field = "artist"
+    return artist, field
+
+
+def check_year(tracks, album):
     fixable_year = False
     years = {TinyTag.get(track).year for track in tracks}
     year = next(iter(years), None)
     if len(years) == 1:
         album = next(iter({TinyTag.get(track).album for track in tracks}), "")
         found = search(BRACKET_YEAR_REGEX, album)
-        if found:
-            bracket_year = "".join(
-                [character for character in found.group() if character.isnumeric()]
-            )
-            if bracket_year and confirm(
-                f"Use bracket year ({bracket_year}) instead of year ({year}) for album:"
+        bracket_year = (
+            "".join([character for character in found.group() if character.isnumeric()])
+            if found
+            else ""
+        )
+        if (
+            bracket_year
+            and bracket_year != year
+            and confirm(
+                f"Use bracket year [{bracket_year}] instead of year ({year}) for album:"
                 f" {album}?"
-            ):
-                year = bracket_year
-                album_artist = next(
-                    iter({TinyTag.get(track).albumartist for track in tracks}), ""
-                )
-                fixable_year = True
-    return year, album, album_artist, fixable_year
+            )
+        ):
+            year = bracket_year
+            fixable_year = True
+    return year, fixable_year
 
 
-def check_disc(tracks):
-    album = ""
-    album_artist = ""
+def check_disc(tracks, album):
     fixable_disc = False
     discs = {TinyTag.get(track).disc for track in tracks}
     disc = next(iter(discs), None)
     disc_total = ""
-    album = next(iter({TinyTag.get(track).album for track in tracks}), "")
     found = search(BRACKET_DISC_REGEX, album)
-    if found:
-        bracket_disc = "".join(
-            [character for character in found.group() if character.isnumeric()]
-        )
-        if bracket_disc and confirm(
-            f"Use bracket disc ({bracket_disc}) instead of disc ({disc}) for album:"
+    bracket_disc = (
+        "".join([character for character in found.group() if character.isnumeric()])
+        if found
+        else ""
+    )
+    if (
+        bracket_disc
+        and bracket_disc != disc
+        and confirm(
+            f"Use bracket disc [{bracket_disc}] instead of disc ({disc}) for album:"
             f" {album}?"
-        ):
-            disc = bracket_disc
-            album_artist = next(
-                iter({TinyTag.get(track).albumartist for track in tracks}), ""
-            )
-            fixable_disc = True
+        )
+    ):
+        disc = bracket_disc
+        fixable_disc = True
     elif not disc:
         disc_totals = {TinyTag.get(track).disc_total for track in tracks}
         disc_total = next(iter(disc_totals), None)
         if not disc_total and confirm(
-            "Apply disc and disc total value of 1/1 to album with missing disc and"
-            f" disc total: {album}?"
+            'Apply default disc and disc total value of "1" to album with missing disc'
+            f" and disc total: {album}?"
         ):
             disc = "1"
             disc_total = "1"
-            album_artist = next(
-                iter({TinyTag.get(track).albumartist for track in tracks}), ""
-            )
             fixable_disc = True
-    return disc, disc_total, album, album_artist, fixable_disc
+    return disc, disc_total, fixable_disc
 
 
-def get_modify_tracks_query(album_artist, album_title):
-    return [
-        f"albumartist::^{album_artist}$",
-        f"album::^{album_title}$",
-    ]
+def get_modify_tracks_query(artist, field, album_title):
+    album = [f"album::^{album_title}$"]
+    return [f"{field}::^{artist}$"] + album if field else album
 
 
 def get_modify_tracks_modification(field, new_value):
@@ -181,15 +194,16 @@ def import_album(album, tracks, import_all, as_is):
     track_total, track_message = get_track_total(tracks)
     if import_all or track_count == track_total:
         error = None if beet_import(album) else "escape_error"
+        error = None
         if not as_is and not error:
-            year, album_title, album_artist, fixable_year = check_year(tracks)
-            query = get_modify_tracks_query(album_artist, album_title)
+            album_title = get_album_title(tracks)
+            year, fixable_year = check_year(tracks, album_title)
+            artist, field = get_artist_and_field(tracks)
+            query = get_modify_tracks_query(artist, field, album_title)
             if fixable_year and year and album_title:
                 modification = get_modify_tracks_modification("year", year)
                 modify_tracks(query + modification, True, False)
-            disc, disc_total, album_title, album_artist, fixable_disc = check_disc(
-                tracks
-            )
+            disc, disc_total, fixable_disc = check_disc(tracks, album_title)
             if fixable_disc and album_title:
                 if disc:
                     modification = get_modify_tracks_modification("disc", disc)
