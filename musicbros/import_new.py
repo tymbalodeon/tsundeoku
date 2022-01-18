@@ -196,8 +196,7 @@ def import_album(album, tracks, import_all, as_is):
     track_count = len(tracks)
     track_total, track_message = get_track_total(tracks)
     if import_all or track_count == track_total:
-        # error = None if beet_import(album) else "escape_error"
-        error = None
+        error = None if beet_import(album) else "escape_error"
         if not as_is and not error:
             album_title = get_album_title(tracks)
             year, fixable_year = check_year(tracks, album_title)
@@ -244,9 +243,9 @@ def import_albums(albums, as_is, import_all=False):
         if not import_all:
             if is_ignored_directory(album):
                 continue
-            # if is_already_imported(album):
-            #     skipped_count += 1
-            #     continue
+            if is_already_imported(album):
+                skipped_count += 1
+                continue
         tracks = get_tracks(album)
         wav_tracks = get_wav_tracks(album)
         if tracks:
