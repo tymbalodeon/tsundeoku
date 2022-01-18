@@ -192,14 +192,11 @@ def get_modify_tracks_modification(field, new_value):
     return [f"{field}={new_value}"]
 
 
-def import_album(album, tracks, import_all, as_is, update):
+def import_album(album, tracks, import_all, as_is):
     track_count = len(tracks)
     track_total, track_message = get_track_total(tracks)
     if import_all or track_count == track_total:
-        if update:
-            error = None if beet_import(album) else "escape_error"
-        else:
-            error = None
+        error = None if beet_import(album) else "escape_error"
         if not as_is and not error:
             album_title = get_album_title(tracks)
             year, fixable_year = check_year(tracks, album_title)
@@ -236,7 +233,7 @@ def import_album(album, tracks, import_all, as_is, update):
     return error
 
 
-def import_albums(albums, as_is, import_all=False, update=False):
+def import_albums(albums, as_is, import_all=False):
     errors = {key: list() for key in ERRORS.keys()}
     imports = False
     wav_imports = 0
@@ -246,13 +243,13 @@ def import_albums(albums, as_is, import_all=False, update=False):
         if not import_all:
             if is_ignored_directory(album):
                 continue
-            if not update and is_already_imported(album):
+            if is_already_imported(album):
                 skipped_count += 1
                 continue
         tracks = get_tracks(album)
         wav_tracks = get_wav_tracks(album)
         if tracks:
-            error = import_album(album, tracks, import_all, as_is, update)
+            error = import_album(album, tracks, import_all, as_is)
             if error:
                 errors[error].append(get_import_error_message(album, error))
                 if error in IMPORTABLE_ERROR_KEYS:
