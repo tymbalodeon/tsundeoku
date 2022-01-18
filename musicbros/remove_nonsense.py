@@ -14,15 +14,36 @@ ACTIONS = [
     ),
     (
         'Replacing "Rec.s" with "Recordings" in all "album" tags...',
-        r"\bRec\.s\s",
+        r"\bRec\.s",
         "Recordings",
         "album",
         True,
     ),
     (
+        "",
+        r"\bRec\.s\s",
+        "Recordings ",
+        "album",
+        True,
+    ),
+    (
         'Replacing "Rec." with "Recording" in all "album" tags...',
+        r"\bRec\.s?",
+        "Recording",
+        "album",
+        True,
+    ),
+    (
+        "",
         r"\bRec\.s?\s",
-        "Recordings",
+        "Recording ",
+        "album",
+        True,
+    ),
+    (
+        'Replacing "Orig." with "Original" in all "album" tags...',
+        r"\bOrig\.\s",
+        "Original ",
         "album",
         True,
     ),
@@ -53,7 +74,8 @@ def list_items(
 
 def remove_nonsense(action):
     message, find, replace, tag, operate_on_albums = action
-    echo(message)
+    if message:
+        echo(message)
     tags = [
         (escape(tag), sub(find, replace, tag))
         for tag in list_items(tag, find, operate_on_albums)
