@@ -14,7 +14,7 @@ ACTIONS = [
     ),
     (
         'Replacing "Rec.s" with "Recordings" in all "album" tags...',
-        r"\bRec\.s\b",
+        r"\bRec\.s?\s",
         "Recordings",
         "album",
         True,
