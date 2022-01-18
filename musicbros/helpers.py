@@ -1,5 +1,5 @@
 from beets import config
-from beets.ui import UserError, _configure, _open_library, decargs
+from beets.ui import _configure, _open_library, decargs
 from beets.ui.commands import modify_items, modify_parse_args
 from typer import colors, echo, secho, style
 
@@ -11,7 +11,8 @@ BRACKET_DISC_REGEX = r"\s\[(d|D)is(c|k)\s\d+\]"
 def modify_tracks(args, album, confirm, library=LIBRARY):
     query, modifications, deletions = modify_parse_args(decargs(args))
     if not modifications and not deletions:
-        raise UserError("no modifications specified")
+        echo("ERROR: No modifications specified.")
+        return
     try:
         modify_items(
             library,

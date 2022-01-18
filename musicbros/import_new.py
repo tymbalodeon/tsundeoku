@@ -1,7 +1,7 @@
 import pickle
 from os import system, walk
 from pathlib import Path
-from re import search, sub
+from re import search, sub, escape
 
 from beets.importer import history_add
 from tinytag import TinyTag
@@ -178,9 +178,10 @@ def check_disc(tracks, album):
             disc = "1"
             disc_total = "1"
             fixable_disc = True
-    elif bracket_disc == disc:
+    elif bracket_disc and bracket_disc == disc:
         remove_bracket_disc = True
-    return disc, disc_total, fixable_disc, remove_bracket_disc
+    remove_bracket_disc = remove_bracket_disc or (fixable_disc and bracket_disc)
+    return (disc, disc_total, fixable_disc, remove_bracket_disc)
 
 
 def get_modify_tracks_query(artist, field, album_title):
@@ -201,7 +202,7 @@ def import_album(album, tracks, import_all, as_is):
             album_title = get_album_title(tracks)
             year, fixable_year = check_year(tracks, album_title)
             artist, field = get_artist_and_field(tracks)
-            query = get_modify_tracks_query(artist, field, album_title)
+            query = get_modify_tracks_query(artist, field, escape(album_title))
             if fixable_year and year and album_title:
                 modification = get_modify_tracks_modification("year", year)
                 modify_tracks(query + modification, True, False)
@@ -217,10 +218,10 @@ def import_album(album, tracks, import_all, as_is):
                         "disctotal", disc_total
                     )
                     modify_tracks(query + modification, True, False)
-            if fixable_disc or remove_bracket_disc:
-                discless_album_title = sub(BRACKET_DISC_REGEX, "", album)
+            if remove_bracket_disc:
+                discless_album_title = sub(BRACKET_DISC_REGEX, "", album_title)
                 query = [
-                    f"album::^{album}$",
+                    f"album::^{escape(album_title)}$",
                     f"album={discless_album_title}",
                 ]
                 modify_tracks(query, True, False)
