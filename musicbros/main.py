@@ -46,6 +46,10 @@ def import_new(
 
 
 @app.command()
-def remove_nonsense():
+def remove_nonsense(
+    solo_instruments: bool = Option(
+        False, help="Remove bracketed solo instrument indications (time consuming)."
+    )
+):
     """Remove nonsense from tags"""
-    remove_nonsense_main()
+    remove_nonsense_main(solo_instruments)

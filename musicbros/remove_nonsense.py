@@ -91,6 +91,7 @@ def remove_nonsense(action):
             echo("No albums to update.")
 
 
-def remove_nonsense_main():
-    for action in ACTIONS:
+def remove_nonsense_main(solo_instruments=False):
+    actions = ACTIONS if solo_instruments else ACTIONS[:-1]
+    for action in actions:
         remove_nonsense(action)
