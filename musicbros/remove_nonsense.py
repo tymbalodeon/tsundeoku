@@ -2,19 +2,12 @@ from re import escape, sub
 
 from typer import echo
 
-from .helpers import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, LIBRARY, modify_tracks
+from .helpers import BRACKET_YEAR_REGEX, LIBRARY, modify_tracks
 
 ACTIONS = [
     (
         'Removing bracketed years from all "album" tags...',
         BRACKET_YEAR_REGEX,
-        "",
-        "album",
-        True,
-    ),
-    (
-        'Removing bracketed discs from all "album" tags...',
-        BRACKET_DISC_REGEX,
         "",
         "album",
         True,

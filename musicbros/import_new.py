@@ -1,7 +1,7 @@
 import pickle
 from os import system, walk
 from pathlib import Path
-from re import search
+from re import search, sub
 
 from beets.importer import history_add
 from tinytag import TinyTag
@@ -9,7 +9,6 @@ from typer import confirm, echo
 
 from .config import IGNORED_DIRECTORIES, MUSIC_PLAYER, PICKLE_FILE, SHARED_DIRECTORY
 from .helpers import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, color, modify_tracks
-from .remove_nonsense import ACTIONS, remove_nonsense
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.m4a", "*.flac", "*.aif*")
 ERRORS = {
@@ -211,8 +210,12 @@ def import_album(album, tracks, import_all, as_is):
                     )
                     modify_tracks(query + modification, True, False)
             if fixable_disc or remove_bracket_disc:
-                remove_bracket_discs_action = ACTIONS[1]
-                remove_nonsense(remove_bracket_discs_action)
+                discless_album_title = sub(BRACKET_DISC_REGEX, "", album)
+                query = [
+                    f"album::^{album}$",
+                    f"album={discless_album_title}",
+                ]
+                modify_tracks(query, True, False)
     elif track_message:
         error = track_message
     elif isinstance(track_total, int) and track_count > track_total:
