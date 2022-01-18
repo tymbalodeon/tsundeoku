@@ -133,9 +133,13 @@ def check_year(tracks, album):
             if found
             else ""
         )
-        if bracket_year != year and confirm(
-            f"Use bracket year [{bracket_year}] instead of year ({year}) for album:"
-            f" {album}?"
+        if (
+            bracket_year
+            and bracket_year != year
+            and confirm(
+                f"Use bracket year [{bracket_year}] instead of year ({year}) for album:"
+                f" {album}?"
+            )
         ):
             year = bracket_year
             fixable_year = True
@@ -154,9 +158,13 @@ def check_disc(tracks, album):
         if found
         else ""
     )
-    if bracket_disc != disc and confirm(
-        f"Use bracket disc [{bracket_disc}] instead of disc ({disc}) for album:"
-        f" {album}?"
+    if (
+        bracket_disc
+        and bracket_disc != disc
+        and confirm(
+            f"Use bracket disc [{bracket_disc}] instead of disc ({disc}) for album:"
+            f" {album}?"
+        )
     ):
         disc = bracket_disc
         fixable_disc = True
@@ -188,7 +196,8 @@ def import_album(album, tracks, import_all, as_is):
     track_count = len(tracks)
     track_total, track_message = get_track_total(tracks)
     if import_all or track_count == track_total:
-        error = None if beet_import(album) else "escape_error"
+        # error = None if beet_import(album) else "escape_error"
+        error = None
         if not as_is and not error:
             album_title = get_album_title(tracks)
             year, fixable_year = check_year(tracks, album_title)
@@ -235,9 +244,9 @@ def import_albums(albums, as_is, import_all=False):
         if not import_all:
             if is_ignored_directory(album):
                 continue
-            if is_already_imported(album):
-                skipped_count += 1
-                continue
+            # if is_already_imported(album):
+            #     skipped_count += 1
+            #     continue
         tracks = get_tracks(album)
         wav_tracks = get_wav_tracks(album)
         if tracks:
