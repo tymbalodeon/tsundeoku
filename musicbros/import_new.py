@@ -212,7 +212,7 @@ def import_album(album, tracks, import_all, as_is):
             if fixable_disc and album_title:
                 if disc:
                     modification = get_modify_tracks_modification("disc", disc)
-                    modify_tracks(query + modification, True, False)
+                    modify_tracks(query + modification, False, False)
                 if disc_total:
                     modification = get_modify_tracks_modification(
                         "disctotal", disc_total
