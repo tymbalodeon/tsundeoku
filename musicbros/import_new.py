@@ -121,6 +121,18 @@ def get_artist_and_field(tracks):
     return artist, field
 
 
+def style_album(album):
+    return {color(album, "blue", bold=True)}
+
+
+def should_update(field, bracket_value, existing_value, album):
+    return confirm(
+        f"Use bracket {field} [{color(bracket_value, bold=True)}] instead of"
+        f" {field} ({color(existing_value, bold=True)}) for album:"
+        f" {style_album(album)}?"
+    )
+
+
 def check_year(tracks, album):
     fixable_year = False
     years = {TinyTag.get(track).year for track in tracks}
@@ -136,10 +148,7 @@ def check_year(tracks, album):
         if (
             bracket_year
             and bracket_year != year
-            and confirm(
-                f"Use bracket year [{bracket_year}] instead of year ({year}) for album:"
-                f" {album}?"
-            )
+            and should_update("year", bracket_year, year, album)
         ):
             year = bracket_year
             fixable_year = True
@@ -161,10 +170,7 @@ def check_disc(tracks, album):
     if (
         bracket_disc
         and bracket_disc != disc
-        and confirm(
-            f"Use bracket disc [{bracket_disc}] instead of disc ({disc}) for album:"
-            f" {album}?"
-        )
+        and should_update("disc", bracket_disc, disc, album)
     ):
         disc = bracket_disc
         fixable_disc = True
@@ -172,8 +178,9 @@ def check_disc(tracks, album):
         disc_totals = {TinyTag.get(track).disc_total for track in tracks}
         disc_total = next(iter(disc_totals), None)
         if not disc_total and confirm(
-            'Apply default disc and disc total value of "1" to album with missing disc'
-            f" and disc total: {album}?"
+            f'Apply default disc and disc total value of "{color(1, bold=True)}" to'
+            " album with missing disc and disc total:"
+            f" {style_album(album)}?"
         ):
             disc = "1"
             disc_total = "1"

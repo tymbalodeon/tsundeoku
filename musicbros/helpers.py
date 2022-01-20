@@ -39,6 +39,10 @@ COLORS = {
 }
 
 
-def color(text, color="yellow", echo=False):
+def color(text, color="yellow", echo=False, bold=False):
     text = f"{text:,}" if isinstance(text, int) else str(text)
-    return secho(text, fg=COLORS[color]) if echo else style(text, fg=COLORS[color])
+    return (
+        secho(text, fg=COLORS[color], bold=bold)
+        if echo
+        else style(text, fg=COLORS[color], bold=bold)
+    )
