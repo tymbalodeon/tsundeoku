@@ -122,7 +122,7 @@ def get_artist_and_field(tracks):
 
 
 def style_album(album):
-    return {color(album, "blue", bold=True)}
+    return color(album, "blue", bold=True)
 
 
 def should_update(field, bracket_value, existing_value, album):
