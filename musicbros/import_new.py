@@ -1,11 +1,11 @@
 import pickle
 from os import system, walk
 from pathlib import Path
-from re import search, sub, escape
+from re import escape, search, sub
 
 from beets.importer import history_add
 from tinytag import TinyTag
-from typer import confirm, echo
+from typer import confirm, echo, secho
 
 from .config import IGNORED_DIRECTORIES, MUSIC_PLAYER, PICKLE_FILE, SHARED_DIRECTORY
 from .helpers import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, color, modify_tracks
@@ -73,10 +73,6 @@ def is_ignored_directory(album):
 
 def is_already_imported(album):
     return album in IMPORTED_ALBUMS
-
-
-def get_import_error_message(album, error_key):
-    return f"{ERRORS[error_key]}: {color(album, 'cyan')}"
 
 
 def get_single_or_double_quote(album):
@@ -207,6 +203,8 @@ def import_album(album, tracks, import_all, as_is):
         error = None if beet_import(album) else "escape_error"
         if not as_is and not error:
             album_title = get_album_title(tracks)
+            if not album_title:
+                album_title = ""
             year, fixable_year = check_year(tracks, album_title)
             artist, field = get_artist_and_field(tracks)
             query = get_modify_tracks_query(artist, field, escape(album_title))
@@ -259,7 +257,7 @@ def import_albums(albums, as_is, import_all=False):
         if tracks:
             error = import_album(album, tracks, import_all, as_is)
             if error:
-                errors[error].append(get_import_error_message(album, error))
+                errors[error].append(album)
                 if error in IMPORTABLE_ERROR_KEYS:
                     importable_error_albums.append(album)
             else:
@@ -270,10 +268,10 @@ def import_albums(albums, as_is, import_all=False):
                 history_add([album.encode()])
                 wav_imports += 1
             else:
-                errors["wav_files"].append(get_import_error_message(album, "wav_files"))
+                errors["wav_files"].append(album)
                 importable_error_albums.append(album)
         if not tracks and not wav_tracks:
-            errors["no_tracks"].append(get_import_error_message(album, "no_tracks"))
+            errors["no_tracks"].append(album)
     if wav_imports:
         echo(
             f"Imported {wav_imports} {'album' if wav_imports == 1 else 'albums'} in WAV"
@@ -281,9 +279,10 @@ def import_albums(albums, as_is, import_all=False):
         )
     if not import_all:
         echo(f"{skipped_count} albums skipped.")
-    for key, error_list in errors.items():
-        if error_list:
-            color(key.replace("_", " ").upper(), echo=True)
-            for error in error_list:
-                echo(f"\t{error}")
+    for key, error_albums in errors.items():
+        if error_albums:
+            album_string = "Albums" if len(error_albums) > 1 else "Album"
+            color(f"{album_string} {key.replace('_', ' ')}:", echo=True)
+            for album in error_albums:
+                echo(f"- {album}")
     return imports, errors, importable_error_albums
