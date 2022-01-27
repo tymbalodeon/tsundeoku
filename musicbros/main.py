@@ -44,7 +44,7 @@ def import_new(
         and confirm("Would you like to import all albums anyway?")
     ):
         imports, errors, importable_error_albums = import_albums(
-            importable_error_albums, as_is, True
+            importable_error_albums, as_is, skip_confirm_disc_overwrite, import_all=True
         )
         if imports and not as_is:
             remove_nonsense_main()
