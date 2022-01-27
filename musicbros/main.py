@@ -22,14 +22,19 @@ def config(update: bool = Option(False, "--update")):
 def import_new(
     as_is: bool = Option(
         False, "--as-is", help="Import new albums without altering metadata"
-    )
+    ),
+    skip_confirm_disc_overwrite: bool = Option(
+        True,
+        " /--confirm-disc-overwrite",
+        help='Ask before applying default disc and disc total values of "1 out of 1"',
+    ),
 ):
     """
     Copy newly added audio files from your shared folder to your music library
     """
     echo("Importing newly added albums...")
     imports, errors, importable_error_albums = import_albums(
-        get_album_directories(), as_is
+        get_album_directories(), as_is, skip_confirm_disc_overwrite
     )
     if imports and not as_is:
         remove_nonsense_main()

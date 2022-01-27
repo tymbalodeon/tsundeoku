@@ -151,7 +151,7 @@ def check_year(tracks, album):
     return year, fixable_year
 
 
-def check_disc(tracks, album):
+def check_disc(tracks, album, skip_confirm_disc_overwrite):
     fixable_disc = False
     remove_bracket_disc = False
     discs = {TinyTag.get(track).disc for track in tracks}
@@ -173,10 +173,13 @@ def check_disc(tracks, album):
     elif not disc:
         disc_totals = {TinyTag.get(track).disc_total for track in tracks}
         disc_total = next(iter(disc_totals), None)
-        if not disc_total and confirm(
-            f'Apply default disc and disc total value of "{color(1, bold=True)}" to'
-            " album with missing disc and disc total:"
-            f" {style_album(album)}?"
+        if not disc_total and (
+            skip_confirm_disc_overwrite
+            or confirm(
+                f'Apply default disc and disc total value of "{color(1, bold=True)}" to'
+                " album with missing disc and disc total:"
+                f" {style_album(album)}?"
+            )
         ):
             disc = "1"
             disc_total = "1"
@@ -196,7 +199,7 @@ def get_modify_tracks_modification(field, new_value):
     return [f"{field}={new_value}"]
 
 
-def import_album(album, tracks, import_all, as_is):
+def import_album(album, tracks, import_all, as_is, skip_confirm_disc_overwrite):
     track_count = len(tracks)
     track_total, track_message = get_track_total(tracks)
     if import_all or track_count == track_total:
@@ -212,7 +215,7 @@ def import_album(album, tracks, import_all, as_is):
                 modification = get_modify_tracks_modification("year", year)
                 modify_tracks(query + modification, True, False)
             disc, disc_total, fixable_disc, remove_bracket_disc = check_disc(
-                tracks, album_title
+                tracks, album_title, skip_confirm_disc_overwrite
             )
             if fixable_disc and album_title:
                 if disc:
@@ -239,7 +242,12 @@ def import_album(album, tracks, import_all, as_is):
     return error
 
 
-def import_albums(albums, as_is, import_all=False):
+def import_albums(
+    albums,
+    as_is,
+    skip_confirm_disc_overwrite,
+    import_all=False,
+):
     errors = {key: list() for key in ERRORS.keys()}
     imports = False
     wav_imports = 0
@@ -255,7 +263,9 @@ def import_albums(albums, as_is, import_all=False):
         tracks = get_tracks(album)
         wav_tracks = get_wav_tracks(album)
         if tracks:
-            error = import_album(album, tracks, import_all, as_is)
+            error = import_album(
+                album, tracks, import_all, as_is, skip_confirm_disc_overwrite
+            )
             if error:
                 errors[error].append(album)
                 if error in IMPORTABLE_ERROR_KEYS:
