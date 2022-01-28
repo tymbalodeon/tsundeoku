@@ -5,7 +5,7 @@ from re import escape, search, sub
 
 from beets.importer import history_add
 from tinytag import TinyTag
-from typer import confirm, echo, secho
+from typer import confirm, echo
 
 from .config import IGNORED_DIRECTORIES, MUSIC_PLAYER, PICKLE_FILE, SHARED_DIRECTORY
 from .helpers import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, color, modify_tracks
@@ -191,8 +191,10 @@ def check_disc(tracks, album, skip_confirm_disc_overwrite):
 
 
 def get_modify_tracks_query(artist, field, album_title):
-    album = [f"album::^{album_title}$"]
-    return [f"{field}::^{artist}$"] + album if field else album
+    query = [f"album::^{album_title}$"]
+    if field and artist:
+        query = [f"{field}::^{artist}$"] + query
+    return query
 
 
 def get_modify_tracks_modification(field, new_value):
