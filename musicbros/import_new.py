@@ -10,7 +10,7 @@ from typer import confirm, echo
 from .config import IGNORED_DIRECTORIES, MUSIC_PLAYER, PICKLE_FILE, SHARED_DIRECTORY
 from .helpers import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, color, modify_tracks
 
-AUDIO_FILE_TYPES = ("*.mp3", "*.m4a", "*.flac", "*.aif*")
+AUDIO_FILE_TYPES = ("*.mp3", "*.Mp3", "*.m4a", "*.flac", "*.aif*")
 ERRORS = {
     "escape_error": "Error parsing path name",
     "conflicting_track_totals": "Album tracks include more than one track total number",
