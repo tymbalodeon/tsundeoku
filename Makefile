@@ -2,7 +2,7 @@ ROOT_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 PYPROJECT := $(ROOT_DIR)/pyproject.toml
 COMMAND := $(shell awk -F '[ ="]+' '$$1 == "name" { print $$2 }' $(PYPROJECT))
 VERSION := $(shell awk -F '[ ="]+' '$$1 == "version" { print $$2 }' $(PYPROJECT))
-ENTRY_POINT = main.py
+ENTRY_POINT := $(ROOT_DIR)/main.py
 WHEEL := ./dist/$(COMMAND)-$(VERSION)-py3-none-any.whl
 POETRY = poetry run
 PRE_COMMIT = pre-commit run
@@ -10,7 +10,7 @@ PRE_COMMIT = pre-commit run
 all: help
 
 binary: ## Build a binary executable with pyinstaller
-	poetry run pyinstaller $(ROOT_DIR)/$(ENTRY_POINT) --name $(COMMAND)
+	poetry run pyinstaller $(ENTRY_POINT) --name $(COMMAND)
 
 black: ## Format code
 	$(POETRY) black ./
