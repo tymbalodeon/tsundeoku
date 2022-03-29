@@ -1,4 +1,5 @@
-from typer import Option, Typer, confirm, echo
+from typer import Option, Typer, confirm, echo, Exit
+
 
 from musicbros import __version__
 
@@ -63,3 +64,23 @@ def remove_nonsense(
 ):
     """Remove nonsense from tags"""
     remove_nonsense_main(solo_instruments)
+
+
+def display_version(version: bool):
+    if version:
+        echo(f"musicbros {__version__}")
+        raise Exit()
+
+
+@app.callback()
+def version(
+    version: bool = Option(
+        False,
+        "--version",
+        "-V",
+        callback=display_version,
+        help="Display version number",
+    )
+):
+    if version:
+        return
