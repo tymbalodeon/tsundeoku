@@ -13,7 +13,7 @@ binary: ## Build a binary executable with pyinstaller
 	poetry run pyinstaller $(ENTRY_POINT) --name $(COMMAND)
 
 black: ## Format code
-	$(POETRY) black ./
+	$(POETRY) black $(ROOT_DIR)
 
 .PHONY: build
 build: ## Build the CLI and isntall it in your global pip packages
@@ -23,9 +23,9 @@ check: format ## Check for problems
 	$(PRE_COMMIT) -a
 
 flake: ## Lint code
-	$(POETRY) pflake8 ./
+	$(POETRY) pflake8 $(ROOT_DIR)
 
-format: isort black ## Format code
+format: isort black flake mypy ## Format and lint code
 
 help: ## Display the help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -33,7 +33,7 @@ help: ## Display the help menu
 	| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 isort: ## Sort imports
-	$(POETRY) isort ./
+	$(POETRY) isort $(ROOT_DIR)
 
 mypy: ## Type-check code
 	$(PRE_COMMIT) mypy -a

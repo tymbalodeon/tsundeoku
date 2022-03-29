@@ -42,7 +42,7 @@ def get_album_directories() -> list[str]:
 
 
 def get_tracks(album: str) -> list[Path]:
-    audio_files = list()
+    audio_files: list[Path] = list()
     for file_type in AUDIO_FILE_TYPES:
         audio_files.extend(Path(album).glob(file_type))
     return audio_files
@@ -135,7 +135,7 @@ def should_update(
 def check_year(tracks: list[Path], album: Optional[str]) -> tuple[Optional[str], bool]:
     fixable_year = False
     years = {TinyTag.get(track).year for track in tracks}
-    year = next(iter(years), None)
+    year = next(iter(years), "")
     if len(years) == 1:
         album = str(next(iter({TinyTag.get(track).album for track in tracks}), ""))
         found = search(BRACKET_YEAR_REGEX, album)
@@ -160,7 +160,7 @@ def check_disc(
     fixable_disc = False
     remove_bracket_disc = False
     discs = {TinyTag.get(track).disc for track in tracks}
-    disc = next(iter(discs), None)
+    disc = next(iter(discs), "")
     disc_total = ""
     found = search(BRACKET_DISC_REGEX, album)
     bracket_disc = (
@@ -177,7 +177,7 @@ def check_disc(
         fixable_disc = True
     elif not disc:
         disc_totals = {TinyTag.get(track).disc_total for track in tracks}
-        disc_total = next(iter(disc_totals), None)
+        disc_total = next(iter(disc_totals), "")
         if not disc_total and (
             skip_confirm_disc_overwrite
             or confirm(
@@ -260,7 +260,7 @@ def import_albums(
     skip_confirm_disc_overwrite: bool,
     import_all=False,
 ):
-    errors = {key: list() for key in ERRORS.keys()}
+    errors: dict[str, list] = {key: list() for key in ERRORS.keys()}
     imports = False
     wav_imports = 0
     skipped_count = 0

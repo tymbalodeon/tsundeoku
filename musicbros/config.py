@@ -63,7 +63,7 @@ def get_new_config_vlue(option: str, first_time: bool) -> Optional[str]:
     confirm_message = f"Would you like to update the {option_display} value?"
     updating = True if first_time else confirm(confirm_message)
     if not first_time and updating and list_option:
-        clear = confirm(f"Would you like to CLEAR the existing list?")
+        clear = confirm("Would you like to CLEAR the existing list?")
         if clear:
             replacing = confirm("Would you like to ADD a new value?")
     empty_value = "" if clear else None
