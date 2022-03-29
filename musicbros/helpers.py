@@ -6,7 +6,7 @@ from beets.ui import _configure, _open_library, decargs
 from beets.ui.commands import modify_items, modify_parse_args
 from typer import colors, echo, style
 
-LIBRARY = _open_library(_configure({}))
+LIBRARY = _open_library(_configure({"verbose": 0, "replace": dict(), "timeout": 5}))
 BRACKET_YEAR_REGEX = r"\s\[\d{4}\]"
 BRACKET_DISC_REGEX = r"\s\[(d|D)is(c|k)\s\d+\]"
 
