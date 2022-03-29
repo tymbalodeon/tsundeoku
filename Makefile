@@ -38,6 +38,9 @@ isort: ## Sort imports
 mypy: ## Type-check code
 	$(PRE_COMMIT) mypy -a
 
+python: ## Run bpython in project virtual environment
+	$(POETRY) bpython
+
 try: ## Try a command using the current state of the files without building
 ifdef args
 	$(POETRY) $(COMMAND) $(args)
