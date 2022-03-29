@@ -15,6 +15,7 @@ binary: ## Build a binary executable with pyinstaller
 black: ## Format code
 	$(POETRY) black ./
 
+.PHONY: build
 build: ## Build the CLI and isntall it in your global pip packages
 	poetry build && pip install $(WHEEL) --force-reinstall
 
