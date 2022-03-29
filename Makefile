@@ -1,10 +1,16 @@
-COMMAND = musicbros
-VERSION := $(shell awk -F '[ ="]+' '$$1 == "version" { print $$2 }' ./pyproject.toml)
+ROOT_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+PYPROJECT := $(ROOT_DIR)/pyproject.toml
+COMMAND := $(shell awk -F '[ ="]+' '$$1 == "name" { print $$2 }' $(PYPROJECT))
+VERSION := $(shell awk -F '[ ="]+' '$$1 == "version" { print $$2 }' $(PYPROJECT))
+ENTRY_POINT = main.py
 WHEEL := ./dist/$(COMMAND)-$(VERSION)-py3-none-any.whl
 POETRY = poetry run
 PRE_COMMIT = pre-commit run
 
 all: help
+
+binary: ## Build a binary executable with pyinstaller
+	poetry run pyinstaller $(ROOT_DIR)/$(ENTRY_POINT)
 
 black: ## Format code
 	$(POETRY) black ./
@@ -21,7 +27,9 @@ flake: ## Lint code
 format: isort black ## Format code
 
 help: ## Display the help menu
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
+	| sort \
+	| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 isort: ## Sort imports
 	$(POETRY) isort ./

@@ -2,13 +2,14 @@ import pickle
 from os import system, walk
 from pathlib import Path
 from re import escape, search, sub
+from typing import Optional
 
 from beets.importer import history_add
 from tinytag import TinyTag
 from typer import confirm, echo
 
 from .config import IGNORED_DIRECTORIES, MUSIC_PLAYER, PICKLE_FILE, SHARED_DIRECTORY
-from .helpers import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, color, modify_tracks
+from .helpers import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, Color, color, modify_tracks
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.Mp3", "*.m4a", "*.flac", "*.aif*")
 ERRORS = {
@@ -27,7 +28,7 @@ IMPORTABLE_ERROR_KEYS = [
 ]
 
 
-def get_imported_albums():
+def get_imported_albums() -> set[str]:
     with open(PICKLE_FILE, "rb") as raw_pickle:
         unpickled = pickle.load(raw_pickle)["taghistory"]
         return {album[0].decode() for album in unpickled}
@@ -36,22 +37,22 @@ def get_imported_albums():
 IMPORTED_ALBUMS = get_imported_albums()
 
 
-def get_album_directories():
+def get_album_directories() -> list[str]:
     return [root for root, dirs, files in walk(SHARED_DIRECTORY) if files and not dirs]
 
 
-def get_tracks(album):
+def get_tracks(album: str) -> list[Path]:
     audio_files = list()
     for file_type in AUDIO_FILE_TYPES:
         audio_files.extend(Path(album).glob(file_type))
     return audio_files
 
 
-def get_wav_tracks(album):
+def get_wav_tracks(album: str) -> bool:
     return bool([track for track in Path(album).glob("*.wav")])
 
 
-def get_track_total(tracks):
+def get_track_total(tracks: list[Path]) -> tuple[Optional[int], Optional[str]]:
     message = None
     track_totals = {TinyTag.get(track).track_total for track in tracks}
     track_total = next(iter(track_totals), None)
@@ -64,27 +65,27 @@ def get_track_total(tracks):
     return track_total, message
 
 
-def is_ignored_directory(album):
+def is_ignored_directory(album: str) -> bool:
     for directory in IGNORED_DIRECTORIES:
         if directory in album:
             return True
     return False
 
 
-def is_already_imported(album):
+def is_already_imported(album: str) -> bool:
     return album in IMPORTED_ALBUMS
 
 
-def get_single_or_double_quote(album):
+def get_single_or_double_quote(album: str) -> str:
     if "'" in album and '"' in album:
-        return None
+        return ""
     elif '"' in album:
         return "'"
     else:
         return '"'
 
 
-def beet_import(album):
+def beet_import(album: str) -> bool:
     quote_character = get_single_or_double_quote(album)
     album = album.replace("$", r"\$")
     if quote_character:
@@ -94,15 +95,15 @@ def beet_import(album):
         return False
 
 
-def import_wav_files(album):
+def import_wav_files(album: str):
     system(f"open -a '{MUSIC_PLAYER}' '{album}'")
 
 
-def get_album_title(tracks):
+def get_album_title(tracks: list[Path]) -> str:
     return next(iter({TinyTag.get(track).album for track in tracks}), "")
 
 
-def get_artist_and_field(tracks):
+def get_artist_and_field(tracks: list[Path]) -> tuple[str, str]:
     field = "albumartist"
     artist = ""
     try:
@@ -110,18 +111,20 @@ def get_artist_and_field(tracks):
     except Exception:
         artists = {TinyTag.get(track).artist for track in tracks}
         if len(artists) > 1:
-            field = None
+            field = ""
         else:
             artist = next(iter(artists), "")
             field = "artist"
     return artist, field
 
 
-def style_album(album):
-    return color(album, "blue", bold=True)
+def style_album(album: str) -> str:
+    return color(album, Color.BLUE, bold=True)
 
 
-def should_update(field, bracket_value, existing_value, album):
+def should_update(
+    field: str, bracket_value: str, existing_value: str, album: str
+) -> bool:
     return confirm(
         f"Use bracket {field} [{color(bracket_value, bold=True)}] instead of"
         f" {field} ({color(existing_value, bold=True)}) for album:"
@@ -129,12 +132,12 @@ def should_update(field, bracket_value, existing_value, album):
     )
 
 
-def check_year(tracks, album):
+def check_year(tracks: list[Path], album: Optional[str]) -> tuple[Optional[str], bool]:
     fixable_year = False
     years = {TinyTag.get(track).year for track in tracks}
     year = next(iter(years), None)
     if len(years) == 1:
-        album = next(iter({TinyTag.get(track).album for track in tracks}), "")
+        album = str(next(iter({TinyTag.get(track).album for track in tracks}), ""))
         found = search(BRACKET_YEAR_REGEX, album)
         bracket_year = (
             "".join([character for character in found.group() if character.isnumeric()])
@@ -151,7 +154,9 @@ def check_year(tracks, album):
     return year, fixable_year
 
 
-def check_disc(tracks, album, skip_confirm_disc_overwrite):
+def check_disc(
+    tracks: list[Path], album: str, skip_confirm_disc_overwrite: bool
+) -> tuple[Optional[str], Optional[str], bool, bool]:
     fixable_disc = False
     remove_bracket_disc = False
     discs = {TinyTag.get(track).disc for track in tracks}
@@ -176,9 +181,8 @@ def check_disc(tracks, album, skip_confirm_disc_overwrite):
         if not disc_total and (
             skip_confirm_disc_overwrite
             or confirm(
-                f'Apply default disc and disc total value of "{color(1, bold=True)}" to'
-                " album with missing disc and disc total:"
-                f" {style_album(album)}?"
+                f'Apply default disc and disc total value of "{color("1", bold=True)}"'
+                f" to album with missing disc and disc total: {style_album(album)}?"
             )
         ):
             disc = "1"
@@ -186,26 +190,32 @@ def check_disc(tracks, album, skip_confirm_disc_overwrite):
             fixable_disc = True
     elif bracket_disc and bracket_disc == disc:
         remove_bracket_disc = True
-    remove_bracket_disc = remove_bracket_disc or (fixable_disc and bracket_disc)
-    return (disc, disc_total, fixable_disc, remove_bracket_disc)
+    remove_bracket_disc = remove_bracket_disc or bool(fixable_disc and bracket_disc)
+    return disc, disc_total, fixable_disc, remove_bracket_disc
 
 
-def get_modify_tracks_query(artist, field, album_title):
+def get_modify_tracks_query(artist: str, field: str, album_title: str) -> list[str]:
     query = [f"album::^{album_title}$"]
     if field and artist:
         query = [f"{field}::^{artist}$"] + query
     return query
 
 
-def get_modify_tracks_modification(field, new_value):
+def get_modify_tracks_modification(field: str, new_value: str) -> list[str]:
     return [f"{field}={new_value}"]
 
 
-def import_album(album, tracks, import_all, as_is, skip_confirm_disc_overwrite):
+def import_album(
+    album: str,
+    tracks: list[Path],
+    import_all: bool,
+    as_is: bool,
+    skip_confirm_disc_overwrite: bool,
+) -> str:
     track_count = len(tracks)
     track_total, track_message = get_track_total(tracks)
     if import_all or track_count == track_total:
-        error = None if beet_import(album) else "escape_error"
+        error = "" if beet_import(album) else "escape_error"
         if not as_is and not error:
             album_title = get_album_title(tracks)
             if not album_title:
@@ -245,9 +255,9 @@ def import_album(album, tracks, import_all, as_is, skip_confirm_disc_overwrite):
 
 
 def import_albums(
-    albums,
-    as_is,
-    skip_confirm_disc_overwrite,
+    albums: list[str],
+    as_is: bool,
+    skip_confirm_disc_overwrite: bool,
     import_all=False,
 ):
     errors = {key: list() for key in ERRORS.keys()}
@@ -294,7 +304,7 @@ def import_albums(
     for key, error_albums in errors.items():
         if error_albums:
             album_string = "Albums" if len(error_albums) > 1 else "Album"
-            color(f"{album_string} {key.replace('_', ' ')}:", echo=True)
+            echo(color(f"{album_string} {key.replace('_', ' ')}:"))
             for album in error_albums:
                 echo(f"- {album}")
     return imports, errors, importable_error_albums

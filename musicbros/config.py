@@ -1,11 +1,12 @@
 from configparser import ConfigParser
 from pathlib import Path
+from typing import Optional
 
 from typer import confirm, echo, prompt
 
-from .helpers import color
+from .helpers import color, create_directory
 
-CONFIG_DIRECTORY = Path.home() / ".config" / "musicbros"
+CONFIG_DIRECTORY = create_directory(Path.home() / ".config" / "musicbros")
 CONFIG_FILE = CONFIG_DIRECTORY / "musicbros.ini"
 CONFIG_SECTION = "musicbros"
 CONFIG_OPTIONS = [
@@ -15,19 +16,21 @@ CONFIG_OPTIONS = [
     "music_player",
 ]
 
+config_options_type = list[tuple[str, str]]
+
 
 def create_config_directory():
     if not CONFIG_DIRECTORY.exists():
         Path.mkdir(CONFIG_DIRECTORY, parents=True)
 
 
-def get_config_option(option):
+def get_config_option(option: str) -> str:
     config = ConfigParser()
     config.read(CONFIG_FILE)
     return config.get(CONFIG_SECTION, option)
 
 
-def get_config_options():
+def get_config_options() -> config_options_type:
     config = ConfigParser()
     config.read(CONFIG_FILE)
     return [
@@ -36,14 +39,14 @@ def get_config_options():
     ]
 
 
-def get_ignored_directories():
+def get_ignored_directories() -> list[str]:
     config = ConfigParser()
     config.read(CONFIG_FILE)
     ignored_directories = get_config_option("ignored_directories")
     return [directory for directory in ignored_directories.split(",")]
 
 
-def get_new_value(option, option_display, replacing):
+def get_new_value(option: str, option_display: str, replacing: bool) -> str:
     prompt_message = f"Please provide your {option_display} value"
     return (
         prompt(prompt_message)
@@ -52,7 +55,7 @@ def get_new_value(option, option_display, replacing):
     )
 
 
-def get_new_config_vlue(option, first_time):
+def get_new_config_vlue(option: str, first_time: bool) -> Optional[str]:
     clear = False
     replacing = False
     list_option = option != CONFIG_OPTIONS[1]
@@ -64,11 +67,10 @@ def get_new_config_vlue(option, first_time):
         if clear:
             replacing = confirm("Would you like to ADD a new value?")
     empty_value = "" if clear else None
-
     return get_new_value(option, option_display, replacing) if updating else empty_value
 
 
-def write_config_options(first_time=False):
+def write_config_options(first_time=False) -> config_options_type:
     create_config_directory()
     new_values = [
         (option, get_new_config_vlue(option, first_time)) for option in CONFIG_OPTIONS
@@ -92,7 +94,7 @@ def print_create_config_message():
     )
 
 
-def confirm_create_config():
+def confirm_create_config() -> Optional[config_options_type]:
     return (
         write_config_options(first_time=True)
         if confirm("Config file not found. Would you like to create one now?")
@@ -100,7 +102,7 @@ def confirm_create_config():
     )
 
 
-def get_musicbros_config():
+def get_musicbros_config() -> Optional[config_options_type]:
     return get_config_options() if CONFIG_FILE.is_file() else confirm_create_config()
 
 

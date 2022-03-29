@@ -1,14 +1,23 @@
+from enum import Enum
+from pathlib import Path
+
 from beets import config
 from beets.ui import _configure, _open_library, decargs
 from beets.ui.commands import modify_items, modify_parse_args
-from typer import colors, echo, secho, style
+from typer import colors, echo, style
 
 LIBRARY = _open_library(_configure({}))
 BRACKET_YEAR_REGEX = r"\s\[\d{4}\]"
 BRACKET_DISC_REGEX = r"\s\[(d|D)is(c|k)\s\d+\]"
 
 
-def modify_tracks(args, album, confirm, library=LIBRARY):
+def create_directory(new_directory: Path, parents=True) -> Path:
+    if not new_directory.exists():
+        Path.mkdir(new_directory, parents=parents)
+    return new_directory
+
+
+def modify_tracks(args: list, album: bool, confirm: bool, library=LIBRARY):
     query, modifications, deletions = modify_parse_args(decargs(args))
     if not modifications and not deletions:
         echo("ERROR: No modifications specified.")
@@ -28,21 +37,16 @@ def modify_tracks(args, album, confirm, library=LIBRARY):
         echo("No matching albums found.")
 
 
-COLORS = {
-    "blue": colors.BLUE,
-    "cyan": colors.CYAN,
-    "green": colors.GREEN,
-    "magenta": colors.MAGENTA,
-    "red": colors.RED,
-    "yellow": colors.YELLOW,
-    "white": colors.WHITE,
-}
+class Color(Enum):
+    BLUE = colors.BLUE
+    CYAN = colors.CYAN
+    GREEN = colors.GREEN
+    MAGENTA = colors.MAGENTA
+    RED = colors.RED
+    YELLOW = colors.YELLOW
+    WHITE = colors.WHITE
 
 
-def color(text, color="yellow", echo=False, bold=False):
+def color(text: str, color=Color.YELLOW, bold=False) -> str:
     text = f"{text:,}" if isinstance(text, int) else str(text)
-    return (
-        secho(text, fg=COLORS[color], bold=bold)
-        if echo
-        else style(text, fg=COLORS[color], bold=bold)
-    )
+    return style(text, fg=color.value, bold=bold)

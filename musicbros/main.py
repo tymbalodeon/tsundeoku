@@ -1,18 +1,25 @@
 from typer import Option, Typer, confirm, echo
 
+from musicbros import __version__
+
 from .config import print_config_values, write_config_options
 from .import_new import get_album_directories, import_albums
 from .remove_nonsense import remove_nonsense_main
 
-app = Typer(help="CLI for managing the Musicbros audio file archive")
+app = Typer(
+    no_args_is_help=True,
+    help=(
+        f"musicbros ({__version__}) -- CLI for managing the 'Musicbros' audio file"
+        " archive"
+    ),
+    context_settings={"help_option_names": ["-h", "--help"]},
+    add_completion=False,
+)
 
 
 @app.command()
 def config(update: bool = Option(False, "--update")):
-    """
-    Create (if config doesn't exist) or optionally update, and display config
-    values
-    """
+    """Create, update, and display config values"""
     if update:
         write_config_options()
     print_config_values()
@@ -26,12 +33,10 @@ def import_new(
     skip_confirm_disc_overwrite: bool = Option(
         True,
         " /--confirm-disc-overwrite",
-        help='Ask before applying default disc and disc total values of "1 out of 1"',
+        help='Confirm applying default disc and disc total values of "1 out of 1"',
     ),
 ):
-    """
-    Copy newly added audio files from your shared folder to your music library
-    """
+    """Copy new adds from your shared folder to your library"""
     echo("Importing newly added albums...")
     imports, errors, importable_error_albums = import_albums(
         get_album_directories(), as_is, skip_confirm_disc_overwrite
