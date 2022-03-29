@@ -10,7 +10,7 @@ PRE_COMMIT = pre-commit run
 all: help
 
 binary: ## Build a binary executable with pyinstaller
-	poetry run pyinstaller $(ROOT_DIR)/$(ENTRY_POINT)
+	poetry run pyinstaller $(ROOT_DIR)/$(ENTRY_POINT) --name $(COMMAND)
 
 black: ## Format code
 	$(POETRY) black ./
