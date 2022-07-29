@@ -87,6 +87,9 @@ def get_single_or_double_quote(album: str) -> str:
 
 def beet_import(album: str) -> bool:
     quote_character = get_single_or_double_quote(album)
+    if not quote_character:
+        album = album.replace('"', r"\"")
+        quote_character = '"'
     album = album.replace("$", r"\$")
     if quote_character:
         system(f"beet import {quote_character}{album}{quote_character}")
