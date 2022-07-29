@@ -32,7 +32,7 @@ build-backend = "poetry.core.masonry.api"
 profile = "black"
 
 [tool.black]
-experimental_string_processing = true
+preview = true
 
 [tool.flake8]
 max-line-length = 88

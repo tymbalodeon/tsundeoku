@@ -2,7 +2,7 @@ import pickle
 from os import system, walk
 from pathlib import Path
 from re import escape, search, sub
-from typing import Optional
+from typing import Match, Optional
 
 from beets.importer import history_add
 from tinytag import TinyTag
@@ -76,9 +76,9 @@ def is_already_imported(album: str) -> bool:
     return album in IMPORTED_ALBUMS
 
 
-def get_single_or_double_quote(album: str) -> str:
+def get_single_or_double_quote(album: str) -> Optional[str]:
     if "'" in album and '"' in album:
-        return ""
+        return None
     elif '"' in album:
         return "'"
     else:
@@ -91,10 +91,10 @@ def beet_import(album: str) -> bool:
         album = album.replace('"', r"\"")
         quote_character = '"'
     album = album.replace("$", r"\$")
-    if quote_character:
+    try:
         system(f"beet import {quote_character}{album}{quote_character}")
         return True
-    else:
+    except Exception:
         return False
 
 
@@ -135,18 +135,22 @@ def should_update(
     )
 
 
+def get_bracket_number(match: Optional[Match[str]]) -> str:
+    if not match:
+        return ""
+    group = match.group()
+    numeric_characters = [character for character in group if character.isnumeric()]
+    return "".join(numeric_characters)
+
+
 def check_year(tracks: list[Path], album: Optional[str]) -> tuple[Optional[str], bool]:
     fixable_year = False
     years = {TinyTag.get(track).year for track in tracks}
     year = next(iter(years), "")
     if len(years) == 1:
         album = str(next(iter({TinyTag.get(track).album for track in tracks}), ""))
-        found = search(BRACKET_YEAR_REGEX, album)
-        bracket_year = (
-            "".join([character for character in found.group() if character.isnumeric()])
-            if found
-            else ""
-        )
+        match = search(BRACKET_YEAR_REGEX, album)
+        bracket_year = get_bracket_number(match)
         if (
             bracket_year
             and bracket_year != year
@@ -165,12 +169,8 @@ def check_disc(
     discs = {TinyTag.get(track).disc for track in tracks}
     disc = next(iter(discs), "")
     disc_total = ""
-    found = search(BRACKET_DISC_REGEX, album)
-    bracket_disc = (
-        "".join([character for character in found.group() if character.isnumeric()])
-        if found
-        else ""
-    )
+    match = search(BRACKET_DISC_REGEX, album)
+    bracket_disc = get_bracket_number(match)
     if (
         bracket_disc
         and bracket_disc != disc

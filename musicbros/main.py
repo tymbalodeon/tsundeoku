@@ -1,5 +1,4 @@
-from typer import Option, Typer, confirm, echo, Exit
-
+from typer import Exit, Option, Typer, confirm, echo
 
 from musicbros import __version__
 

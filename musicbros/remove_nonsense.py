@@ -83,25 +83,23 @@ def list_items(
     return [album_or_item.get(query_tag) for album_or_item in albums_or_items]
 
 
-def remove_nonsense(action: Action):
+def remove_nonsense(action: Action) -> None:
     if action.message:
         echo(action.message)
-    tags = [
-        (escape(tag), sub(action.find, action.replace, tag))
-        for tag in list_items(action.tag, action.find, action.operate_on_albums)
-    ]
-    if tags:
-        for found_value, replacement_value in tags:
-            query = [
-                f"{action.tag}::^{found_value}$",
-                f"{action.tag}={replacement_value}",
-            ]
-            modify_tracks(query, action.operate_on_albums, False)
-        else:
-            echo("No albums to update.")
+    items = list_items(action.tag, action.find, action.operate_on_albums)
+    tags = [(escape(tag), sub(action.find, action.replace, tag)) for tag in items]
+    if not tags:
+        echo("No albums to update.")
+        return
+    for found_value, replacement_value in tags:
+        query = [
+            f"{action.tag}::^{found_value}$",
+            f"{action.tag}={replacement_value}",
+        ]
+        modify_tracks(query, action.operate_on_albums, False)
 
 
-def remove_nonsense_main(solo_instruments=False):
+def remove_nonsense_main(solo_instruments=False) -> None:
     actions = ACTIONS if solo_instruments else ACTIONS[:-1]
     for action in actions:
         remove_nonsense(action)

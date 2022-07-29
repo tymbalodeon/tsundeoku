@@ -4,7 +4,7 @@ from typing import Optional
 
 from typer import confirm, echo, prompt
 
-from .helpers import color, create_directory
+from .helpers import Color, color, create_directory
 
 CONFIG_DIRECTORY = create_directory(Path.home() / ".config" / "musicbros")
 CONFIG_FILE = CONFIG_DIRECTORY / "musicbros.ini"
@@ -16,7 +16,7 @@ CONFIG_OPTIONS = [
     "music_player",
 ]
 
-config_options_type = list[tuple[str, str]]
+ConfigOptions = list[tuple[str, str]]
 
 
 def create_config_directory():
@@ -30,7 +30,7 @@ def get_config_option(option: str) -> str:
     return config.get(CONFIG_SECTION, option)
 
 
-def get_config_options() -> config_options_type:
+def get_config_options() -> ConfigOptions:
     config = ConfigParser()
     config.read(CONFIG_FILE)
     return [
@@ -48,11 +48,10 @@ def get_ignored_directories() -> list[str]:
 
 def get_new_value(option: str, option_display: str, replacing: bool) -> str:
     prompt_message = f"Please provide your {option_display} value"
-    return (
-        prompt(prompt_message)
-        if replacing
-        else f"{get_config_option(option)},{prompt(prompt_message)}"
-    )
+    if replacing:
+        return prompt(prompt_message)
+    else:
+        return f"{get_config_option(option)},{prompt(prompt_message)}"
 
 
 def get_new_config_vlue(option: str, first_time: bool) -> Optional[str]:
@@ -67,10 +66,13 @@ def get_new_config_vlue(option: str, first_time: bool) -> Optional[str]:
         if clear:
             replacing = confirm("Would you like to ADD a new value?")
     empty_value = "" if clear else None
-    return get_new_value(option, option_display, replacing) if updating else empty_value
+    if updating:
+        return get_new_value(option, option_display, replacing)
+    else:
+        return empty_value
 
 
-def write_config_options(first_time=False) -> config_options_type:
+def write_config_options(first_time=False) -> ConfigOptions:
     create_config_directory()
     new_values = [
         (option, get_new_config_vlue(option, first_time)) for option in CONFIG_OPTIONS
@@ -94,23 +96,26 @@ def print_create_config_message():
     )
 
 
-def confirm_create_config() -> Optional[config_options_type]:
-    return (
-        write_config_options(first_time=True)
-        if confirm("Config file not found. Would you like to create one now?")
-        else print_create_config_message()
-    )
+def confirm_create_config() -> Optional[ConfigOptions]:
+    if confirm("Config file not found. Would you like to create one now?"):
+        return write_config_options(first_time=True)
+    else:
+        return print_create_config_message()
 
 
-def get_musicbros_config() -> Optional[config_options_type]:
-    return get_config_options() if CONFIG_FILE.is_file() else confirm_create_config()
+def get_musicbros_config() -> Optional[ConfigOptions]:
+    if CONFIG_FILE.is_file():
+        return get_config_options()
+    else:
+        return confirm_create_config()
 
 
 def print_config_values():
     config = get_musicbros_config()
     if config:
+        echo(f"[{color('musicbros')}]")
         for option, value in config:
-            echo(f"{color(option.replace('_', ' ').upper())}: {value}")
+            echo(f"{color(option, Color.CYAN)} = {value}")
 
 
 PICKLE_FILE = get_config_option("pickle_file")
