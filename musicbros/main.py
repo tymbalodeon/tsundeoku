@@ -7,7 +7,6 @@ from .import_new import get_album_directories, import_albums
 from .remove_nonsense import remove_nonsense_main
 
 app = Typer(
-    # no_args_is_help=True,
     help=(
         f"musicbros ({__version__}) -- CLI for managing the 'Musicbros' audio file"
         " archive"
