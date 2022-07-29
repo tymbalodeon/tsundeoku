@@ -7,7 +7,7 @@ from .import_new import get_album_directories, import_albums
 from .remove_nonsense import remove_nonsense_main
 
 app = Typer(
-    no_args_is_help=True,
+    # no_args_is_help=True,
     help=(
         f"musicbros ({__version__}) -- CLI for managing the 'Musicbros' audio file"
         " archive"
@@ -25,7 +25,7 @@ def config(update: bool = Option(False, "--update")):
     print_config_values()
 
 
-@app.command()
+@app.callback()
 def import_new(
     as_is: bool = Option(
         False, "--as-is", help="Import new albums without altering metadata"
@@ -71,7 +71,7 @@ def display_version(version: bool):
         raise Exit()
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def version(
     version: bool = Option(
         False,
@@ -83,3 +83,5 @@ def version(
 ):
     if version:
         return
+    else:
+        import_new()
