@@ -42,7 +42,7 @@ def get_config_options() -> ConfigOptions:
 def get_ignored_directories() -> list[str]:
     config = ConfigParser()
     config.read(CONFIG_FILE)
-    ignored_directories = get_config_option("ignored_directories")
+    ignored_directories = get_config_option(CONFIG_OPTIONS[2])
     return [directory for directory in ignored_directories.split(",")]
 
 
@@ -125,14 +125,15 @@ def update_or_print_config(update: bool):
 
 
 def get_pickle_file() -> str:
+    pickle_file_option_name = CONFIG_OPTIONS[1]
     try:
-        return get_config_option("pickle_file")
+        return get_config_option(pickle_file_option_name)
     except Exception:
         update_or_print_config(False)
-        return get_config_option("pickle_file")
+        return get_config_option(pickle_file_option_name)
 
 
 PICKLE_FILE = get_pickle_file()
-SHARED_DIRECTORY = get_config_option("shared_directory")
-MUSIC_PLAYER = get_config_option("music_player")
+SHARED_DIRECTORY = get_config_option(CONFIG_OPTIONS[0])
+MUSIC_PLAYER = get_config_option(CONFIG_OPTIONS[3])
 IGNORED_DIRECTORIES = get_ignored_directories()
