@@ -56,7 +56,7 @@ def get_new_value(option: str, option_display: str, replacing: bool) -> str:
 
 def get_new_config_vlue(option: str, first_time: bool) -> Optional[str]:
     clear = False
-    replacing = False
+    replacing = True
     list_option = option != CONFIG_OPTIONS[1]
     option_display = option.replace("_", " ").upper()
     confirm_message = f"Would you like to update the {option_display} value?"
@@ -118,7 +118,21 @@ def print_config_values():
             echo(f"{color(option, Color.CYAN)} = {value}")
 
 
-PICKLE_FILE = get_config_option("pickle_file")
+def update_or_print_config(update: bool):
+    if update:
+        write_config_options()
+    print_config_values()
+
+
+def get_pickle_file() -> str:
+    try:
+        return get_config_option("pickle_file")
+    except Exception:
+        update_or_print_config(False)
+        return get_config_option("pickle_file")
+
+
+PICKLE_FILE = get_pickle_file()
 SHARED_DIRECTORY = get_config_option("shared_directory")
 MUSIC_PLAYER = get_config_option("music_player")
 IGNORED_DIRECTORIES = get_ignored_directories()

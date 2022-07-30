@@ -2,7 +2,7 @@ from typer import Exit, Option, Typer, confirm, echo
 
 from musicbros import __version__
 
-from .config import print_config_values, write_config_options
+from .config import print_config_values, update_or_print_config, write_config_options
 from .import_new import get_album_directories, import_albums
 from .remove_nonsense import remove_nonsense_main
 
@@ -19,9 +19,7 @@ app = Typer(
 @app.command()
 def config(update: bool = Option(False, "--update")):
     """Create, update, and display config values"""
-    if update:
-        write_config_options()
-    print_config_values()
+    update_or_print_config(update)
 
 
 @app.callback()
