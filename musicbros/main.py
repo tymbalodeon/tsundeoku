@@ -17,7 +17,7 @@ app = Typer(
 
 
 @app.command()
-def config(update: bool = Option(False, "--update")):
+def config(update: bool = Option(False, "--update", "-u")):
     """Create, update, and display config values"""
     update_or_print_config(update)
 
@@ -29,7 +29,7 @@ def import_new(
     ),
     skip_confirm_disc_overwrite: bool = Option(
         True,
-        " /--overwrite-discs",
+        " /--confirm-overwrite-discs",
         help='Confirm applying default disc and disc total values of "1 out of 1"',
     ),
 ):
@@ -55,7 +55,9 @@ def import_new(
 @app.command()
 def remove_nonsense(
     solo_instruments: bool = Option(
-        False, help="Remove bracketed solo instrument indications (time consuming)."
+        False,
+        " /--remove-instruments",
+        help='Remove bracketed "[solo <instrument>]" indications (time consuming).',
     )
 ):
     """Remove nonsense from tags"""
