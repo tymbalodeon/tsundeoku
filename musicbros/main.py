@@ -1,8 +1,8 @@
-from typer import Exit, Option, Typer, confirm, echo
+from typer import Context, Exit, Option, Typer, confirm, echo
 
 from musicbros import __version__
 
-from .config import print_config_values, update_or_print_config, write_config_options
+from .config import update_or_print_config
 from .import_new import get_album_directories, import_albums
 from .remove_nonsense import remove_nonsense_main
 
@@ -22,14 +22,14 @@ def config(update: bool = Option(False, "--update")):
     update_or_print_config(update)
 
 
-@app.callback()
+@app.command()
 def import_new(
     as_is: bool = Option(
         False, "--as-is", help="Import new albums without altering metadata"
     ),
     skip_confirm_disc_overwrite: bool = Option(
         True,
-        " /--confirm-disc-overwrite",
+        " /--overwrite-discs",
         help='Confirm applying default disc and disc total values of "1 out of 1"',
     ),
 ):
@@ -70,15 +70,16 @@ def display_version(version: bool):
 
 @app.callback(invoke_without_command=True)
 def version(
+    context: Context,
     version: bool = Option(
         False,
         "--version",
         "-V",
         callback=display_version,
         help="Display version number",
-    )
+    ),
 ):
     if version:
         return
-    else:
+    elif not context.invoked_subcommand:
         import_new()
