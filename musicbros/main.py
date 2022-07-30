@@ -8,8 +8,8 @@ from .remove_nonsense import remove_nonsense_main
 
 app = Typer(
     help=(
-        f"musicbros ({__version__}) -- CLI for managing the 'Musicbros' audio file"
-        " archive"
+        f"musicbros ({__version__}) -- A CLI for managing imports from a shared folder"
+        ' to a "beets" library'
     ),
     context_settings={"help_option_names": ["-h", "--help"]},
     add_completion=False,
