@@ -8,6 +8,7 @@ PRE_COMMIT = pre-commit run
 
 all: help
 
+.PHONY: build
 build: ## Build the CLI and isntall it in your global pip packages
 	poetry build && pip install $(WHEEL) --force-reinstall
 
