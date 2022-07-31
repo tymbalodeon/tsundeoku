@@ -1,10 +1,12 @@
-from typer import Context, Exit, Option, Typer, confirm, echo
+from typing import Optional
+
+from typer import Argument, Context, Exit, Option, Typer, confirm, echo
 
 from musicbros import __version__
 
 from .config import update_or_print_config
 from .import_new import get_album_directories, import_albums
-from .remove_nonsense import remove_nonsense_main, remove_nonsense_if_as_is
+from .remove_nonsense import remove_nonsense_if_as_is, remove_nonsense_main
 
 app = Typer(
     help=(
@@ -32,22 +34,32 @@ def import_new(
         " /--confirm-overwrite-discs",
         help='Confirm applying default disc and disc total values of "1 out of 1"',
     ),
+    albums: Optional[list[str]] = Argument(None, hidden=False),
 ):
     """Copy new adds from your shared folder to your library"""
     echo("Importing newly added albums...")
+    first_time = False
+    if not isinstance(albums, list):
+        first_time = True
+        albums = get_album_directories()
     imports, errors, importable_error_albums = import_albums(
-        get_album_directories(), as_is, skip_confirm_disc_overwrite
+        albums,
+        as_is,
+        skip_confirm_disc_overwrite,
+        import_all=not first_time,
     )
     remove_nonsense_if_as_is(imports, as_is)
     if (
-        errors
+        first_time
+        and errors
         and importable_error_albums
         and confirm("Would you like to import all albums anyway?")
     ):
-        imports, _, _ = import_albums(
-            importable_error_albums, as_is, skip_confirm_disc_overwrite, import_all=True
+        import_new(
+            as_is=as_is,
+            skip_confirm_disc_overwrite=skip_confirm_disc_overwrite,
+            albums=importable_error_albums,
         )
-        remove_nonsense_if_as_is(imports, as_is)
 
 
 @app.command()
