@@ -4,7 +4,7 @@ from musicbros import __version__
 
 from .config import update_or_print_config
 from .import_new import get_album_directories, import_albums
-from .remove_nonsense import remove_nonsense_main
+from .remove_nonsense import remove_nonsense_main, remove_nonsense_if_as_is
 
 app = Typer(
     help=(
@@ -38,18 +38,16 @@ def import_new(
     imports, errors, importable_error_albums = import_albums(
         get_album_directories(), as_is, skip_confirm_disc_overwrite
     )
-    if imports and not as_is:
-        remove_nonsense_main()
+    remove_nonsense_if_as_is(imports, as_is)
     if (
         errors
         and importable_error_albums
         and confirm("Would you like to import all albums anyway?")
     ):
-        imports, errors, importable_error_albums = import_albums(
+        imports, _, _ = import_albums(
             importable_error_albums, as_is, skip_confirm_disc_overwrite, import_all=True
         )
-        if imports and not as_is:
-            remove_nonsense_main()
+        remove_nonsense_if_as_is(imports, as_is)
 
 
 @app.command()
@@ -84,4 +82,4 @@ def version(
     if version:
         return
     elif not context.invoked_subcommand:
-        import_new()
+        import_new(as_is=False, skip_confirm_disc_overwrite=True)
