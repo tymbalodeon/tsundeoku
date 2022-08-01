@@ -16,7 +16,7 @@ beets = "^1.5.0"
 click = "8.0.4"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
+pytest = "^7.1"
 black = "^21.10b0"
 isort = "^5.10.0"
 pre-commit = "^2.15.0"
