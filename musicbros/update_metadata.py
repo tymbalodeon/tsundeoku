@@ -83,7 +83,7 @@ def list_items(
     return [album_or_item.get(query_tag) for album_or_item in albums_or_items]
 
 
-def remove_nonsense(action: Action):
+def update_metadata(action: Action):
     if action.message:
         echo(action.message)
     items = list_items(action.tag, action.find, action.operate_on_albums)
@@ -99,12 +99,12 @@ def remove_nonsense(action: Action):
         modify_tracks(query, action.operate_on_albums, False)
 
 
-def remove_nonsense_main(solo_instruments=False):
+def update_metadata_main(solo_instruments=False):
     actions = ACTIONS if solo_instruments else ACTIONS[:-1]
     for action in actions:
-        remove_nonsense(action)
+        update_metadata(action)
 
 
-def remove_nonsense_if_as_is(imports: bool, as_is: bool):
+def update_metadata_if_as_is(imports: bool, as_is: bool):
     if imports and not as_is:
-        remove_nonsense_main()
+        update_metadata_main()
