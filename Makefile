@@ -5,8 +5,18 @@ VERSION := $(shell awk -F '[ ="]+' '$$1 == "version" { print $$2 }' $(PYPROJECT)
 WHEEL := ./dist/$(COMMAND)-$(VERSION)-py3-none-any.whl
 POETRY = poetry run
 PRE_COMMIT = pre-commit run
+BEETS_CONFIG_PATH = ~/.config/beets/config.yaml
+
+define BEETS_CONFIG_VALUES
+directory: ~/music
+library: ~/data/musiclibrary.db
+endef
 
 all: help
+
+export BEETS_CONFIG_VALUES
+beets: ## Install beets
+	pip install beets && echo "$$BEETS_CONFIG_VALUES" > $(BEETS_CONFIG_PATH)
 
 .PHONY: build
 build: ## Build the CLI and isntall it in your global pip packages
@@ -22,6 +32,8 @@ help: ## Display the help menu
 
 shell: ## Run bpython in project virtual environment
 	$(POETRY) bpython
+
+start: beets build ## Install beets before installing musicbros
 
 try: ## Try a command using the current state of the files without building
 ifdef args
