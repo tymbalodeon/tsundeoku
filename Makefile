@@ -8,8 +8,11 @@ PRE_COMMIT = pre-commit run
 BEETS_CONFIG_PATH = ~/.config/beets/config.yaml
 
 define BEETS_CONFIG_VALUES
-directory: ~/music
-library: ~/data/musiclibrary.db
+directory: ~/Music
+library: ~/.beets/library.db
+import:
+  incremental: yes
+  autotag: no
 endef
 
 all: help
