@@ -15,7 +15,7 @@ endef
 all: help
 
 export BEETS_CONFIG_VALUES
-beets: ## Install beets
+beets:
 	pip install beets && echo "$$BEETS_CONFIG_VALUES" > $(BEETS_CONFIG_PATH)
 
 .PHONY: build
@@ -25,7 +25,7 @@ build: ## Build the CLI and isntall it in your global pip packages
 check: ## Check for problems
 	$(POETRY) $(PRE_COMMIT) -a
 
-help: ## Display the help menu
+help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 	| sort \
 	| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
