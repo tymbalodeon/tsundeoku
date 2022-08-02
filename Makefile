@@ -9,7 +9,7 @@ BEETS_CONFIG_PATH = ~/.config/beets/config.yaml
 
 define BEETS_CONFIG_VALUES
 directory: ~/Music
-library: ~/.beets/library.db
+library: ~/.config/beets/library.db
 import:
   incremental: yes
   autotag: no
