@@ -34,9 +34,6 @@ def get_imported_albums() -> set[str]:
         return {album[0].decode() for album in unpickled}
 
 
-IMPORTED_ALBUMS = get_imported_albums()
-
-
 def get_album_directories() -> list[str]:
     return [root for root, dirs, files in walk(SHARED_DIRECTORY) if files and not dirs]
 
@@ -73,7 +70,7 @@ def is_ignored_directory(album: str) -> bool:
 
 
 def is_already_imported(album: str) -> bool:
-    return album in IMPORTED_ALBUMS
+    return album in get_imported_albums()
 
 
 def get_single_or_double_quote(album: str) -> Optional[str]:
