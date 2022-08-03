@@ -1,8 +1,7 @@
 import pickle
 from os import system, walk
 from pathlib import Path
-from re import escape, search, sub
-from typing import Match, Optional
+from re import Match, escape, search, sub
 
 from beets.importer import history_add
 from tinytag import TinyTag
@@ -46,7 +45,7 @@ def get_album_directories() -> list[str]:
 
 
 def get_tracks(album: str) -> list[Path]:
-    audio_files: list[Path] = list()
+    audio_files: list[Path] = []
     for file_type in AUDIO_FILE_TYPES:
         audio_files.extend(Path(album).glob(file_type))
     return audio_files
@@ -56,7 +55,7 @@ def get_wav_tracks(album: str) -> bool:
     return bool([track for track in Path(album).glob("*.wav")])
 
 
-def get_track_total(tracks: list[Path]) -> tuple[Optional[int], Optional[str]]:
+def get_track_total(tracks: list[Path]) -> tuple[int | None, str | None]:
     message = None
     track_totals = {TinyTag.get(track).track_total for track in tracks}
     track_total = next(iter(track_totals), None)
@@ -80,7 +79,7 @@ def is_already_imported(album: str) -> bool:
     return album in get_imported_albums()
 
 
-def get_single_or_double_quote(album: str) -> Optional[str]:
+def get_single_or_double_quote(album: str) -> str | None:
     if "'" in album and '"' in album:
         return None
     elif '"' in album:
@@ -140,7 +139,7 @@ def should_update(
     )
 
 
-def get_bracket_number(match: Optional[Match[str]]) -> str:
+def get_bracket_number(match: Match[str] | None) -> str:
     if not match:
         return ""
     group = match.group()
@@ -148,7 +147,7 @@ def get_bracket_number(match: Optional[Match[str]]) -> str:
     return "".join(numeric_characters)
 
 
-def check_year(tracks: list[Path], album: Optional[str]) -> tuple[Optional[str], bool]:
+def check_year(tracks: list[Path], album: str | None) -> tuple[str | None, bool]:
     fixable_year = False
     years = {TinyTag.get(track).year for track in tracks}
     year = next(iter(years), "")
@@ -168,7 +167,7 @@ def check_year(tracks: list[Path], album: Optional[str]) -> tuple[Optional[str],
 
 def check_disc(
     tracks: list[Path], album: str, skip_confirm_disc_overwrite: bool
-) -> tuple[Optional[str], Optional[str], bool, bool]:
+) -> tuple[str | None, str | None, bool, bool]:
     fixable_disc = False
     remove_bracket_disc = False
     discs = {TinyTag.get(track).disc for track in tracks}
@@ -268,11 +267,11 @@ def import_albums(
     skip_confirm_disc_overwrite: bool,
     import_all=False,
 ):
-    errors: dict[str, list] = {key: list() for key in ERRORS.keys()}
+    errors: dict[str, list] = {key: [] for key in ERRORS.keys()}
     imports = False
     wav_imports = 0
     skipped_count = 0
-    importable_error_albums = list()
+    importable_error_albums = []
     for album in albums:
         if not import_all:
             if is_ignored_directory(album):

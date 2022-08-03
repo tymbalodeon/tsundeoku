@@ -1,5 +1,3 @@
-from typing import Optional
-
 from typer import Argument, Exit, Option, Typer, confirm, echo
 
 from musicbros import __version__
@@ -34,7 +32,7 @@ def import_new(
         " /--confirm-overwrite-discs",
         help='Confirm applying default disc and disc total values of "1 out of 1"',
     ),
-    albums: Optional[list[str]] = Argument(None, hidden=False),
+    albums: list[str] | None = Argument(None, hidden=False),
 ):
     """Copy new adds from your shared folder to your "beets" library"""
     echo("Importing newly added albums...")
