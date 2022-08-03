@@ -19,7 +19,7 @@ all: help
 
 export BEETS_CONFIG_VALUES
 beets:
-	pip install beets && echo "$$BEETS_CONFIG_VALUES" > $(BEETS_CONFIG_PATH)
+	echo "$$BEETS_CONFIG_VALUES" > $(BEETS_CONFIG_PATH)
 
 .PHONY: build
 build: ## Build the CLI and isntall it in your global pip packages
@@ -36,7 +36,7 @@ help:
 shell: ## Run bpython in project virtual environment
 	$(POETRY) bpython
 
-start: beets build ## Install beets before installing musicbros
+start: beets build ## Add beets config before installing musicbros
 
 try: ## Try a command using the current state of the files without building
 ifdef args
