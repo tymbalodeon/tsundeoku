@@ -9,12 +9,10 @@ from .helpers import Color, color, create_directory
 CONFIG_DIRECTORY = create_directory(Path.home() / ".config" / "musicbros")
 CONFIG_FILE = CONFIG_DIRECTORY / "musicbros.ini"
 CONFIG_SECTION = "musicbros"
-CONFIG_OPTIONS = [
-    "shared_directory",
-    "pickle_file",
-    "ignored_directories",
-    "music_player",
-]
+SHARED_DIRECTORY_OPTION_NAME = "shared_directory"
+PICKLE_FILE_OPTION_NAME = "pickle_file"
+IGNORED_DIRECTORIES_OPTION_NAME = "ignored_directories"
+MUSIC_PLAYER_OPTION_NAME = "music_player"
 
 ConfigOptions = list[tuple[str, str]]
 
@@ -122,19 +120,19 @@ def get_config_value(option_name: str) -> str:
 
 
 def get_shared_directory() -> str:
-    return get_config_value(CONFIG_OPTIONS[0])
+    return get_config_value(SHARED_DIRECTORY_OPTION_NAME)
 
 
 def get_pickle_file() -> str:
-    return get_config_value(CONFIG_OPTIONS[1])
+    return get_config_value(PICKLE_FILE_OPTION_NAME)
 
 
 def get_ignored_directories() -> list[str]:
     config = ConfigParser()
     config.read(CONFIG_FILE)
-    ignored_directories = get_config_option(CONFIG_OPTIONS[2])
+    ignored_directories = get_config_option(IGNORED_DIRECTORIES_OPTION_NAME)
     return [directory for directory in ignored_directories.split(",")]
 
 
 def get_music_player() -> str:
-    return get_config_value(CONFIG_OPTIONS[3])
+    return get_config_value(MUSIC_PLAYER_OPTION_NAME)
