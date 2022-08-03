@@ -4,7 +4,7 @@ from typer import Argument, Context, Exit, Option, Typer, confirm, echo
 
 from musicbros import __version__
 
-from .config import update_or_print_config
+from .config import update_or_print_config, validate_config
 from .import_new import get_album_directories, import_albums
 from .update_metadata import update_metadata_if_as_is, update_metadata_main
 
@@ -39,7 +39,7 @@ def import_new(
     """Copy new adds from your shared folder to your "beets" library"""
     echo("Importing newly added albums...")
     first_time = False
-    if not isinstance(albums, list):
+    if not albums:
         first_time = True
         albums = get_album_directories()
     imports, errors, importable_error_albums = import_albums(
@@ -105,7 +105,8 @@ def version(
         help="Display version number",
     ),
 ):
+    validate_config()
     if version:
         return
-    elif not context.invoked_subcommand:
-        import_new(as_is=False, skip_confirm_disc_overwrite=True)
+    if not context.invoked_subcommand:
+        import_new(as_is=False, skip_confirm_disc_overwrite=True, albums=None)
