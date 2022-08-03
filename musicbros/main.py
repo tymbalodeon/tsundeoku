@@ -1,4 +1,4 @@
-from typer import Argument, Exit, Option, Typer, confirm, echo
+from typer import Argument, Context, Exit, Option, Typer, confirm, echo
 
 from musicbros import __version__
 
@@ -30,14 +30,22 @@ def import_new(
     skip_confirm_disc_overwrite: bool = Option(
         True,
         " /--confirm-overwrite-discs",
-        help='Confirm applying default disc and disc total values of "1 out of 1"',
+        help=(
+            'Prompt for confirmation to apply default disc and disc total values of "1'
+            ' out of 1"'
+        ),
+    ),
+    prompt: bool = Option(
+        True,
+        " /--skip-albums-requiring-prompt",
+        help="Skip importing albums requiring prompt for user decision",
     ),
     albums: list[str] | None = Argument(None, hidden=False),
 ):
     """Copy new adds from your shared folder to your "beets" library"""
     echo("Importing newly added albums...")
     first_time = False
-    if not isinstance(albums, list):
+    if not albums:
         first_time = True
         albums = get_album_directories()
     imports, errors, importable_error_albums = import_albums(
@@ -45,6 +53,7 @@ def import_new(
         as_is,
         skip_confirm_disc_overwrite,
         import_all=not first_time,
+        prompt=prompt,
     )
     update_metadata_if_as_is(imports, as_is)
     if (
@@ -94,6 +103,7 @@ def display_version(version: bool):
 
 @app.callback(invoke_without_command=True)
 def version(
+    context: Context,
     version: bool = Option(
         False,
         "--version",
@@ -105,4 +115,5 @@ def version(
     validate_config()
     if version:
         return
-    import_new(as_is=False, skip_confirm_disc_overwrite=True)
+    if not context.invoked_subcommand:
+        import_new(as_is=False, skip_confirm_disc_overwrite=True, albums=None)
