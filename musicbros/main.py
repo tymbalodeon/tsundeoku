@@ -1,5 +1,3 @@
-from typing import Optional
-
 from typer import Argument, Context, Exit, Option, Typer, confirm, echo
 
 from musicbros import __version__
@@ -42,7 +40,7 @@ def import_new(
         " /--skip-albums-requiring-prompt",
         help="Skip importing albums requiring prompt for user decision",
     ),
-    albums: Optional[list[str]] = Argument(None, hidden=False),
+    albums: list[str] | None = Argument(None, hidden=False),
 ):
     """Copy new adds from your shared folder to your "beets" library"""
     echo("Importing newly added albums...")
