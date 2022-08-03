@@ -150,15 +150,11 @@ def get_music_player() -> str:
     return get_config_value(MUSIC_PLAYER_OPTION_NAME)
 
 
-def add_missing_config_option(option_and_value: str):
+def add_missing_config_option(option: str, value: str) -> str:
+    option_and_value = f"{option} = {value}\n"
     with open(CONFIG_FILE, "a") as config_file:
         config_file.write(option_and_value)
-
-
-class InvalidOption(Exception):
-    def __init__(self):
-        default_message = "Invalid option"
-        super().__init__(default_message)
+    return value
 
 
 def validate_shared_directory(shared_directory: str) -> Optional[str]:
@@ -206,30 +202,29 @@ def validate_option(value: str, option_getter: Callable) -> Optional[str]:
 
 
 def get_or_add_config_option(
-    config_getter: Callable, option_and_value: str
+    config_getter: Callable, option: str, value: str
 ) -> Optional[str]:
     try:
         value = config_getter()
-        return validate_option(value, config_getter)
     except Exception:
-        add_missing_config_option(option_and_value)
-        return None
+        value = add_missing_config_option(option, value)
+    return validate_option(value, config_getter)
 
 
 def validate_config():
     home = Path.home()
-    default_shared_directory = home / "Dropbox"
-    default_pickle_file = home / ".config/beets/state.pickle"
+    default_shared_directory = str(home / "Dropbox")
+    default_pickle_file = str(home / ".config/beets/state.pickle")
     default_music_player = "Swinsian"
     config_getters_and_values = (
-        (get_shared_directory, f"shared_directory = {default_shared_directory}\n"),
-        (get_pickle_file, f"pickle_file = {default_pickle_file}\n"),
-        (get_ignored_directories, "ignored_directories =\n"),
-        (get_music_player, f"music_player = {default_music_player}\n"),
+        (get_shared_directory, "shared_directory", default_shared_directory),
+        (get_pickle_file, "pickle_file", default_pickle_file),
+        (get_ignored_directories, "ignored_directories", ""),
+        (get_music_player, "music_player", default_music_player),
     )
     error_messages = list()
-    for option_getter, option_and_value in config_getters_and_values:
-        error_message = get_or_add_config_option(option_getter, option_and_value)
+    for option_getter, option, value in config_getters_and_values:
+        error_message = get_or_add_config_option(option_getter, option, value)
         if error_message:
             error_messages.append(error_message)
     if error_messages:
