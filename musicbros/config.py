@@ -1,6 +1,6 @@
 from configparser import ConfigParser
 from pathlib import Path
-from subprocess import Popen, run
+from subprocess import run
 from typing import Callable, Optional
 
 from click.exceptions import Exit
@@ -161,41 +161,38 @@ class InvalidOption(Exception):
         super().__init__(default_message)
 
 
-def validate_shared_directory(shared_directory: str):
+def validate_shared_directory(shared_directory: str) -> Optional[str]:
     shared_directory_exists = Path(shared_directory).is_dir()
-    if not shared_directory_exists:
-        message = (
-            "WARNING: Shared directory does not exist. Please create the directory or"
-            f" update your config with `{CONFIG_SECTION} config --update`."
-        )
-        echo(color(message))
-        raise InvalidOption
+    if shared_directory_exists:
+        return None
+    return (
+        "WARNING: Shared directory does not exist. Please create the directory or"
+        f" update your config with `{CONFIG_SECTION} config --update`."
+    )
 
 
-def validate_pickle_file(pickle_file: str):
+def validate_pickle_file(pickle_file: str) -> Optional[str]:
     pickle_file_exists = Path(pickle_file).is_file()
-    if not pickle_file_exists:
-        message = (
-            "WARNING: Pickle file does not exist. Please initialize your beets library"
-            " following the beets documentation."
-        )
-        echo(color(message))
-        raise InvalidOption
+    if pickle_file_exists:
+        return None
+    return (
+        "WARNING: Pickle file does not exist. Please initialize your beets library"
+        " following the beets documentation."
+    )
 
 
-def validate_music_player(music_player: str):
+def validate_music_player(music_player: str) -> Optional[str]:
     command = f'mdfind "kMDItemKind == \'Application\'" | grep "{music_player}"'
     application = run(command, shell=True, capture_output=True).stdout
-    if not application:
-        message = (
-            "WARNING: Music player does not exist. Please install it or"
-            f" update your config with `{CONFIG_SECTION} config --update`."
-        )
-        echo(color(message))
-        raise InvalidOption
+    if application:
+        return None
+    return (
+        "WARNING: Music player does not exist. Please install it or"
+        f" update your config with `{CONFIG_SECTION} config --update`."
+    )
 
 
-def validate_option(value: str, option_getter: Callable):
+def validate_option(value: str, option_getter: Callable) -> Optional[str]:
     validators = {
         get_shared_directory: validate_shared_directory,
         get_pickle_file: validate_pickle_file,
@@ -203,18 +200,20 @@ def validate_option(value: str, option_getter: Callable):
         get_music_player: validate_music_player,
     }
     validator = validators.get(option_getter)
-    if validator:
-        validator(value)
+    if not validator:
+        return None
+    return validator(value)
 
 
-def get_or_add_config_option(config_getter: Callable, option_and_value: str):
+def get_or_add_config_option(
+    config_getter: Callable, option_and_value: str
+) -> Optional[str]:
     try:
         value = config_getter()
-        validate_option(value, config_getter)
-    except InvalidOption:
-        raise Exit()
+        return validate_option(value, config_getter)
     except Exception:
         add_missing_config_option(option_and_value)
+        return None
 
 
 def validate_config():
@@ -228,5 +227,12 @@ def validate_config():
         (get_ignored_directories, "ignored_directories =\n"),
         (get_music_player, f"music_player = {default_music_player}\n"),
     ]
+    error_messages = list()
     for option_getter, option_and_value in config_getters_and_values:
-        get_or_add_config_option(option_getter, option_and_value)
+        error_message = get_or_add_config_option(option_getter, option_and_value)
+        if error_message:
+            error_messages.append(error_message)
+    if error_messages:
+        for message in error_messages:
+            echo(color(message))
+        raise Exit()
