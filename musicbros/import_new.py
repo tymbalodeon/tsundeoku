@@ -2,6 +2,7 @@ from os import system, walk
 from pathlib import Path
 from pickle import load
 from re import Match, escape, search, sub
+from typing import Optional
 
 from beets.importer import history_add
 from tinytag import TinyTag
@@ -55,7 +56,7 @@ def get_wav_tracks(album: str) -> bool:
     return bool([track for track in Path(album).glob("*.wav")])
 
 
-def get_track_total(tracks: list[Path]) -> tuple[int | None, str | None]:
+def get_track_total(tracks: list[Path]) -> tuple[Optional[int], Optional[str]]:
     message = None
     track_totals = {TinyTag.get(track).track_total for track in tracks}
     track_total = next(iter(track_totals), None)
@@ -79,7 +80,7 @@ def is_already_imported(album: str) -> bool:
     return album in get_imported_albums()
 
 
-def get_single_or_double_quote(album: str) -> str | None:
+def get_single_or_double_quote(album: str) -> Optional[str]:
     if "'" in album and '"' in album:
         return None
     elif '"' in album:
@@ -139,7 +140,7 @@ def should_update(
     )
 
 
-def get_bracket_number(match: Match[str] | None) -> str:
+def get_bracket_number(match: Optional[Match[str]]) -> str:
     if not match:
         return ""
     group = match.group()
@@ -148,8 +149,8 @@ def get_bracket_number(match: Match[str] | None) -> str:
 
 
 def check_year(
-    tracks: list[Path], album: str | None, prompt: bool
-) -> tuple[str | None, bool]:
+    tracks: list[Path], album: Optional[str], prompt: bool
+) -> tuple[Optional[str], bool]:
     fixable_year = False
     years = {TinyTag.get(track).year for track in tracks}
     year = next(iter(years), "")
@@ -170,7 +171,7 @@ def check_year(
 
 def check_disc(
     tracks: list[Path], album: str, skip_confirm_disc_overwrite: bool, prompt: bool
-) -> tuple[str | None, str | None, bool, bool]:
+) -> tuple[Optional[str], Optional[str], bool, bool]:
     fixable_disc = False
     remove_bracket_disc = False
     discs = {TinyTag.get(track).disc for track in tracks}

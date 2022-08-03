@@ -2,6 +2,7 @@ from collections.abc import Callable
 from configparser import ConfigParser
 from pathlib import Path
 from subprocess import run
+from typing import Optional
 
 from click.exceptions import Exit
 from typer import confirm, echo, prompt
@@ -51,7 +52,7 @@ def get_new_value(option: str, option_display: str, replacing: bool) -> str:
         return f"{get_config_option(option)},{prompt(prompt_message)}"
 
 
-def get_new_config_vlue(option: str, first_time: bool) -> str | None:
+def get_new_config_vlue(option: str, first_time: bool) -> Optional[str]:
     clear = False
     replacing = True
     list_option = option != PICKLE_FILE_OPTION_NAME
@@ -99,14 +100,14 @@ def print_create_config_message():
     )
 
 
-def confirm_create_config() -> ConfigOptions | None:
+def confirm_create_config() -> Optional[ConfigOptions]:
     if confirm("Config file not found. Would you like to create one now?"):
         return write_config_options(first_time=True)
     else:
         return print_create_config_message()
 
 
-def get_musicbros_config() -> ConfigOptions | None:
+def get_musicbros_config() -> Optional[ConfigOptions]:
     if CONFIG_FILE.is_file():
         return get_config_options()
     else:
@@ -157,7 +158,7 @@ def add_missing_config_option(option: str, value: str) -> str:
     return value
 
 
-def validate_shared_directory(shared_directory: str) -> str | None:
+def validate_shared_directory(shared_directory: str) -> Optional[str]:
     shared_directory_exists = Path(shared_directory).is_dir()
     if shared_directory_exists:
         return None
@@ -167,7 +168,7 @@ def validate_shared_directory(shared_directory: str) -> str | None:
     )
 
 
-def validate_pickle_file(pickle_file: str) -> str | None:
+def validate_pickle_file(pickle_file: str) -> Optional[str]:
     pickle_file_exists = Path(pickle_file).is_file()
     if pickle_file_exists:
         return None
@@ -177,7 +178,7 @@ def validate_pickle_file(pickle_file: str) -> str | None:
     )
 
 
-def validate_music_player(music_player: str) -> str | None:
+def validate_music_player(music_player: str) -> Optional[str]:
     command = f'mdfind "kMDItemKind == \'Application\'" | grep "{music_player}"'
     application = run(command, shell=True, capture_output=True).stdout
     if application:
@@ -188,7 +189,7 @@ def validate_music_player(music_player: str) -> str | None:
     )
 
 
-def validate_option(value: str, option_getter: Callable) -> str | None:
+def validate_option(value: str, option_getter: Callable) -> Optional[str]:
     validators = {
         get_shared_directory: validate_shared_directory,
         get_pickle_file: validate_pickle_file,
@@ -203,7 +204,7 @@ def validate_option(value: str, option_getter: Callable) -> str | None:
 
 def get_or_add_config_option(
     config_getter: Callable, option: str, value: str
-) -> str | None:
+) -> Optional[str]:
     try:
         value = config_getter()
     except Exception:
