@@ -32,7 +32,10 @@ def import_new(
     skip_confirm_disc_overwrite: bool = Option(
         True,
         " /--confirm-overwrite-discs",
-        help='Prompt for confirmation to apply default disc and disc total values of "1 out of 1"',
+        help=(
+            'Prompt for confirmation to apply default disc and disc total values of "1'
+            ' out of 1"'
+        ),
     ),
     prompt: bool = Option(
         True,

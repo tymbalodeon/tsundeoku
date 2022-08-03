@@ -1,6 +1,6 @@
-import pickle
 from os import system, walk
 from pathlib import Path
+from pickle import load
 from re import escape, search, sub
 from typing import Match, Optional
 
@@ -36,7 +36,7 @@ IMPORTABLE_ERROR_KEYS = [
 def get_imported_albums() -> set[str]:
     pickle_file = get_pickle_file()
     with open(pickle_file, "rb") as raw_pickle:
-        unpickled = pickle.load(raw_pickle)["taghistory"]
+        unpickled = load(raw_pickle)["taghistory"]
         return {album[0].decode() for album in unpickled}
 
 
