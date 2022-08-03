@@ -234,7 +234,8 @@ def import_album(
         disc, disc_total, fixable_disc, remove_bracket_disc = check_disc(
             tracks, album_title, skip_confirm_disc_overwrite, prompt=prompt
         )
-        if not fixable_year or not fixable_disc:
+        not_fixable = not fixable_year or not fixable_disc
+        if not prompt and not_fixable:
             return "skip"
         error = "" if beet_import(album) else "escape_error"
         if error or as_is:
