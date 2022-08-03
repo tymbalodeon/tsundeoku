@@ -2,7 +2,6 @@ from configparser import ConfigParser
 from pathlib import Path
 from typing import Callable, Optional
 
-from click.exceptions import Exit
 from typer import confirm, echo, prompt
 
 from .helpers import Color, color, create_directory
@@ -165,7 +164,7 @@ def validate_config():
     config_getters_and_values = [
         (get_shared_directory, f"shared_directory = {default_shared_directory}\n"),
         (get_pickle_file, f"pickle_file = {default_pickle_file}\n"),
-        (get_ignored_directories, f"ignored_directories =\n"),
+        (get_ignored_directories, "ignored_directories =\n"),
         (get_music_player, f"music_player = {default_music_player}\n"),
     ]
     for option_getter, option_and_value in config_getters_and_values:
