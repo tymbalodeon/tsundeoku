@@ -111,7 +111,7 @@ def get_album_title(tracks: list[Path]) -> str:
     return next(iter({TinyTag.get(track).album for track in tracks}), "")
 
 
-def get_artist_and_field(tracks: list[Path]) -> tuple[str, str]:
+def get_artist_and_artist_field_name(tracks: list[Path]) -> tuple[str, str]:
     field = "albumartist"
     artist = ""
     try:
@@ -148,7 +148,9 @@ def get_bracket_number(match: Optional[Match[str]]) -> str:
     return "".join(numeric_characters)
 
 
-def check_year(tracks: list[Path], album: Optional[str]) -> tuple[Optional[str], bool]:
+def check_year(
+    tracks: list[Path], album: Optional[str], prompt: bool
+) -> tuple[Optional[str], bool]:
     fixable_year = False
     years = {TinyTag.get(track).year for track in tracks}
     year = next(iter(years), "")
@@ -159,6 +161,7 @@ def check_year(tracks: list[Path], album: Optional[str]) -> tuple[Optional[str],
         if (
             bracket_year
             and bracket_year != year
+            and prompt
             and should_update("year", bracket_year, year, album)
         ):
             year = bracket_year
@@ -167,7 +170,7 @@ def check_year(tracks: list[Path], album: Optional[str]) -> tuple[Optional[str],
 
 
 def check_disc(
-    tracks: list[Path], album: str, skip_confirm_disc_overwrite: bool
+    tracks: list[Path], album: str, skip_confirm_disc_overwrite: bool, prompt: bool
 ) -> tuple[Optional[str], Optional[str], bool, bool]:
     fixable_disc = False
     remove_bracket_disc = False
@@ -179,6 +182,7 @@ def check_disc(
     if (
         bracket_disc
         and bracket_disc != disc
+        and prompt
         and should_update("disc", bracket_disc, disc, album)
     ):
         disc = bracket_disc
@@ -188,7 +192,8 @@ def check_disc(
         disc_total = next(iter(disc_totals), "")
         if not disc_total and (
             skip_confirm_disc_overwrite
-            or confirm(
+            or prompt
+            and confirm(
                 f'Apply default disc and disc total value of "{color("1", bold=True)}"'
                 f" to album with missing disc and disc total: {style_album(album)}?"
             )
@@ -219,40 +224,40 @@ def import_album(
     import_all: bool,
     as_is: bool,
     skip_confirm_disc_overwrite: bool,
+    prompt: bool,
 ) -> str:
     track_count = len(tracks)
     track_total, track_message = get_track_total(tracks)
     if import_all or track_count == track_total:
+        album_title = get_album_title(tracks)
+        year, fixable_year = check_year(tracks, album_title, prompt=prompt)
+        disc, disc_total, fixable_disc, remove_bracket_disc = check_disc(
+            tracks, album_title, skip_confirm_disc_overwrite, prompt=prompt
+        )
+        if not fixable_year or not fixable_disc:
+            return "skip"
         error = "" if beet_import(album) else "escape_error"
-        if not as_is and not error:
-            album_title = get_album_title(tracks)
-            if not album_title:
-                album_title = ""
-            year, fixable_year = check_year(tracks, album_title)
-            artist, field = get_artist_and_field(tracks)
-            query = get_modify_tracks_query(artist, field, escape(album_title))
-            if fixable_year and year and album_title:
-                modification = get_modify_tracks_modification("year", year)
+        if error or as_is:
+            return error
+        artist, field = get_artist_and_artist_field_name(tracks)
+        query = get_modify_tracks_query(artist, field, escape(album_title))
+        if fixable_year and year and album_title:
+            modification = get_modify_tracks_modification("year", year)
+            modify_tracks(query + modification, True, False)
+        if fixable_disc and album_title:
+            if disc:
+                modification = get_modify_tracks_modification("disc", disc)
+                modify_tracks(query + modification, False, False)
+            if disc_total:
+                modification = get_modify_tracks_modification("disctotal", disc_total)
                 modify_tracks(query + modification, True, False)
-            disc, disc_total, fixable_disc, remove_bracket_disc = check_disc(
-                tracks, album_title, skip_confirm_disc_overwrite
-            )
-            if fixable_disc and album_title:
-                if disc:
-                    modification = get_modify_tracks_modification("disc", disc)
-                    modify_tracks(query + modification, False, False)
-                if disc_total:
-                    modification = get_modify_tracks_modification(
-                        "disctotal", disc_total
-                    )
-                    modify_tracks(query + modification, True, False)
-            if remove_bracket_disc:
-                discless_album_title = sub(BRACKET_DISC_REGEX, "", album_title)
-                query = [
-                    f"album::^{escape(album_title)}$",
-                    f"album={discless_album_title}",
-                ]
-                modify_tracks(query, True, False)
+        if remove_bracket_disc:
+            discless_album_title = sub(BRACKET_DISC_REGEX, "", album_title)
+            query = [
+                f"album::^{escape(album_title)}$",
+                f"album={discless_album_title}",
+            ]
+            modify_tracks(query, True, False)
     elif track_message:
         error = track_message
     elif isinstance(track_total, int) and track_count > track_total:
@@ -267,11 +272,13 @@ def import_albums(
     as_is: bool,
     skip_confirm_disc_overwrite: bool,
     import_all=False,
+    prompt=True,
 ):
     errors: dict[str, list] = {key: list() for key in ERRORS.keys()}
     imports = False
     wav_imports = 0
     skipped_count = 0
+    prompt_skipped_count = 0
     importable_error_albums = list()
     for album in albums:
         if not import_all:
@@ -284,12 +291,20 @@ def import_albums(
         wav_tracks = get_wav_tracks(album)
         if tracks:
             error = import_album(
-                album, tracks, import_all, as_is, skip_confirm_disc_overwrite
+                album,
+                tracks,
+                import_all,
+                as_is,
+                skip_confirm_disc_overwrite,
+                prompt=prompt,
             )
             if error:
-                errors[error].append(album)
-                if error in IMPORTABLE_ERROR_KEYS:
-                    importable_error_albums.append(album)
+                if prompt:
+                    errors[error].append(album)
+                    if error in IMPORTABLE_ERROR_KEYS:
+                        importable_error_albums.append(album)
+                else:
+                    prompt_skipped_count += 1
             else:
                 imports = True
         if wav_tracks:
@@ -297,18 +312,24 @@ def import_albums(
                 import_wav_files(album)
                 history_add([album.encode()])
                 wav_imports += 1
-            else:
+            elif prompt:
                 errors["wav_files"].append(album)
                 importable_error_albums.append(album)
-        if not tracks and not wav_tracks:
+            else:
+                prompt_skipped_count += 1
+        if not tracks and not wav_tracks and prompt:
             errors["no_tracks"].append(album)
+        else:
+            prompt_skipped_count += 1
     if wav_imports:
         echo(
             f"Imported {wav_imports} {'album' if wav_imports == 1 else 'albums'} in WAV"
             " format."
         )
     if not import_all:
-        echo(f"{skipped_count} albums skipped.")
+        echo(f"Skipped {skipped_count} previously imported albums.")
+    if not prompt:
+        echo(f"Skipped {prompt_skipped_count} albums requiring prompt.")
     for key, error_albums in errors.items():
         if error_albums:
             album_string = "Albums" if len(error_albums) > 1 else "Album"

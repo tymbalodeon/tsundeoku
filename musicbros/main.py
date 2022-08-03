@@ -32,7 +32,12 @@ def import_new(
     skip_confirm_disc_overwrite: bool = Option(
         True,
         " /--confirm-overwrite-discs",
-        help='Confirm applying default disc and disc total values of "1 out of 1"',
+        help='Prompt for confirmation to apply default disc and disc total values of "1 out of 1"',
+    ),
+    prompt: bool = Option(
+        True,
+        " /--skip-albums-requiring-prompt",
+        help="Skip importing albums requiring prompt for user decision",
     ),
     albums: Optional[list[str]] = Argument(None, hidden=False),
 ):
@@ -47,6 +52,7 @@ def import_new(
         as_is,
         skip_confirm_disc_overwrite,
         import_all=not first_time,
+        prompt=prompt,
     )
     update_metadata_if_as_is(imports, as_is)
     if (
