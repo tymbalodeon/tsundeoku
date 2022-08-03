@@ -31,4 +31,4 @@ in order to get started and generate the pickle file.
 - To update metadata for all previously imported tracks: `musicbros update-metadata`
 - To create, update, and view your config file storing the location of your
   shared folder and beets pickle file: `musicbros config` (or `musicbros config --update`)
-- For information about each command: `musicbros --help` or `musicbros <command> --help`
+- For information: `musicbros --help` or `musicbros <command> --help`
