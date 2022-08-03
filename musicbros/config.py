@@ -6,6 +6,7 @@ from typer import confirm, echo, prompt
 
 from .helpers import Color, color, create_directory
 
+ConfigOptions = list[tuple[str, str]]
 CONFIG_DIRECTORY = create_directory(Path.home() / ".config" / "musicbros")
 CONFIG_FILE = CONFIG_DIRECTORY / "musicbros.ini"
 CONFIG_SECTION = "musicbros"
@@ -14,7 +15,10 @@ PICKLE_FILE_OPTION_NAME = "pickle_file"
 IGNORED_DIRECTORIES_OPTION_NAME = "ignored_directories"
 MUSIC_PLAYER_OPTION_NAME = "music_player"
 
-ConfigOptions = list[tuple[str, str]]
+
+if not CONFIG_FILE.is_file():
+    with open(CONFIG_FILE, "w") as config_file:
+        config_file.write("[musicbros]\n")
 
 
 def create_config_directory():
