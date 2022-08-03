@@ -1,6 +1,6 @@
 from typing import Optional
 
-from typer import Argument, Exit, Option, Typer, confirm, echo
+from typer import Argument, Context, Exit, Option, Typer, confirm, echo
 
 from musicbros import __version__
 
@@ -39,7 +39,7 @@ def import_new(
     """Copy new adds from your shared folder to your "beets" library"""
     echo("Importing newly added albums...")
     first_time = False
-    if not isinstance(albums, list):
+    if not albums:
         first_time = True
         albums = get_album_directories()
     imports, errors, importable_error_albums = import_albums(
@@ -96,6 +96,7 @@ def display_version(version: bool):
 
 @app.callback(invoke_without_command=True)
 def version(
+    context: Context,
     version: bool = Option(
         False,
         "--version",
@@ -107,4 +108,5 @@ def version(
     validate_config()
     if version:
         return
-    import_new(as_is=False, skip_confirm_disc_overwrite=True)
+    if not context.invoked_subcommand:
+        import_new(as_is=False, skip_confirm_disc_overwrite=True, albums=None)
