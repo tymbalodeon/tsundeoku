@@ -1,5 +1,6 @@
 from configparser import ConfigParser
 from pathlib import Path
+from subprocess import Popen, run
 from typing import Callable, Optional
 
 from click.exceptions import Exit
@@ -183,7 +184,15 @@ def validate_pickle_file(pickle_file: str):
 
 
 def validate_music_player(music_player: str):
-    pass
+    command = f'mdfind "kMDItemKind == \'Application\'" | grep "{music_player}"'
+    application = run(command, shell=True, capture_output=True).stdout
+    if not application:
+        message = (
+            "WARNING: Music player does not exist. Please install it or"
+            f" update your config with `{CONFIG_SECTION} config --update`."
+        )
+        echo(color(message))
+        raise InvalidOption
 
 
 def validate_option(value: str, option_getter: Callable):
