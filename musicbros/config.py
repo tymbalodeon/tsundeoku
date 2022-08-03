@@ -1,7 +1,8 @@
 from configparser import ConfigParser
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
+from click.exceptions import Exit
 from typer import confirm, echo, prompt
 
 from .helpers import Color, color, create_directory
@@ -144,5 +145,28 @@ def get_music_player() -> str:
     return get_config_value(MUSIC_PLAYER_OPTION_NAME)
 
 
+def add_missing_config_option(option_and_value: str):
+    with open(CONFIG_FILE, "a") as config_file:
+        config_file.write(option_and_value)
+
+
+def get_or_add_config_option(config_getter: Callable, option_and_value: str):
+    try:
+        config_getter()
+    except Exception:
+        add_missing_config_option(option_and_value)
+
+
 def validate_config():
-    print("VALIDATING...")
+    home = Path.home()
+    default_shared_directory = home / "Dropbox"
+    default_pickle_file = home / ".config/beets/state.pickle"
+    default_music_player = "Swinsian"
+    config_getters_and_values = [
+        (get_shared_directory, f"shared_directory = {default_shared_directory}\n"),
+        (get_pickle_file, f"pickle_file = {default_pickle_file}\n"),
+        (get_ignored_directories, f"ignored_directories =\n"),
+        (get_music_player, f"music_player = {default_music_player}\n"),
+    ]
+    for option_getter, option_and_value in config_getters_and_values:
+        get_or_add_config_option(option_getter, option_and_value)
