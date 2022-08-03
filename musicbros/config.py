@@ -48,7 +48,7 @@ def get_new_value(option: str, option_display: str, replacing: bool) -> str:
 def get_new_config_vlue(option: str, first_time: bool) -> Optional[str]:
     clear = False
     replacing = True
-    list_option = option != CONFIG_OPTIONS[1]
+    list_option = option != PICKLE_FILE_OPTION_NAME
     option_display = option.replace("_", " ").upper()
     confirm_message = f"Would you like to update the {option_display} value?"
     updating = True if first_time else confirm(confirm_message)
@@ -65,8 +65,14 @@ def get_new_config_vlue(option: str, first_time: bool) -> Optional[str]:
 
 def write_config_options(first_time=False) -> ConfigOptions:
     create_config_directory()
+    config_options = [
+        SHARED_DIRECTORY_OPTION_NAME,
+        PICKLE_FILE_OPTION_NAME,
+        IGNORED_DIRECTORIES_OPTION_NAME,
+        MUSIC_PLAYER_OPTION_NAME,
+    ]
     new_values = [
-        (option, get_new_config_vlue(option, first_time)) for option in CONFIG_OPTIONS
+        (option, get_new_config_vlue(option, first_time)) for option in config_options
     ]
     config = ConfigParser()
     if first_time:
@@ -136,3 +142,7 @@ def get_ignored_directories() -> list[str]:
 
 def get_music_player() -> str:
     return get_config_value(MUSIC_PLAYER_OPTION_NAME)
+
+
+def validate_config():
+    print("VALIDATING...")
