@@ -1,10 +1,10 @@
 from typing import Optional
 
-from typer import Argument, Context, Exit, Option, Typer, confirm, echo
+from typer import Argument, Exit, Option, Typer, confirm, echo
 
 from musicbros import __version__
 
-from .config import update_or_print_config
+from .config import print_config_values, update_or_print_config
 from .import_new import get_album_directories, import_albums
 from .update_metadata import update_metadata_if_as_is, update_metadata_main
 
@@ -96,7 +96,6 @@ def display_version(version: bool):
 
 @app.callback(invoke_without_command=True)
 def version(
-    context: Context,
     version: bool = Option(
         False,
         "--version",
@@ -105,7 +104,7 @@ def version(
         help="Display version number",
     ),
 ):
+    print_config_values()
     if version:
         return
-    elif not context.invoked_subcommand:
-        import_new(as_is=False, skip_confirm_disc_overwrite=True)
+    import_new(as_is=False, skip_confirm_disc_overwrite=True)
