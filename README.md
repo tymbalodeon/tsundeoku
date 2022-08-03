@@ -11,7 +11,8 @@ the beets library.
 Metadata can also be changed to suit the user's preferences. For example, there
 are options to strip bracketed years (in the format: "[YYYY]") from album
 fields, to expand abbreviations (such as "Rec.s" to "Recordings"), and to strip
-bracketed instrument indications (in the format: "[solo \<instrument\>]").
+bracketed instrument indications (in the format: "[solo \<instrument\>]"). Run
+`musicbros update-metadata --help` to see all update rules.
 
 # Installation
 
