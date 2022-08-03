@@ -318,10 +318,11 @@ def import_albums(
                 importable_error_albums.append(album)
             else:
                 prompt_skipped_count += 1
-        if not tracks and not wav_tracks and prompt:
-            errors["no_tracks"].append(album)
-        else:
-            prompt_skipped_count += 1
+        if not tracks and not wav_tracks:
+            if prompt:
+                errors["no_tracks"].append(album)
+            else:
+                prompt_skipped_count += 1
     if wav_imports:
         echo(
             f"Imported {wav_imports} {'album' if wav_imports == 1 else 'albums'} in WAV"
