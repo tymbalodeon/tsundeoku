@@ -1,8 +1,7 @@
 from os import system, walk
 from pathlib import Path
 from pickle import load
-from re import escape, search, sub
-from typing import Match, Optional
+from re import Match, escape, search, sub
 
 from beets.importer import history_add
 from tinytag import TinyTag
@@ -149,8 +148,8 @@ def get_bracket_number(match: Match[str] | None) -> str:
 
 
 def check_year(
-    tracks: list[Path], album: Optional[str], prompt: bool
-) -> tuple[Optional[str], bool]:
+    tracks: list[Path], album: str | None, prompt: bool
+) -> tuple[str | None, bool]:
     fixable_year = False
     years = {TinyTag.get(track).year for track in tracks}
     year = next(iter(years), "")
@@ -171,7 +170,7 @@ def check_year(
 
 def check_disc(
     tracks: list[Path], album: str, skip_confirm_disc_overwrite: bool, prompt: bool
-) -> tuple[Optional[str], Optional[str], bool, bool]:
+) -> tuple[str | None, str | None, bool, bool]:
     fixable_disc = False
     remove_bracket_disc = False
     discs = {TinyTag.get(track).disc for track in tracks}
@@ -280,7 +279,7 @@ def import_albums(
     wav_imports = 0
     skipped_count = 0
     prompt_skipped_count = 0
-    importable_error_albums = list()
+    importable_error_albums = []
     for album in albums:
         if not import_all:
             if is_ignored_directory(album):
