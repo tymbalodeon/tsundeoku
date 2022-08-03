@@ -166,7 +166,7 @@ def validate_shared_directory(shared_directory: str) -> Optional[str]:
     if shared_directory_exists:
         return None
     return (
-        "WARNING: Shared directory does not exist. Please create the directory or"
+        "ERROR: Shared directory does not exist. Please create the directory or"
         f" update your config with `{CONFIG_SECTION} config --update`."
     )
 
@@ -176,7 +176,7 @@ def validate_pickle_file(pickle_file: str) -> Optional[str]:
     if pickle_file_exists:
         return None
     return (
-        "WARNING: Pickle file does not exist. Please initialize your beets library"
+        "ERROR: Pickle file does not exist. Please initialize your beets library"
         " following the beets documentation."
     )
 
@@ -187,7 +187,7 @@ def validate_music_player(music_player: str) -> Optional[str]:
     if application:
         return None
     return (
-        "WARNING: Music player does not exist. Please install it or"
+        "ERROR: Music player does not exist. Please install it or"
         f" update your config with `{CONFIG_SECTION} config --update`."
     )
 
@@ -221,12 +221,12 @@ def validate_config():
     default_shared_directory = home / "Dropbox"
     default_pickle_file = home / ".config/beets/state.pickle"
     default_music_player = "Swinsian"
-    config_getters_and_values = [
+    config_getters_and_values = (
         (get_shared_directory, f"shared_directory = {default_shared_directory}\n"),
         (get_pickle_file, f"pickle_file = {default_pickle_file}\n"),
         (get_ignored_directories, "ignored_directories =\n"),
         (get_music_player, f"music_player = {default_music_player}\n"),
-    ]
+    )
     error_messages = list()
     for option_getter, option_and_value in config_getters_and_values:
         error_message = get_or_add_config_option(option_getter, option_and_value)
