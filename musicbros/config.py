@@ -2,6 +2,7 @@ from configparser import ConfigParser
 from pathlib import Path
 from typing import Callable, Optional
 
+from click.exceptions import Exit
 from typer import confirm, echo, prompt
 
 from .helpers import Color, color, create_directory
@@ -153,9 +154,56 @@ def add_missing_config_option(option_and_value: str):
         config_file.write(option_and_value)
 
 
+class InvalidOption(Exception):
+    def __init__(self):
+        default_message = "Invalid option"
+        super().__init__(default_message)
+
+
+def validate_shared_directory(shared_directory: str):
+    shared_directory_exists = Path(shared_directory).is_dir()
+    if not shared_directory_exists:
+        message = (
+            "WARNING: Shared directory does not exist. Please create the directory or"
+            f" update your config with `{CONFIG_SECTION} config --update`."
+        )
+        echo(color(message))
+        raise InvalidOption
+
+
+def validate_pickle_file(pickle_file: str):
+    pickle_file_exists = Path(pickle_file).is_file()
+    if not pickle_file_exists:
+        message = (
+            "WARNING: Pickle file does not exist. Please initialize your beets library"
+            " following the beets documentation."
+        )
+        echo(color(message))
+        raise InvalidOption
+
+
+def validate_music_player(music_player: str):
+    pass
+
+
+def validate_option(value: str, option_getter: Callable):
+    validators = {
+        get_shared_directory: validate_shared_directory,
+        get_pickle_file: validate_pickle_file,
+        get_ignored_directories: None,
+        get_music_player: validate_music_player,
+    }
+    validator = validators.get(option_getter)
+    if validator:
+        validator(value)
+
+
 def get_or_add_config_option(config_getter: Callable, option_and_value: str):
     try:
-        config_getter()
+        value = config_getter()
+        validate_option(value, config_getter)
+    except InvalidOption:
+        raise Exit()
     except Exception:
         add_missing_config_option(option_and_value)
 
