@@ -8,7 +8,12 @@ from beets.importer import history_add
 from tinytag import TinyTag
 from typer import confirm, echo
 
-from .config import IGNORED_DIRECTORIES, MUSIC_PLAYER, PICKLE_FILE, SHARED_DIRECTORY
+from .config import (
+    get_ignored_directories,
+    get_music_player,
+    get_pickle_file,
+    get_shared_directory,
+)
 from .helpers import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, Color, color, modify_tracks
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.Mp3", "*.m4a", "*.flac", "*.aif*")
@@ -29,13 +34,15 @@ IMPORTABLE_ERROR_KEYS = [
 
 
 def get_imported_albums() -> set[str]:
-    with open(PICKLE_FILE, "rb") as raw_pickle:
+    pickle_file = get_pickle_file()
+    with open(pickle_file, "rb") as raw_pickle:
         unpickled = pickle.load(raw_pickle)["taghistory"]
         return {album[0].decode() for album in unpickled}
 
 
 def get_album_directories() -> list[str]:
-    return [root for root, dirs, files in walk(SHARED_DIRECTORY) if files and not dirs]
+    shared_directory = get_shared_directory()
+    return [root for root, dirs, files in walk(shared_directory) if files and not dirs]
 
 
 def get_tracks(album: str) -> list[Path]:
@@ -63,7 +70,7 @@ def get_track_total(tracks: list[Path]) -> tuple[Optional[int], Optional[str]]:
 
 
 def is_ignored_directory(album: str) -> bool:
-    for directory in IGNORED_DIRECTORIES:
+    for directory in get_ignored_directories():
         if directory in album:
             return True
     return False
@@ -96,7 +103,8 @@ def beet_import(album: str) -> bool:
 
 
 def import_wav_files(album: str):
-    system(f"open -a '{MUSIC_PLAYER}' '{album}'")
+    music_player = get_music_player()
+    system(f"open -a '{music_player}' '{album}'")
 
 
 def get_album_title(tracks: list[Path]) -> str:

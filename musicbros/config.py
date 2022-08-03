@@ -39,13 +39,6 @@ def get_config_options() -> ConfigOptions:
     ]
 
 
-def get_ignored_directories() -> list[str]:
-    config = ConfigParser()
-    config.read(CONFIG_FILE)
-    ignored_directories = get_config_option(CONFIG_OPTIONS[2])
-    return [directory for directory in ignored_directories.split(",")]
-
-
 def get_new_value(option: str, option_display: str, replacing: bool) -> str:
     prompt_message = f"Please provide your {option_display} value"
     if replacing:
@@ -124,16 +117,24 @@ def update_or_print_config(update: bool):
     print_config_values()
 
 
+def get_config_value(option_name: str) -> str:
+    return get_config_option(option_name)
+
+
+def get_shared_directory() -> str:
+    return get_config_value(CONFIG_OPTIONS[0])
+
+
 def get_pickle_file() -> str:
-    pickle_file_option_name = CONFIG_OPTIONS[1]
-    try:
-        return get_config_option(pickle_file_option_name)
-    except Exception:
-        update_or_print_config(False)
-        return get_config_option(pickle_file_option_name)
+    return get_config_value(CONFIG_OPTIONS[1])
 
 
-PICKLE_FILE = get_pickle_file()
-SHARED_DIRECTORY = get_config_option(CONFIG_OPTIONS[0])
-MUSIC_PLAYER = get_config_option(CONFIG_OPTIONS[3])
-IGNORED_DIRECTORIES = get_ignored_directories()
+def get_ignored_directories() -> list[str]:
+    config = ConfigParser()
+    config.read(CONFIG_FILE)
+    ignored_directories = get_config_option(CONFIG_OPTIONS[2])
+    return [directory for directory in ignored_directories.split(",")]
+
+
+def get_music_player() -> str:
+    return get_config_value(CONFIG_OPTIONS[3])
