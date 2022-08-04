@@ -9,10 +9,7 @@ from .import_new import get_album_directories, import_albums
 from .update_metadata import update_metadata_if_as_is, update_metadata_main
 
 app = Typer(
-    help=(
-        f"musicbros ({__version__}) -- A CLI for managing imports from a shared folder"
-        ' to a "beets" library'
-    ),
+    help=(f"CLI for managing imports from a shared folder" ' to a "beets" library'),
     context_settings={"help_option_names": ["-h", "--help"]},
     add_completion=False,
 )
