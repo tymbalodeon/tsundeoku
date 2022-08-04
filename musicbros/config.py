@@ -7,7 +7,7 @@ from typing import Optional
 from rich import print
 from rich.console import Console
 from rich.syntax import Syntax
-from typer import Exit, confirm, echo, prompt
+from typer import confirm, echo, prompt
 
 from .helpers import color
 
@@ -209,7 +209,7 @@ def get_or_add_config_option(
     return validate_option(value, config_getter)
 
 
-def validate_config():
+def validate_config() -> bool:
     home = Path.home()
     default_shared_directory = str(home / "Dropbox")
     default_pickle_file = str(home / ".config/beets/state.pickle")
@@ -225,7 +225,6 @@ def validate_config():
         error_message = get_or_add_config_option(option_getter, option, value)
         if error_message:
             error_messages.append(color(error_message))
-    if error_messages:
-        for message in error_messages:
-            print(message)
-        raise Exit()
+    for message in error_messages:
+        print(message)
+    return not error_messages

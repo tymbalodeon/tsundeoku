@@ -125,8 +125,13 @@ def version(
         help="Display version number",
     ),
 ):
-    validate_config()
     if version:
         return
-    if not context.invoked_subcommand:
-        import_new(as_is=False, skip_confirm_disc_overwrite=True, albums=None)
+    is_valid = validate_config()
+    subcommand = context.invoked_subcommand
+    if is_valid:
+        if not subcommand:
+            import_new(as_is=False, skip_confirm_disc_overwrite=True, albums=None)
+        return
+    if subcommand in {"import-new", "update-metadata"}:
+        raise Exit()
