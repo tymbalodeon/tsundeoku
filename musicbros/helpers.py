@@ -1,5 +1,4 @@
 from enum import Enum
-from pathlib import Path
 
 from beets import config
 from beets.ui import _configure, _open_library, decargs
@@ -7,15 +6,6 @@ from beets.ui.commands import modify_items, modify_parse_args
 from typer import colors, echo, style
 
 LIBRARY = _open_library(_configure({"verbose": 0, "replace": dict(), "timeout": 5}))
-BRACKET_YEAR_REGEX = r"\s\[\d{4}\]"
-BRACKET_DISC_REGEX = r"\s\[(d|D)is(c|k)\s\d+\]"
-BRACKET_SOLO_INSTRUMENT = r"\s\[solo\s[a-z]+\]"
-
-
-def create_directory(new_directory: Path, parents=True) -> Path:
-    if not new_directory.exists():
-        Path.mkdir(new_directory, parents=parents)
-    return new_directory
 
 
 def modify_tracks(args: list, album: bool, confirm: bool, library=LIBRARY):
@@ -24,13 +14,18 @@ def modify_tracks(args: list, album: bool, confirm: bool, library=LIBRARY):
         echo("ERROR: No modifications specified.")
         return
     try:
+        config_import = config["import"]
+        write = config_import["write"]
+        move = config_import["move"]
+        copy = config_import["copy"]
+        move = move.get(bool) or copy.get(bool)
         modify_items(
             library,
             modifications,
             deletions,
             query,
-            config["import"]["write"].get(bool),
-            config["import"]["move"].get(bool) or config["import"]["copy"].get(bool),
+            write.get(bool),
+            move,
             album,
             confirm,
         )

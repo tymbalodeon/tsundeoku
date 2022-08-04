@@ -6,10 +6,10 @@ from typing import Optional
 
 from typer import Exit, confirm, echo, prompt
 
-from .helpers import Color, color, create_directory
+from .helpers import Color, color
 
 ConfigOptions = list[tuple[str, str]]
-CONFIG_DIRECTORY = create_directory(Path.home() / ".config" / "musicbros")
+CONFIG_DIRECTORY = Path.home() / ".config" / "musicbros"
 CONFIG_FILE = CONFIG_DIRECTORY / "musicbros.ini"
 CONFIG_SECTION_NAME = "musicbros"
 SHARED_DIRECTORY_OPTION_NAME = "shared_directory"
@@ -48,8 +48,7 @@ def get_new_value(option: str, option_display: str, replacing: bool) -> str:
     prompt_message = f"Please provide your {option_display} value"
     if replacing:
         return prompt(prompt_message)
-    else:
-        return f"{get_config_option(option)},{prompt(prompt_message)}"
+    return f"{get_config_option(option)},{prompt(prompt_message)}"
 
 
 def get_new_config_vlue(option: str, first_time: bool) -> Optional[str]:
@@ -66,8 +65,7 @@ def get_new_config_vlue(option: str, first_time: bool) -> Optional[str]:
     empty_value = "" if clear else None
     if updating:
         return get_new_value(option, option_display, replacing)
-    else:
-        return empty_value
+    return empty_value
 
 
 def write_config_options(first_time=False) -> ConfigOptions:
@@ -102,15 +100,13 @@ def print_create_config_message():
 def confirm_create_config() -> Optional[ConfigOptions]:
     if confirm("Config file not found. Would you like to create one now?"):
         return write_config_options(first_time=True)
-    else:
-        return print_create_config_message()
+    return print_create_config_message()
 
 
 def get_musicbros_config() -> Optional[ConfigOptions]:
-    if CONFIG_FILE.is_file():
-        return get_config_options()
-    else:
+    if not CONFIG_FILE.is_file():
         return confirm_create_config()
+    return get_config_options()
 
 
 def print_config_values():
@@ -140,7 +136,6 @@ def get_pickle_file() -> str:
 
 
 def get_ignored_directories() -> list[str]:
-    config = get_config()
     ignored_directories = get_config_option(IGNORED_DIRECTORIES_OPTION_NAME)
     return [directory for directory in ignored_directories.split(",")]
 
@@ -158,33 +153,33 @@ def add_missing_config_option(option: str, value: str) -> str:
 
 def validate_shared_directory(shared_directory: str) -> Optional[str]:
     shared_directory_exists = Path(shared_directory).is_dir()
-    if shared_directory_exists:
-        return None
-    return (
-        "ERROR: Shared directory does not exist. Please create the directory or"
-        f" update your config with `{CONFIG_SECTION_NAME} config --update`."
-    )
+    if not shared_directory_exists:
+        return (
+            "ERROR: Shared directory does not exist. Please create the directory or"
+            f" update your config with `{CONFIG_SECTION_NAME} config --update`."
+        )
+    return None
 
 
 def validate_pickle_file(pickle_file: str) -> Optional[str]:
     pickle_file_exists = Path(pickle_file).is_file()
-    if pickle_file_exists:
-        return None
-    return (
-        "ERROR: Pickle file does not exist. Please initialize your beets library"
-        " following the beets documentation."
-    )
+    if not pickle_file_exists:
+        return (
+            "ERROR: Pickle file does not exist. Please initialize your beets library"
+            " following the beets documentation."
+        )
+    return None
 
 
 def validate_music_player(music_player: str) -> Optional[str]:
     command = f'mdfind "kMDItemKind == \'Application\'" | grep "{music_player}"'
     application = run(command, shell=True, capture_output=True).stdout
-    if application:
-        return None
-    return (
-        "ERROR: Music player does not exist. Please install it or"
-        f" update your config with `{CONFIG_SECTION_NAME} config --update`."
-    )
+    if not application:
+        return (
+            "ERROR: Music player does not exist. Please install it or"
+            f" update your config with `{CONFIG_SECTION_NAME} config --update`."
+        )
+    return None
 
 
 def validate_option(value: str, option_getter: Callable) -> Optional[str]:
