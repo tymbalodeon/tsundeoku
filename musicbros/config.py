@@ -4,43 +4,43 @@ from pathlib import Path
 from subprocess import run
 from typing import Optional
 
-from click.exceptions import Exit
-from typer import confirm, echo, prompt
+from typer import Exit, confirm, echo, prompt
 
 from .helpers import Color, color, create_directory
 
 ConfigOptions = list[tuple[str, str]]
 CONFIG_DIRECTORY = create_directory(Path.home() / ".config" / "musicbros")
 CONFIG_FILE = CONFIG_DIRECTORY / "musicbros.ini"
-CONFIG_SECTION = "musicbros"
+CONFIG_SECTION_NAME = "musicbros"
 SHARED_DIRECTORY_OPTION_NAME = "shared_directory"
 PICKLE_FILE_OPTION_NAME = "pickle_file"
 IGNORED_DIRECTORIES_OPTION_NAME = "ignored_directories"
 MUSIC_PLAYER_OPTION_NAME = "music_player"
 
 
+if not CONFIG_DIRECTORY.exists():
+    Path.mkdir(CONFIG_DIRECTORY, parents=True)
 if not CONFIG_FILE.is_file():
     with open(CONFIG_FILE, "w") as config_file:
         config_file.write("[musicbros]\n")
 
 
-def create_config_directory():
-    if not CONFIG_DIRECTORY.exists():
-        Path.mkdir(CONFIG_DIRECTORY, parents=True)
+def get_config() -> ConfigParser:
+    config = ConfigParser()
+    config.read(CONFIG_FILE)
+    return config
 
 
 def get_config_option(option: str) -> str:
-    config = ConfigParser()
-    config.read(CONFIG_FILE)
-    return config.get(CONFIG_SECTION, option)
+    config = get_config()
+    return config.get(CONFIG_SECTION_NAME, option)
 
 
 def get_config_options() -> ConfigOptions:
-    config = ConfigParser()
-    config.read(CONFIG_FILE)
+    config = get_config()
     return [
-        (option, config.get(CONFIG_SECTION, option))
-        for option in config.options(CONFIG_SECTION)
+        (option, config.get(CONFIG_SECTION_NAME, option))
+        for option in config.options(CONFIG_SECTION_NAME)
     ]
 
 
@@ -71,7 +71,6 @@ def get_new_config_vlue(option: str, first_time: bool) -> Optional[str]:
 
 
 def write_config_options(first_time=False) -> ConfigOptions:
-    create_config_directory()
     config_options = [
         SHARED_DIRECTORY_OPTION_NAME,
         PICKLE_FILE_OPTION_NAME,
@@ -81,14 +80,14 @@ def write_config_options(first_time=False) -> ConfigOptions:
     new_values = [
         (option, get_new_config_vlue(option, first_time)) for option in config_options
     ]
-    config = ConfigParser()
     if first_time:
-        config[CONFIG_SECTION] = {}
+        config = ConfigParser()
+        config[CONFIG_SECTION_NAME] = {}
     else:
-        config.read(CONFIG_FILE)
+        config = get_config()
     for option, value in new_values:
         if value is not None:
-            config[CONFIG_SECTION][option] = value
+            config[CONFIG_SECTION_NAME][option] = value
     with open(CONFIG_FILE, "w") as config_file:
         config.write(config_file)
     return get_config_options()
@@ -141,8 +140,7 @@ def get_pickle_file() -> str:
 
 
 def get_ignored_directories() -> list[str]:
-    config = ConfigParser()
-    config.read(CONFIG_FILE)
+    config = get_config()
     ignored_directories = get_config_option(IGNORED_DIRECTORIES_OPTION_NAME)
     return [directory for directory in ignored_directories.split(",")]
 
@@ -164,7 +162,7 @@ def validate_shared_directory(shared_directory: str) -> Optional[str]:
         return None
     return (
         "ERROR: Shared directory does not exist. Please create the directory or"
-        f" update your config with `{CONFIG_SECTION} config --update`."
+        f" update your config with `{CONFIG_SECTION_NAME} config --update`."
     )
 
 
@@ -185,7 +183,7 @@ def validate_music_player(music_player: str) -> Optional[str]:
         return None
     return (
         "ERROR: Music player does not exist. Please install it or"
-        f" update your config with `{CONFIG_SECTION} config --update`."
+        f" update your config with `{CONFIG_SECTION_NAME} config --update`."
     )
 
 
