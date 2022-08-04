@@ -4,9 +4,12 @@ from pathlib import Path
 from subprocess import run
 from typing import Optional
 
+from rich import print
+from rich.console import Console
+from rich.syntax import Syntax
 from typer import Exit, confirm, echo, prompt
 
-from .helpers import Color, color
+from .helpers import color
 
 ConfigOptions = list[tuple[str, str]]
 CONFIG_DIRECTORY = Path.home() / ".config" / "musicbros"
@@ -22,7 +25,7 @@ if not CONFIG_DIRECTORY.exists():
     Path.mkdir(CONFIG_DIRECTORY, parents=True)
 if not CONFIG_FILE.is_file():
     with open(CONFIG_FILE, "w") as config_file:
-        config_file.write("[musicbros]\n")
+        config_file.write(f"[{CONFIG_SECTION_NAME}]\n")
 
 
 def get_config() -> ConfigParser:
@@ -112,9 +115,10 @@ def get_musicbros_config() -> Optional[ConfigOptions]:
 def print_config_values():
     config = get_musicbros_config()
     if config:
-        echo(f"[{color('musicbros')}]")
-        for option, value in config:
-            echo(f"{color(option, Color.CYAN)} = {value}")
+        console = Console()
+        with open(CONFIG_FILE) as config_file:
+            syntax = Syntax(config_file.read(), "yaml")
+        console.print(syntax)
 
 
 def update_or_print_config(update: bool):
@@ -220,8 +224,8 @@ def validate_config():
     for option_getter, option, value in config_getters_and_values:
         error_message = get_or_add_config_option(option_getter, option, value)
         if error_message:
-            error_messages.append(error_message)
+            error_messages.append(color(error_message))
     if error_messages:
         for message in error_messages:
-            echo(color(message))
+            print(message)
         raise Exit()
