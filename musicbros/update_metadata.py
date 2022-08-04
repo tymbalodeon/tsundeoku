@@ -3,7 +3,7 @@ from re import escape, sub
 
 from typer import echo
 
-from .helpers import LIBRARY, modify_tracks
+from .library import LIBRARY, modify_tracks
 from .regex import BRACKET_YEAR_REGEX
 
 

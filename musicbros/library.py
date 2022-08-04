@@ -1,9 +1,7 @@
-from enum import Enum
-
 from beets import config
 from beets.ui import _configure, _open_library, decargs
 from beets.ui.commands import modify_items, modify_parse_args
-from typer import colors, echo
+from rich import print
 
 library_config = {"verbose": 0, "replace": {}, "timeout": 5}
 LIBRARY = _open_library(_configure(library_config))
@@ -12,7 +10,7 @@ LIBRARY = _open_library(_configure(library_config))
 def modify_tracks(args: list, album: bool, confirm: bool, library=LIBRARY):
     query, modifications, deletions = modify_parse_args(decargs(args))
     if not modifications and not deletions:
-        echo("ERROR: No modifications specified.")
+        print("ERROR: No modifications specified.")
         return
     try:
         config_import = config["import"]
@@ -31,22 +29,4 @@ def modify_tracks(args: list, album: bool, confirm: bool, library=LIBRARY):
             confirm,
         )
     except Exception:
-        echo("No matching albums found.")
-
-
-class Color(Enum):
-    BLUE = colors.BLUE
-    CYAN = colors.CYAN
-    GREEN = colors.GREEN
-    MAGENTA = colors.MAGENTA
-    RED = colors.RED
-    YELLOW = colors.YELLOW
-    WHITE = colors.WHITE
-
-
-def color(text: str, color=Color.YELLOW, bold=False) -> str:
-    text = f"{text:,}" if isinstance(text, int) else str(text)
-    style = color.value
-    if bold:
-        style = f"bold {style}"
-    return f"[{style}]{text}[/{style}]"
+        print("No matching albums found.")

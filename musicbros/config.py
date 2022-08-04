@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.syntax import Syntax
 from typer import confirm, echo, prompt
 
-from .helpers import color
+from .style import color
 
 ConfigOptions = list[tuple[str, str]]
 CONFIG_DIRECTORY = Path.home() / ".config" / "musicbros"

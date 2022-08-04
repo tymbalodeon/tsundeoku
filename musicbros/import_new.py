@@ -14,8 +14,9 @@ from .config import (
     get_pickle_file,
     get_shared_directory,
 )
-from .helpers import Color, color, modify_tracks
+from .library import modify_tracks
 from .regex import BRACKET_DISC_REGEX, BRACKET_SOLO_INSTRUMENT, BRACKET_YEAR_REGEX
+from .style import Color, color
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.Mp3", "*.m4a", "*.flac", "*.aif*")
 ERRORS = {
