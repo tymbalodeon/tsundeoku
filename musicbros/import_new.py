@@ -14,7 +14,14 @@ from .config import (
     get_pickle_file,
     get_shared_directory,
 )
-from .helpers import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, Color, color, modify_tracks
+from .helpers import (
+    BRACKET_DISC_REGEX,
+    BRACKET_SOLO_INSTRUMENT,
+    BRACKET_YEAR_REGEX,
+    Color,
+    color,
+    modify_tracks,
+)
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.Mp3", "*.m4a", "*.flac", "*.aif*")
 ERRORS = {
@@ -140,9 +147,9 @@ def should_update(
     )
 
 
-def get_bracket_number(match: Optional[Match[str]]) -> str:
+def get_bracket_number(match: Optional[Match[str]]) -> Optional[str]:
     if not match:
-        return ""
+        return None
     group = match.group()
     numeric_characters = [character for character in group if character.isnumeric()]
     return "".join(numeric_characters)
@@ -176,7 +183,7 @@ def check_disc(
     remove_bracket_disc = False
     discs = {TinyTag.get(track).disc for track in tracks}
     disc = next(iter(discs), "")
-    disc_total = ""
+    disc_total = None
     match = search(BRACKET_DISC_REGEX, album)
     bracket_disc = get_bracket_number(match)
     if (
@@ -189,7 +196,7 @@ def check_disc(
         fixable_disc = True
     elif not disc:
         disc_totals = {TinyTag.get(track).disc_total for track in tracks}
-        disc_total = next(iter(disc_totals), "")
+        disc_total = next(iter(disc_totals), None)
         if not disc_total and (
             skip_confirm_disc_overwrite
             or prompt
@@ -205,6 +212,23 @@ def check_disc(
         remove_bracket_disc = True
     remove_bracket_disc = remove_bracket_disc or bool(fixable_disc and bracket_disc)
     return disc, disc_total, fixable_disc, remove_bracket_disc
+
+
+def has_solo_instrument(artist: str) -> Optional[str]:
+    match = search(BRACKET_SOLO_INSTRUMENT, artist)
+    if not match:
+        return None
+    return match.group()
+
+
+def check_artist(
+    tracks: list[Path], skip_confirm_artist_overwrite: bool, prompt: bool
+) -> Optional[str]:
+    artists = {TinyTag.get(track).artist for track in tracks}
+    solo_instrument = next(
+        (artist for artist in artists if has_solo_instrument(artist)), None
+    )
+    return solo_instrument
 
 
 def get_modify_tracks_query(artist: str, field: str, album_title: str) -> list[str]:
@@ -224,6 +248,7 @@ def import_album(
     import_all: bool,
     as_is: bool,
     skip_confirm_disc_overwrite: bool,
+    skip_confirm_artist_overwrite: bool,
     prompt: bool,
 ) -> str:
     track_count = len(tracks)
@@ -232,8 +257,11 @@ def import_album(
         album_title = get_album_title(tracks)
         year, fixable_year = check_year(tracks, album_title, prompt=prompt)
         disc, disc_total, fixable_disc, remove_bracket_disc = check_disc(
-            tracks, album_title, skip_confirm_disc_overwrite, prompt=prompt
+            tracks, album_title, skip_confirm_disc_overwrite, prompt
         )
+        solo_instrument = check_artist(tracks, skip_confirm_artist_overwrite, prompt)
+        if solo_instrument:
+            pass
         not_fixable = not fixable_year or not fixable_disc
         if not prompt and not_fixable:
             return "skip"
@@ -272,6 +300,7 @@ def import_albums(
     albums: list[str],
     as_is: bool,
     skip_confirm_disc_overwrite: bool,
+    skip_confirm_artist_overwrite: bool,
     import_all=False,
     prompt=True,
 ):
@@ -297,6 +326,7 @@ def import_albums(
                 import_all,
                 as_is,
                 skip_confirm_disc_overwrite,
+                skip_confirm_artist_overwrite,
                 prompt=prompt,
             )
             if error:
