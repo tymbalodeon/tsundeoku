@@ -16,7 +16,7 @@ from .config import (
 )
 from .library import modify_tracks
 from .regex import BRACKET_DISC_REGEX, BRACKET_SOLO_INSTRUMENT, BRACKET_YEAR_REGEX
-from .style import print_with_color
+from .style import PrintLevel, print_with_color
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.Mp3", "*.m4a", "*.flac", "*.aif*")
 ERRORS = {
@@ -379,7 +379,9 @@ def import_albums(
     for key, error_albums in errors.items():
         if error_albums:
             album_string = "Albums" if len(error_albums) > 1 else "Album"
-            print_with_color(f"{album_string} {key.replace('_', ' ')}:", style="cyan")
+            print_with_color(
+                f"{album_string} {key.replace('_', ' ')}:", style=PrintLevel.INFO
+            )
             for album in error_albums:
                 print(f"- {album}")
     return imports, errors, importable_error_albums
