@@ -23,12 +23,12 @@ SHARED_DIRECTORY_OPTION_NAME = "shared_directory"
 PICKLE_FILE_OPTION_NAME = "pickle_file"
 IGNORED_DIRECTORIES_OPTION_NAME = "ignored_directories"
 MUSIC_PLAYER_OPTION_NAME = "music_player"
-CONFIG_OPTIONS = [
+CONFIG_OPTIONS = (
     SHARED_DIRECTORY_OPTION_NAME,
     PICKLE_FILE_OPTION_NAME,
     IGNORED_DIRECTORIES_OPTION_NAME,
     MUSIC_PLAYER_OPTION_NAME,
-]
+)
 
 
 if not CONFIG_DIRECTORY.exists():
@@ -120,22 +120,38 @@ def print_config_values():
     console.print(syntax)
 
 
-def update_or_print_config(update: bool):
-    if update:
-        write_config_options()
-    print_config_values()
+def add_missing_config_option(option: ConfigOption, value: ConfigValue) -> ConfigValue:
+    option_and_value = f"{option} = {value}\n"
+    with open(CONFIG_FILE, "a") as config_file:
+        config_file.write(option_and_value)
+    return value
 
 
 def get_shared_directory() -> Optional[ConfigValue]:
-    return get_config_value(SHARED_DIRECTORY_OPTION_NAME)
+    option = SHARED_DIRECTORY_OPTION_NAME
+    try:
+        return get_config_value(option)
+    except Exception:
+        default_value = str(Path.home() / "Dropbox")
+        return add_missing_config_option(option, default_value)
 
 
 def get_pickle_file() -> Optional[ConfigValue]:
-    return get_config_value(PICKLE_FILE_OPTION_NAME)
+    option = PICKLE_FILE_OPTION_NAME
+    try:
+        return get_config_value(option)
+    except Exception:
+        default_value = str(Path.home() / ".config/beets/state.pickle")
+        return add_missing_config_option(option, default_value)
 
 
 def get_ignored_directories() -> list[ConfigValue]:
-    ignored_directories_value = get_config_value(IGNORED_DIRECTORIES_OPTION_NAME)
+    option = IGNORED_DIRECTORIES_OPTION_NAME
+    try:
+        ignored_directories_value = get_config_value(IGNORED_DIRECTORIES_OPTION_NAME)
+    except Exception:
+        default_value = ""
+        ignored_directories_value = add_missing_config_option(option, default_value)
     if ignored_directories_value:
         ignored_directories = ignored_directories_value.split(",")
     else:
@@ -144,86 +160,85 @@ def get_ignored_directories() -> list[ConfigValue]:
 
 
 def get_music_player() -> Optional[ConfigValue]:
-    return get_config_value(MUSIC_PLAYER_OPTION_NAME)
+    option = MUSIC_PLAYER_OPTION_NAME
+    try:
+        return get_config_value(MUSIC_PLAYER_OPTION_NAME)
+    except Exception:
+        default_value = "Swinsian"
+        return add_missing_config_option(option, default_value)
 
 
-def add_missing_config_option(option: ConfigOption, value: ConfigValue) -> ConfigValue:
-    option_and_value = f"{option} = {value}\n"
-    with open(CONFIG_FILE, "a") as config_file:
-        config_file.write(option_and_value)
-    return value
-
-
-def validate_shared_directory(shared_directory: ConfigValue) -> Optional[ErrorMessage]:
+def validate_shared_directory() -> Optional[ErrorMessage]:
+    shared_directory = get_shared_directory()
+    error_message = (
+        "ERROR: Shared directory does not exist. Please create the directory or"
+        f" update your config with `{CONFIG_SECTION_NAME} config --update`."
+    )
+    if not shared_directory:
+        return error_message
     shared_directory_exists = Path(shared_directory).is_dir()
     if not shared_directory_exists:
-        return (
-            "ERROR: Shared directory does not exist. Please create the directory or"
-            f" update your config with `{CONFIG_SECTION_NAME} config --update`."
-        )
+        return error_message
     return None
 
 
-def validate_pickle_file(pickle_file: ConfigValue) -> Optional[ErrorMessage]:
+def validate_ignored_directories() -> Optional[ErrorMessage]:
+    shared_directory = get_shared_directory()
+    error_message = (
+        "ERROR: Shared directory does not exist. Please create the directory or"
+        f" update your config with `{CONFIG_SECTION_NAME} config --update`."
+    )
+    if not shared_directory:
+        return error_message
+    shared_directory_exists = Path(shared_directory).is_dir()
+    if not shared_directory_exists:
+        return error_message
+    return None
+
+
+def validate_pickle_file() -> Optional[ErrorMessage]:
+    pickle_file = get_pickle_file()
+    error_message = (
+        "ERROR: Pickle file does not exist. Please initialize your beets library"
+        " following the beets documentation."
+    )
+    if not pickle_file:
+        return error_message
     pickle_file_exists = Path(pickle_file).is_file()
     if not pickle_file_exists:
-        return (
-            "ERROR: Pickle file does not exist. Please initialize your beets library"
-            " following the beets documentation."
-        )
+        return error_message
     return None
 
 
-def validate_music_player(music_player: ConfigValue) -> Optional[ErrorMessage]:
+def validate_music_player() -> Optional[ErrorMessage]:
+    music_player = get_music_player()
+    error_message = (
+        "ERROR: Music player does not exist. Please install it or"
+        f" update your config with `{CONFIG_SECTION_NAME} config --update`."
+    )
+    if not music_player:
+        return error_message
     command = f'mdfind "kMDItemKind == \'Application\'" | grep "{music_player}"'
     application = run(command, shell=True, capture_output=True).stdout
     if not application:
-        return (
-            "ERROR: Music player does not exist. Please install it or"
-            f" update your config with `{CONFIG_SECTION_NAME} config --update`."
-        )
+        return error_message
     return None
 
 
-def validate_option(
-    value: ConfigValue, option_getter: Callable
-) -> Optional[ErrorMessage]:
-    validators = {
-        get_shared_directory: validate_shared_directory,
-        get_pickle_file: validate_pickle_file,
-        get_ignored_directories: None,
-        get_music_player: validate_music_player,
-    }
-    validator = validators.get(option_getter)
-    if not validator:
-        return None
-    return validator(value)
-
-
-def get_or_add_config_option(
-    config_getter: Callable, option: ConfigOption, value: ConfigValue
-) -> Optional[ErrorMessage]:
-    try:
-        value = config_getter()
-    except Exception:
-        value = add_missing_config_option(option, value)
-    return validate_option(value, config_getter)
+def get_validators() -> list[Callable]:
+    return [
+        validate_shared_directory,
+        validate_pickle_file,
+        validate_ignored_directories,
+        validate_music_player,
+    ]
 
 
 def validate_config() -> bool:
-    home = Path.home()
-    default_shared_directory = str(home / "Dropbox")
-    default_pickle_file = str(home / ".config/beets/state.pickle")
-    default_music_player = "Swinsian"
-    config_getters_and_values = (
-        (get_shared_directory, "shared_directory", default_shared_directory),
-        (get_pickle_file, "pickle_file", default_pickle_file),
-        (get_ignored_directories, "ignored_directories", ""),
-        (get_music_player, "music_player", default_music_player),
-    )
     error_messages = []
-    for option_getter, option, value in config_getters_and_values:
-        error_message = get_or_add_config_option(option_getter, option, value)
+    validators = get_validators()
+    for validate in validators:
+        error_message = validate()
         if error_message:
             error_messages.append(error_message)
     for message in error_messages:
