@@ -19,19 +19,26 @@ from .regex import BRACKET_DISC_REGEX, BRACKET_SOLO_INSTRUMENT, BRACKET_YEAR_REG
 from .style import PrintLevel, print_with_color
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.Mp3", "*.m4a", "*.flac", "*.aif*")
+ESCAPE_ERROR = "escape error"
+CONFLICTING_TRACK_TOTALS = "conflicting track totals"
+MISSING_TRACK_TOTAL = "missing track total"
+MISSING_TRACKS = "missing tracks"
+NO_TRACKS = "no tracks"
+WAV_FILES = "wav files"
+SKIP = "skip"
 ERRORS = {
-    "escape_error": "Error parsing path name",
-    "conflicting_track_totals": "Album tracks include more than one track total number",
-    "missing_track_total": "Album does not contain a track total number",
-    "missing_tracks": "Album is missing tracks",
-    "no_tracks": "Folder does not contain supported audio files",
-    "wav_files": "Album is in wav format",
+    ESCAPE_ERROR: "Error parsing path name",
+    CONFLICTING_TRACK_TOTALS: "Album tracks include more than one track total number",
+    MISSING_TRACK_TOTAL: "Album does not contain a track total number",
+    MISSING_TRACKS: "Album is missing tracks",
+    NO_TRACKS: "Folder does not contain supported audio files",
+    WAV_FILES: "Album is in wav format",
 }
 IMPORTABLE_ERROR_KEYS = [
-    "conflicting_track_totals",
-    "missing_track_total",
-    "missing_tracks",
-    "wav_files",
+    CONFLICTING_TRACK_TOTALS,
+    MISSING_TRACK_TOTAL,
+    MISSING_TRACKS,
+    WAV_FILES,
 ]
 
 
@@ -65,9 +72,9 @@ def get_track_total(tracks: list[Path]) -> tuple[Optional[int], str]:
     track_totals = {TinyTag.get(track).track_total for track in tracks}
     track_total = next(iter(track_totals), None)
     if len(track_totals) > 1:
-        message = "conflicting_track_totals"
+        message = CONFLICTING_TRACK_TOTALS
     elif not track_total:
-        message = "missing_track_total"
+        message = MISSING_TRACK_TOTAL
     else:
         track_total = int(track_total)
     return track_total, message
@@ -278,8 +285,8 @@ def import_album(
             pass
         not_fixable = not fixable_year or not fixable_disc
         if not prompt and not_fixable:
-            return "skip"
-        error = "" if beet_import(album) else "escape_error"
+            return SKIP
+        error = "" if beet_import(album) else ESCAPE_ERROR
         if error or as_is:
             return error
         artist, field = get_artist_and_artist_field_name(tracks)
@@ -304,9 +311,9 @@ def import_album(
     elif track_message:
         error = track_message
     elif isinstance(track_total, int) and track_count > track_total:
-        error = "conflicting_track_totals"
+        error = CONFLICTING_TRACK_TOTALS
     else:
-        error = "missing_tracks"
+        error = MISSING_TRACKS
     return error
 
 
@@ -358,13 +365,13 @@ def import_albums(
                 history_add([album.encode()])
                 wav_imports += 1
             elif prompt:
-                errors["wav_files"].append(album)
+                errors[WAV_FILES].append(album)
                 importable_error_albums.append(album)
             else:
                 prompt_skipped_count += 1
         if not tracks and not wav_tracks:
             if prompt:
-                errors["no_tracks"].append(album)
+                errors[NO_TRACKS].append(album)
             else:
                 prompt_skipped_count += 1
     if wav_imports:
@@ -379,9 +386,7 @@ def import_albums(
     for key, error_albums in errors.items():
         if error_albums:
             album_string = "Albums" if len(error_albums) > 1 else "Album"
-            print_with_color(
-                f"{album_string} {key.replace('_', ' ')}:", style=PrintLevel.INFO
-            )
+            print_with_color(f"{album_string} {key}:", style=PrintLevel.INFO)
             for album in error_albums:
                 print(f"- {album}")
     return imports, errors, importable_error_albums
