@@ -1,6 +1,8 @@
 from typing import Optional
 
-from typer import Argument, Context, Exit, Option, Typer, confirm, echo
+from rich import print
+from rich.prompt import Confirm
+from typer import Argument, Context, Exit, Option, Typer
 
 from musicbros import __version__
 
@@ -47,7 +49,7 @@ def import_new(
     albums: Optional[list[str]] = Argument(None, hidden=False),
 ):
     """Copy new adds from your shared folder to your "beets" library"""
-    echo("Importing newly added albums...")
+    print("Importing newly added albums...")
     first_time = False
     if not albums:
         first_time = True
@@ -65,7 +67,7 @@ def import_new(
         first_time
         and errors
         and importable_error_albums
-        and confirm("Would you like to import all albums anyway?")
+        and Confirm.ask("Would you like to import all albums anyway?")
     ):
         import_new(
             as_is=as_is,
@@ -110,7 +112,7 @@ def update_metadata(
 
 def display_version(version: bool):
     if version:
-        echo(f"musicbros {__version__}")
+        print(f"musicbros {__version__}")
         raise Exit()
 
 

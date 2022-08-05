@@ -6,10 +6,10 @@ from typing import Optional
 
 from rich import print
 from rich.console import Console
+from rich.prompt import Confirm, Prompt
 from rich.syntax import Syntax
-from typer import confirm, echo, prompt
 
-from .style import color
+from .style import print_with_color
 
 ConfigOptions = list[tuple[str, str]]
 CONFIG_DIRECTORY = Path.home() / ".config" / "musicbros"
@@ -49,9 +49,10 @@ def get_config_options() -> ConfigOptions:
 
 def get_new_value(option: str, option_display: str, replacing: bool) -> str:
     prompt_message = f"Please provide your {option_display} value"
+    new_value = Prompt.ask(prompt_message)
     if replacing:
-        return prompt(prompt_message)
-    return f"{get_config_option(option)},{prompt(prompt_message)}"
+        return new_value
+    return f"{get_config_option(option)},{new_value}"
 
 
 def get_new_config_vlue(option: str, first_time: bool) -> Optional[str]:
@@ -60,11 +61,11 @@ def get_new_config_vlue(option: str, first_time: bool) -> Optional[str]:
     list_option = option != PICKLE_FILE_OPTION_NAME
     option_display = option.replace("_", " ").upper()
     confirm_message = f"Would you like to update the {option_display} value?"
-    updating = True if first_time else confirm(confirm_message)
+    updating = True if first_time else Confirm.ask(confirm_message)
     if not first_time and updating and list_option:
-        clear = confirm("Would you like to CLEAR the existing list?")
+        clear = Confirm.ask("Would you like to CLEAR the existing list?")
         if clear:
-            replacing = confirm("Would you like to ADD a new value?")
+            replacing = Confirm.ask("Would you like to ADD a new value?")
     empty_value = "" if clear else None
     if updating:
         return get_new_value(option, option_display, replacing)
@@ -95,13 +96,13 @@ def write_config_options(first_time=False) -> ConfigOptions:
 
 
 def print_create_config_message():
-    echo(
+    print(
         f"A config file is required. Please create one at {CONFIG_FILE} and try again."
     )
 
 
 def confirm_create_config() -> Optional[ConfigOptions]:
-    if confirm("Config file not found. Would you like to create one now?"):
+    if Confirm.ask("Config file not found. Would you like to create one now?"):
         return write_config_options(first_time=True)
     return print_create_config_message()
 
@@ -224,7 +225,7 @@ def validate_config() -> bool:
     for option_getter, option, value in config_getters_and_values:
         error_message = get_or_add_config_option(option_getter, option, value)
         if error_message:
-            error_messages.append(color(error_message))
+            error_messages.append(error_message)
     for message in error_messages:
-        print(message)
+        print_with_color(message)
     return not error_messages

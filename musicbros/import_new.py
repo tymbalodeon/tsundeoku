@@ -5,8 +5,8 @@ from re import Match, escape, search, sub
 from typing import Optional
 
 from beets.importer import history_add
+from rich.prompt import Prompt
 from tinytag import TinyTag
-from typer import confirm, echo
 
 from .config import (
     get_ignored_directories,
@@ -16,7 +16,7 @@ from .config import (
 )
 from .library import modify_tracks
 from .regex import BRACKET_DISC_REGEX, BRACKET_SOLO_INSTRUMENT, BRACKET_YEAR_REGEX
-from .style import Color, color
+from .style import print_with_color
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.Mp3", "*.m4a", "*.flac", "*.aif*")
 ERRORS = {
@@ -117,7 +117,7 @@ def get_artist_and_artist_field_name(tracks: list[Path]) -> tuple[str, str]:
     field = "albumartist"
     artist = ""
     try:
-        artist = next(iter({TinyTag.get(track).albumartist for track in tracks}))
+        artist = next(iter({TinyTag.get(track).albumartist for track in tracks}), "")
     except Exception:
         artists = {TinyTag.get(track).artist for track in tracks}
         if len(artists) > 1:
@@ -128,17 +128,13 @@ def get_artist_and_artist_field_name(tracks: list[Path]) -> tuple[str, str]:
     return artist, field
 
 
-def style_album(album: str) -> str:
-    return color(album, Color.BLUE, bold=True)
-
-
 def should_update(
-    field: str, bracket_value: str, existing_value: str, album: str
+    field: str, bracket_value: str, existing_value: Optional[str], album: str
 ) -> bool:
-    return confirm(
-        f"Use bracket {field} [{color(bracket_value, bold=True)}] instead of"
-        f" {field} ({color(existing_value, bold=True)}) for album:"
-        f" {style_album(album)}?"
+    return Prompt.ask(
+        f"Use bracket {field} [yellow]{bracket_value}[/yellow] instead of"
+        f" {field} ([yellow]{existing_value}[/yellow]) for album:"
+        f" [blue]{album}[/blue]?"
     )
 
 
@@ -195,9 +191,9 @@ def check_disc(
         if not disc_total and (
             skip_confirm_disc_overwrite
             or prompt
-            and confirm(
-                f'Apply default disc and disc total value of "{color("1", bold=True)}"'
-                f" to album with missing disc and disc total: {style_album(album)}?"
+            and Prompt.ask(
+                'Apply default disc and disc total value of [bold]"1"[/bold]'
+                f" to album with missing disc and disc total: [blue]{album}[/blue]?"
             )
         ):
             disc = "1"
@@ -349,18 +345,18 @@ def import_albums(
             else:
                 prompt_skipped_count += 1
     if wav_imports:
-        echo(
+        print(
             f"Imported {wav_imports} {'album' if wav_imports == 1 else 'albums'} in WAV"
             " format."
         )
     if not import_all:
-        echo(f"Skipped {skipped_count} previously imported albums.")
+        print(f"Skipped {skipped_count} previously imported albums.")
     if not prompt:
-        echo(f"Skipped {prompt_skipped_count} albums requiring prompt.")
+        print(f"Skipped {prompt_skipped_count} albums requiring prompt.")
     for key, error_albums in errors.items():
         if error_albums:
             album_string = "Albums" if len(error_albums) > 1 else "Album"
-            echo(color(f"{album_string} {key.replace('_', ' ')}:"))
+            print_with_color(f"{album_string} {key.replace('_', ' ')}:", style="cyan")
             for album in error_albums:
-                echo(f"- {album}")
+                print(f"- {album}")
     return imports, errors, importable_error_albums

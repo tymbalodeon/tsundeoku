@@ -1,21 +1,7 @@
-from enum import Enum
-
-from typer import colors
+from rich.console import Console
 
 
-class Color(Enum):
-    BLUE = colors.BLUE
-    CYAN = colors.CYAN
-    GREEN = colors.GREEN
-    MAGENTA = colors.MAGENTA
-    RED = colors.RED
-    YELLOW = colors.YELLOW
-    WHITE = colors.WHITE
-
-
-def color(text: str, color=Color.YELLOW, bold=False) -> str:
-    text = f"{text:,}" if isinstance(text, int) else str(text)
-    style = color.value
-    if bold:
-        style = f"bold {style}"
-    return f"[{style}]{text}[/{style}]"
+def print_with_color(text: str | int, style="yellow"):
+    if isinstance(text, int):
+        text = f"{text:,}"
+    Console().print(text, style=style)

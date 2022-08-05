@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from re import escape, sub
 
-from typer import echo
 
+from rich import print
 from .library import LIBRARY, modify_tracks
 from .regex import BRACKET_YEAR_REGEX
 
@@ -86,11 +86,11 @@ def list_items(
 
 def update_metadata(action: Action):
     if action.message:
-        echo(action.message)
+        print(action.message)
     items = list_items(action.tag, action.find, action.operate_on_albums)
     tags = [(escape(tag), sub(action.find, action.replace, tag)) for tag in items]
     if not tags:
-        echo("No albums to update.")
+        print("No albums to update.")
         return
     for found_value, replacement_value in tags:
         query = [
