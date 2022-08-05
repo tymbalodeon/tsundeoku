@@ -102,13 +102,16 @@ def is_already_imported(album: str) -> bool:
 
 
 def get_escaped_album(album: str) -> str:
-    single_quote = "'" in album
-    double_quote = '"' in album
-    if single_quote and double_quote:
-        album = album.replace('"', r"\"")
-        quote_character = '"'
+    single_quote = "'"
+    double_quote = '"'
+    escaped_double_quote = r"\""
+    has_single_quote = single_quote in album
+    has_double_quote = double_quote in album
+    if has_single_quote and has_double_quote:
+        album = album.replace(double_quote, escaped_double_quote)
+        quote_character = double_quote
     else:
-        quote_character = "'" if double_quote else '"'
+        quote_character = single_quote if has_double_quote else double_quote
     album = album.replace("$", r"\$")
     return f"{quote_character}{album}{quote_character}"
 
