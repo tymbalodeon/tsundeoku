@@ -4,7 +4,6 @@ from pathlib import Path
 from subprocess import run
 from typing import Optional
 
-from rich import print
 from rich.console import Console
 from rich.prompt import Confirm, Prompt
 from rich.syntax import Syntax
@@ -114,31 +113,11 @@ def write_config_options(first_time=False) -> ConfigOptions:
     return get_config_options()
 
 
-def print_create_config_message():
-    print(
-        f"A config file is required. Please create one at {CONFIG_FILE} and try again."
-    )
-
-
-def confirm_create_config() -> Optional[ConfigOptions]:
-    if Confirm.ask("Config file not found. Would you like to create one now?"):
-        return write_config_options(first_time=True)
-    return print_create_config_message()
-
-
-def get_user_config() -> Optional[ConfigOptions]:
-    if not CONFIG_FILE.is_file():
-        return confirm_create_config()
-    return get_config_options()
-
-
 def print_config_values():
-    config = get_user_config()
-    if config:
-        console = Console()
-        with open(CONFIG_FILE) as config_file:
-            syntax = Syntax(config_file.read(), "yaml")
-        console.print(syntax)
+    console = Console()
+    with open(CONFIG_FILE) as config_file:
+        syntax = Syntax(config_file.read(), "yaml")
+    console.print(syntax)
 
 
 def update_or_print_config(update: bool):
