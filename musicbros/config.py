@@ -39,49 +39,50 @@ def get_config_option(option: str) -> str:
     return config.get(CONFIG_SECTION_NAME, option)
 
 
+def get_option_and_value(option: str, config: ConfigParser) -> tuple[str, str]:
+    return (option, config.get(CONFIG_SECTION_NAME, option))
+
+
+def get_new_option_and_value(
+    option: str, first_time: bool
+) -> tuple[str, Optional[str]]:
+    return (option, get_new_config_value(option, first_time))
+
+
 def get_config_options() -> ConfigOptions:
     config = get_config()
-    return [
-        (option, config.get(CONFIG_SECTION_NAME, option))
-        for option in config.options(CONFIG_SECTION_NAME)
-    ]
+    options = config.options(CONFIG_SECTION_NAME)
+    return [get_option_and_value(option, config) for option in options]
 
 
-def get_new_value(option: str, option_display: str, replacing: bool) -> str:
+def get_new_value(option_display: str) -> str:
     prompt_message = f"Please provide your {option_display} value"
-    new_value = Prompt.ask(prompt_message)
-    if replacing:
-        return new_value
-    return f"{get_config_option(option)},{new_value}"
+    return Prompt.ask(prompt_message)
 
 
-def get_new_config_vlue(option: str, first_time: bool) -> Optional[str]:
-    clear = False
-    replacing = True
+def get_new_config_value(option: str, first_time: bool) -> Optional[str]:
     list_option = option != PICKLE_FILE_OPTION_NAME
     option_display = option.replace("_", " ").upper()
     confirm_message = f"Would you like to update the {option_display} value?"
     updating = True if first_time else Confirm.ask(confirm_message)
     if not first_time and updating and list_option:
         clear = Confirm.ask("Would you like to CLEAR the existing list?")
-        if clear:
-            replacing = Confirm.ask("Would you like to ADD a new value?")
+    else:
+        clear = False
     empty_value = "" if clear else None
     if updating:
-        return get_new_value(option, option_display, replacing)
+        return get_new_value(option_display)
     return empty_value
 
 
 def write_config_options(first_time=False) -> ConfigOptions:
-    config_options = [
+    options = [
         SHARED_DIRECTORY_OPTION_NAME,
         PICKLE_FILE_OPTION_NAME,
         IGNORED_DIRECTORIES_OPTION_NAME,
         MUSIC_PLAYER_OPTION_NAME,
     ]
-    new_values = [
-        (option, get_new_config_vlue(option, first_time)) for option in config_options
-    ]
+    new_values = [get_new_option_and_value(option, first_time) for option in options]
     if first_time:
         config = ConfigParser()
         config[CONFIG_SECTION_NAME] = {}

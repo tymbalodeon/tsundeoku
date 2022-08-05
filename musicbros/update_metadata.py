@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from re import escape, sub
 
-
 from rich import print
+
 from .library import LIBRARY, modify_tracks
 from .regex import BRACKET_YEAR_REGEX
 
