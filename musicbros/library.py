@@ -7,7 +7,7 @@ library_config = {"verbose": 0, "replace": {}, "timeout": 5}
 LIBRARY = _open_library(_configure(library_config))
 
 
-def modify_tracks(args: list, album: bool, confirm: bool, library=LIBRARY):
+def modify_tracks(args: list, album=True, confirm=False, library=LIBRARY):
     query, modifications, deletions = modify_parse_args(decargs(args))
     if not modifications and not deletions:
         print("ERROR: No modifications specified.")
