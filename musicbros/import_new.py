@@ -2,7 +2,7 @@ from os import system, walk
 from pathlib import Path
 from pickle import load
 from re import Match, escape, search, sub
-from typing import Optional, cast
+from typing import Optional
 
 from beets.importer import history_add
 from rich.prompt import Prompt
@@ -121,7 +121,7 @@ def import_wav_files(album: str):
 def get_album_title(tracks: list[Path]) -> str:
     album_titles = {TinyTag.get(track).album for track in tracks}
     album_title = next(iter(album_titles), "")
-    return cast(str, album_title)
+    return album_title
 
 
 def get_artist_and_artist_field_name(
@@ -140,7 +140,6 @@ def get_artist_and_artist_field_name(
         else:
             artist = next(iter(artists), artist)
             field = "artist"
-    artist = cast(str, artist)
     return artist, field
 
 
@@ -162,9 +161,7 @@ def get_bracket_number(match: Optional[Match[str]]) -> Optional[str]:
     return "".join(numeric_characters)
 
 
-def check_year(
-    tracks: list[Path], album: Optional[str], prompt: bool
-) -> tuple[Optional[str], bool]:
+def check_year(tracks: list[Path], album: str, prompt: bool) -> tuple[str, bool]:
     update_year = False
     years = {TinyTag.get(track).year for track in tracks}
     year = str(next(iter(years), ""))
@@ -190,12 +187,12 @@ def check_disc(
     album: str,
     skip_confirm_disc_overwrite: bool,
     prompt: bool,
-) -> tuple[Optional[str], Optional[str], bool, bool]:
+) -> tuple[str, str, bool, bool]:
     update_disc = False
     remove_bracket_disc = False
     discs = {TinyTag.get(track).disc for track in tracks}
     disc = str(next(iter(discs), ""))
-    disc_total = None
+    disc_total = ""
     if album:
         match = search(BRACKET_DISC_REGEX, album)
         bracket_disc = get_bracket_number(match)
@@ -212,7 +209,7 @@ def check_disc(
         update_disc = True
     elif not disc:
         disc_totals = {TinyTag.get(track).disc_total for track in tracks}
-        disc_total = next(iter(disc_totals), None)
+        disc_total = next(iter(disc_totals), "")
         apply_default_disc = not disc_total and (
             skip_confirm_disc_overwrite
             or prompt
@@ -231,7 +228,7 @@ def check_disc(
     return disc, disc_total, update_disc, remove_bracket_disc
 
 
-def has_solo_instrument(artist: Optional[str]) -> Optional[str]:
+def has_solo_instrument(artist: str) -> Optional[str]:
     if not artist:
         return None
     match = search(BRACKET_SOLO_INSTRUMENT, artist)
@@ -242,11 +239,11 @@ def has_solo_instrument(artist: Optional[str]) -> Optional[str]:
 
 def check_artist(
     tracks: list[Path], skip_confirm_artist_overwrite: bool, prompt: bool
-) -> tuple[Optional[str], bool]:
+) -> tuple[str, bool]:
     update_artist = False
     artists = {TinyTag.get(track).artist for track in tracks}
     solo_instrument = next(
-        (artist for artist in artists if has_solo_instrument(artist)), None
+        (artist for artist in artists if has_solo_instrument(artist)), ""
     )
     update_artist = (
         solo_instrument
@@ -334,6 +331,15 @@ def import_album(
     return error
 
 
+def print_errors(errors: dict):
+    for key, error_albums in errors.items():
+        if error_albums:
+            album_string = "Albums" if len(error_albums) > 1 else "Album"
+            print_with_color(f"{album_string} {key}:", style=PrintLevel.INFO)
+            for album in error_albums:
+                print(f"- {album}")
+
+
 def import_albums(
     albums: list[str],
     as_is: bool,
@@ -400,10 +406,5 @@ def import_albums(
         print(f"Skipped {skipped_count} previously imported albums.")
     if not prompt:
         print(f"Skipped {prompt_skipped_count} albums requiring prompt.")
-    for key, error_albums in errors.items():
-        if error_albums:
-            album_string = "Albums" if len(error_albums) > 1 else "Album"
-            print_with_color(f"{album_string} {key}:", style=PrintLevel.INFO)
-            for album in error_albums:
-                print(f"- {album}")
+    print_errors(errors)
     return imports, errors, importable_error_albums
