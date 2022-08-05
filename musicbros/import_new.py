@@ -53,6 +53,8 @@ IMPORTABLE_ERROR_KEYS = [
 
 def get_imported_albums() -> set[str]:
     pickle_file = get_pickle_file()
+    if not pickle_file:
+        return set()
     with open(pickle_file, "rb") as raw_pickle:
         unpickled = load(raw_pickle)["taghistory"]
         return {album[0].decode() for album in unpickled}
@@ -60,6 +62,8 @@ def get_imported_albums() -> set[str]:
 
 def get_album_directories() -> list[str]:
     shared_directory = get_shared_directory()
+    if not shared_directory:
+        return []
     return [root for root, dirs, files in walk(shared_directory) if files and not dirs]
 
 
