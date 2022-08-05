@@ -6,7 +6,6 @@ from typing import Optional
 
 from beets.importer import history_add
 from rich.prompt import Prompt
-from tinytag import TinyTag
 
 from .config import (
     get_ignored_directories,
@@ -17,6 +16,15 @@ from .config import (
 from .library import modify_tracks
 from .regex import BRACKET_DISC_REGEX, BRACKET_SOLO_INSTRUMENT, BRACKET_YEAR_REGEX
 from .style import PrintLevel, print_with_color
+from .tags import (
+    get_album_title,
+    get_albumartist,
+    get_artists,
+    get_disc_total,
+    get_discs,
+    get_track_totals,
+    get_years,
+)
 
 AUDIO_FILE_TYPES = ("*.mp3", "*.Mp3", "*.m4a", "*.flac", "*.aif*")
 ESCAPE_ERROR = "escape error"
@@ -69,14 +77,14 @@ def has_wav_tracks(album: str) -> bool:
 
 def get_track_total(tracks: list[Path]) -> tuple[Optional[int], str]:
     message = ""
-    track_totals = {TinyTag.get(track).track_total for track in tracks}
-    track_total = next(iter(track_totals), None)
+    track_totals = get_track_totals(tracks)
+    track_total: Optional[str] | int = next(iter(track_totals), None)
+    if track_total is not None:
+        track_total = int(track_total)
     if len(track_totals) > 1:
         message = CONFLICTING_TRACK_TOTALS
     elif not track_total:
         message = MISSING_TRACK_TOTAL
-    else:
-        track_total = int(track_total)
     return track_total, message
 
 
@@ -118,23 +126,15 @@ def import_wav_files(album: str):
     system(f"open -a '{music_player}' '{album}'")
 
 
-def get_album_title(tracks: list[Path]) -> str:
-    album_titles = {TinyTag.get(track).album for track in tracks}
-    album_title = next(iter(album_titles), "")
-    return album_title
-
-
 def get_artist_and_artist_field_name(
     tracks: list[Path],
 ) -> tuple[str, str]:
     field = "albumartist"
     artist = ""
     try:
-        artist = next(
-            iter({TinyTag.get(track).albumartist for track in tracks}), artist
-        )
+        artist = get_albumartist(tracks)
     except Exception:
-        artists = {TinyTag.get(track).artist for track in tracks}
+        artists = get_artists(tracks)
         if len(artists) > 1:
             field = ""
         else:
@@ -163,11 +163,11 @@ def get_bracket_number(match: Optional[Match[str]]) -> Optional[str]:
 
 def check_year(tracks: list[Path], album: str, prompt: bool) -> tuple[str, bool]:
     update_year = False
-    years = {TinyTag.get(track).year for track in tracks}
+    years = get_years(tracks)
     year = str(next(iter(years), ""))
     single_year = len(years) == 1
     if single_year:
-        album = str(next(iter({TinyTag.get(track).album for track in tracks}), ""))
+        album = get_album_title(tracks)
         match = search(BRACKET_YEAR_REGEX, album)
         bracket_year = get_bracket_number(match)
         update_with_bracket_year = (
@@ -190,7 +190,7 @@ def check_disc(
 ) -> tuple[str, str, bool, bool]:
     update_disc = False
     remove_bracket_disc = False
-    discs = {TinyTag.get(track).disc for track in tracks}
+    discs = get_discs(tracks)
     disc = str(next(iter(discs), ""))
     disc_total = ""
     if album:
@@ -208,8 +208,7 @@ def check_disc(
         disc = bracket_disc
         update_disc = True
     elif not disc:
-        disc_totals = {TinyTag.get(track).disc_total for track in tracks}
-        disc_total = next(iter(disc_totals), "")
+        disc_total = get_disc_total(tracks)
         apply_default_disc = not disc_total and (
             skip_confirm_disc_overwrite
             or prompt
@@ -241,7 +240,7 @@ def check_artist(
     tracks: list[Path], skip_confirm_artist_overwrite: bool, prompt: bool
 ) -> tuple[str, bool]:
     update_artist = False
-    artists = {TinyTag.get(track).artist for track in tracks}
+    artists = get_artists(tracks)
     solo_instrument = next(
         (artist for artist in artists if has_solo_instrument(artist)), ""
     )
@@ -280,7 +279,8 @@ def import_album(
 ) -> str:
     track_count = len(tracks)
     track_total, track_message = get_track_total(tracks)
-    if import_all or track_count == track_total:
+    is_complete_album = track_count and track_total and track_count == track_total
+    if import_all or is_complete_album:
         album_title = get_album_title(tracks)
         year, update_year = check_year(tracks, album_title, prompt=prompt)
         disc, disc_total, update_disc, remove_bracket_disc = check_disc(
