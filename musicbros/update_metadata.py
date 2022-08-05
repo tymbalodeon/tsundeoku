@@ -60,10 +60,7 @@ ACTIONS = [
 
 
 def list_items(
-    query_tag: str,
-    query: str,
-    operate_on_albums: bool,
-    library=LIBRARY,
+    query_tag: str, query: str, operate_on_albums: bool, library=LIBRARY
 ) -> list[str]:
     query_string = f"'{query_tag}::{query}'"
     if operate_on_albums:
@@ -93,8 +90,3 @@ def update_metadata_main(solo_instruments=False):
     actions = ACTIONS if solo_instruments else ACTIONS[:-1]
     for action in actions:
         update_metadata(action)
-
-
-def update_metadata_if_as_is(imports: bool, as_is: bool):
-    if imports and not as_is:
-        update_metadata_main()

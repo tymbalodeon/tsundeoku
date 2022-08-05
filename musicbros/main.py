@@ -8,7 +8,7 @@ from musicbros import __version__
 
 from .config import print_config_values, validate_config, write_config_options
 from .import_new import get_album_directories, import_albums
-from .update_metadata import update_metadata_if_as_is, update_metadata_main
+from .update_metadata import update_metadata_main
 
 app = Typer(
     help='CLI for managing imports from a shared folder to a "beets" library',
@@ -64,7 +64,8 @@ def import_new(
         import_all=not first_time,
         prompt=prompt,
     )
-    update_metadata_if_as_is(imports, as_is)
+    if imports and not as_is:
+        update_metadata_main()
     if (
         first_time
         and errors
