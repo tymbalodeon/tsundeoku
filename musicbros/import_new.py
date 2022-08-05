@@ -18,6 +18,7 @@ from .regex import BRACKET_DISC_REGEX, BRACKET_SOLO_INSTRUMENT, BRACKET_YEAR_REG
 from .style import PrintLevel, print_with_color
 from .tags import (
     get_album_title,
+    get_album_wide_tag,
     get_albumartist,
     get_artists,
     get_disc_total,
@@ -78,7 +79,7 @@ def has_wav_tracks(album: str) -> bool:
 def get_track_total(tracks: list[Path]) -> tuple[Optional[int], str]:
     message = ""
     track_totals = get_track_totals(tracks)
-    track_total: Optional[str] | int = next(iter(track_totals), None)
+    track_total: Optional[str] | int = get_album_wide_tag(track_totals)
     if track_total is not None:
         track_total = int(track_total)
     if len(track_totals) > 1:
@@ -138,7 +139,7 @@ def get_artist_and_artist_field_name(
         if len(artists) > 1:
             field = ""
         else:
-            artist = next(iter(artists), artist)
+            artist = get_album_wide_tag(artists)
             field = "artist"
     return artist, field
 
@@ -164,7 +165,7 @@ def get_bracket_number(match: Optional[Match[str]]) -> Optional[str]:
 def check_year(tracks: list[Path], album: str, prompt: bool) -> tuple[str, bool]:
     update_year = False
     years = get_years(tracks)
-    year = str(next(iter(years), ""))
+    year = get_album_wide_tag(years)
     single_year = len(years) == 1
     if single_year:
         album = get_album_title(tracks)
@@ -191,7 +192,7 @@ def check_disc(
     update_disc = False
     remove_bracket_disc = False
     discs = get_discs(tracks)
-    disc = str(next(iter(discs), ""))
+    disc = get_album_wide_tag(discs)
     disc_total = ""
     if album:
         match = search(BRACKET_DISC_REGEX, album)
@@ -241,9 +242,10 @@ def check_artist(
 ) -> tuple[str, bool]:
     update_artist = False
     artists = get_artists(tracks)
-    solo_instrument = next(
-        (artist for artist in artists if has_solo_instrument(artist)), ""
+    artists_with_solo_instruments = (
+        artist for artist in artists if has_solo_instrument(artist)
     )
+    solo_instrument = next(artists_with_solo_instruments, "")
     update_artist = (
         solo_instrument
         and skip_confirm_artist_overwrite
