@@ -12,59 +12,49 @@ class Action:
     message: str
     find: str
     replace: str
-    tag: str
-    operate_on_albums: bool
+    tag: str = "album"
+    operate_on_albums: bool = True
 
 
 ACTIONS = [
     Action(
-        'Removing bracketed years from all "album" tags...',
-        BRACKET_YEAR_REGEX,
-        "",
-        "album",
-        True,
+        message='Removing bracketed years from all "album" tags...',
+        find=BRACKET_YEAR_REGEX,
+        replace="",
     ),
     Action(
-        'Replacing "Rec.s" with "Recordings" in all "album" tags...',
-        r"\bRec\.s",
-        "Recordings",
-        "album",
-        True,
+        message='Replacing "Rec.s" with "Recordings" in all "album" tags...',
+        find=r"\bRec\.s",
+        replace="Recordings",
     ),
     Action(
-        "",
-        r"\bRec\.s\s",
-        "Recordings ",
-        "album",
-        True,
+        message="",
+        find=r"\bRec\.s\s",
+        replace="Recordings ",
     ),
     Action(
-        'Replacing "Rec." with "Recording" in all "album" tags...',
-        r"\bRec\.s?",
-        "Recording",
-        "album",
-        True,
+        message='Replacing "Rec." with "Recording" in all "album" tags...',
+        find=r"\bRec\.s?",
+        replace="Recording",
     ),
     Action(
-        "",
-        r"\bRec\.s?\s",
-        "Recording ",
-        "album",
-        True,
+        message="",
+        find=r"\bRec\.s?\s",
+        replace="Recording ",
     ),
     Action(
-        'Replacing "Orig." with "Original" in all "album" tags...',
-        r"\bOrig\.\s",
-        "Original ",
-        "album",
-        True,
+        message='Replacing "Orig." with "Original" in all "album" tags...',
+        find=r"\bOrig\.\s",
+        replace="Original ",
     ),
     Action(
-        'Removing bracketed solo instrument indications from all "artist" tags...',
-        r"\s\[solo.+\]",
-        "",
-        "artist",
-        False,
+        message=(
+            'Removing bracketed solo instrument indications from all "artist" tags...'
+        ),
+        find=r"\s\[solo.+\]",
+        replace="",
+        tag="artist",
+        operate_on_albums=False,
     ),
 ]
 
@@ -76,11 +66,10 @@ def list_items(
     library=LIBRARY,
 ) -> list[str]:
     query_string = f"'{query_tag}::{query}'"
-    albums_or_items = (
-        library.albums(query_string)
-        if operate_on_albums
-        else library.items(query_string)
-    )
+    if operate_on_albums:
+        albums_or_items = library.albums(query_string)
+    else:
+        albums_or_items = library.items(query_string)
     return [album_or_item.get(query_tag) for album_or_item in albums_or_items]
 
 
