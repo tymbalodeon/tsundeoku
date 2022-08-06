@@ -165,8 +165,8 @@ def should_update(
     field: str, bracket_value: str, existing_value: str, album: str
 ) -> bool:
     return Prompt.ask(
-        f"Use bracket {field} [yellow]{bracket_value}[/yellow] instead of"
-        f" {field} ([yellow]{existing_value}[/yellow]) for album:"
+        f"Use bracket {field} [bold yellow]{bracket_value}[/bold yellow] instead of"
+        f" {field} ([bold yellow]{existing_value}[/bold yellow]) for album:"
         f" [blue]{album}[/blue]?"
     )
 
@@ -227,15 +227,15 @@ def check_disc(
         update_disc = True
     elif not disc:
         disc_total = get_disc_total(tracks)
-        apply_default_disc = not disc_total and (
+        if not disc_total and (
             skip_confirm_disc_overwrite
             or prompt
             and Prompt.ask(
-                'Apply default disc and disc total value of [bold]"1"[/bold]'
-                f" to album with missing disc and disc total: [blue]{album}[/blue]?",
+                'Apply default disc and disc total value of [bold yellow]"1"[/bold'
+                " yellow] to album with missing disc and disc total:"
+                f" [blue]{album}[/blue]?",
             )
-        )
-        if apply_default_disc:
+        ):
             disc = "1"
             disc_total = "1"
             update_disc = True
@@ -263,17 +263,18 @@ def check_artist(
         artist for artist in artists if has_solo_instrument(artist)
     )
     solo_instrument = next(artists_with_solo_instruments, "")
-    update_artist = (
+    if (
         solo_instrument
         and skip_confirm_artist_overwrite
         or prompt
         and Prompt.ask(
-            "Remove bracketed solo instrument indication"
-            f" ([blue]{solo_instrument}[/blue]) from the artist field and add to"
+            "Remove bracketed solo instrument indication [bold"
+            f" yellow]{solo_instrument}[/bold yellow] from the artist field and add to"
             " comments?"
         )
-    )
-    return solo_instrument, bool(update_artist)
+    ):
+        update_artist = True
+    return solo_instrument, update_artist
 
 
 def get_modify_tracks_query(artist: str, field: str, album_title: str) -> BeetsQuery:
