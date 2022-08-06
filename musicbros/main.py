@@ -45,7 +45,7 @@ def import_new(
     ),
     prompt: bool = Option(
         True,
-        " /--skip-albums-requiring-prompt",
+        " /--no-prompt",
         help="Skip importing albums requiring prompt for user decision",
     ),
     albums: Optional[list[str]] = Argument(None, hidden=False),
