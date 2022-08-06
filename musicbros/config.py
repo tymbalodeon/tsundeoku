@@ -116,7 +116,7 @@ def write_config_options(first_time=False) -> ConfigOptions:
 def print_config_values():
     console = Console()
     with open(CONFIG_FILE) as config_file:
-        syntax = Syntax(config_file.read(), "yaml")
+        syntax = Syntax(config_file.read(), "yaml", theme="ansi_dark")
     console.print(syntax)
 
 
