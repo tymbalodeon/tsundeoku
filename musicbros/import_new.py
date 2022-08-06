@@ -261,9 +261,8 @@ def check_artist(
         artist for artist in artists if has_solo_instrument(artist)
     )
     solo_instrument = next(artists_with_solo_instruments, "")
-    if (
-        solo_instrument
-        and skip_confirm_artist_overwrite
+    if solo_instrument and (
+        skip_confirm_artist_overwrite
         or prompt
         and Prompt.ask(
             "Remove bracketed solo instrument indication [bold"
