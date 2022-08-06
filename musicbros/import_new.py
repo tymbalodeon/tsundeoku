@@ -1,10 +1,11 @@
+from enum import Enum
 from os import system, walk
 from pathlib import Path
 from pickle import load
 from re import Match, escape, search, sub
 from typing import Optional
 
-from beets.importer import Enum, history_add
+from beets.importer import history_add
 from rich.prompt import Prompt
 
 from .config import (
