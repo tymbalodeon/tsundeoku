@@ -185,16 +185,14 @@ def check_year(tracks: Tracks, album: str, prompt: bool) -> tuple[str, bool]:
     year = get_album_wide_tag(years)
     single_year = len(years) == 1
     if single_year:
-        album = get_album_title(tracks)
         match = search(BRACKET_YEAR_REGEX, album)
         bracket_year = get_bracket_number(match)
-        update_with_bracket_year = (
+        if (
             bracket_year
             and bracket_year != year
             and prompt
             and should_update("year", bracket_year, year, album)
-        )
-        if update_with_bracket_year and bracket_year:
+        ):
             year = bracket_year
             update_year = True
     return year, update_year
@@ -313,14 +311,14 @@ def import_album(
         if not prompt and requires_prompt:
             return ImportError.SKIP
         error = None if beet_import(album) else ImportError.ESCAPE_ERROR
-        if error or as_is:
+        if error or as_is or not album_title:
             return error
         artist, field = get_artist_and_artist_field_name(tracks)
         query = get_modify_tracks_query(artist, field, escape(album_title))
-        if update_year and year and album_title:
+        if update_year and year:
             modification = get_modify_tracks_modification("year", year)
             modify_tracks(query + modification)
-        if update_disc and album_title:
+        if update_disc:
             if disc:
                 modification = get_modify_tracks_modification("disc", disc)
                 modify_tracks(query + modification, album=False)
