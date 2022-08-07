@@ -43,16 +43,6 @@ class ImportError(Enum):
     SKIP = "skip"
 
 
-ERRORS = {
-    ImportError.ESCAPE_ERROR: "Error parsing path name",
-    ImportError.CONFLICTING_TRACK_TOTALS: (
-        "Album tracks include more than one track total number"
-    ),
-    ImportError.MISSING_TRACK_TOTAL: "Album does not contain a track total number",
-    ImportError.MISSING_TRACKS: "Album is missing tracks",
-    ImportError.NO_TRACKS: "Folder does not contain supported audio files",
-    ImportError.WAV_FILES: "Album is in wav format",
-}
 IMPORTABLE_ERROR_KEYS = [
     ImportError.CONFLICTING_TRACK_TOTALS,
     ImportError.MISSING_TRACK_TOTAL,
@@ -352,7 +342,7 @@ def import_albums(
     import_all=False,
     prompt=True,
 ):
-    errors: dict[ImportError, list] = {key: [] for key in ERRORS.keys()}
+    errors: dict[ImportError, list] = {import_error: [] for import_error in ImportError}
     imports = False
     wav_imports = 0
     skipped_count = 0
