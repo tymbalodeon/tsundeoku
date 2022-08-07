@@ -135,18 +135,18 @@ def import_wav_files(album: str):
 def get_artist_and_artist_field_name(
     tracks: Tracks,
 ) -> tuple[str, str]:
-    field = "albumartist"
+    artist_field_type = "albumartist"
     artist = ""
     try:
         artist = get_albumartist(tracks)
     except Exception:
         artists = get_artists(tracks)
         if len(artists) > 1:
-            field = ""
+            artist_field_type = ""
         else:
             artist = get_album_wide_tag(artists)
-            field = "artist"
-    return artist, field
+            artist_field_type = "artist"
+    return artist, artist_field_type
 
 
 def should_update(
@@ -237,17 +237,17 @@ def has_solo_instrument(artist: str) -> bool:
 
 def check_artist(
     tracks: Tracks, skip_confirm_artist_overwrite: bool, prompt: bool
-) -> Optional[list[str]]:
+) -> list[str]:
     artists = get_artists(tracks)
     artists_with_solo_instruments = {
         artist for artist in artists if has_solo_instrument(artist)
     }
-    if not artists_with_solo_instruments:
-        return None
     solo_instruments = []
+    if not artists_with_solo_instruments:
+        return solo_instruments
     for solo_instrument in artists_with_solo_instruments:
         if not solo_instrument:
-            return None
+            return solo_instruments
         skip_prompts = not skip_confirm_artist_overwrite or not prompt
         if skip_prompts:
             raise Exception
@@ -261,15 +261,21 @@ def check_artist(
     return solo_instruments
 
 
-def get_modify_tracks_query(artist: str, field: str, album_title: str) -> BeetsQuery:
+def get_modify_tracks_query(
+    album_title: str, artist: str, artist_field_type: str
+) -> BeetsQuery:
     query = [f"album::^{album_title}$"]
-    if field and artist:
-        query = [f"{field}::^{artist}$"] + query
+    if artist_field_type and artist:
+        query = [f"{artist_field_type}::^{artist}$"] + query
     return query
 
 
 def get_modify_tracks_modification(field: str, new_value: str) -> BeetsQuery:
     return [f"{field}={new_value}"]
+
+
+def add_solo_instrument_to_comments():
+    pass
 
 
 def import_album(
@@ -306,8 +312,8 @@ def import_album(
     error = beet_import(album)
     if error:
         return error
-    artist, field = get_artist_and_artist_field_name(tracks)
-    query = get_modify_tracks_query(artist, field, escape(album_title))
+    artist, artist_field_type = get_artist_and_artist_field_name(tracks)
+    query = get_modify_tracks_query(escape(album_title), artist, artist_field_type)
     if year:
         modification = get_modify_tracks_modification("year", year)
         modify_tracks(query + modification)
@@ -324,15 +330,12 @@ def import_album(
             f"album={discless_album_title}",
         ]
         modify_tracks(query)
-    if solo_instruments:
-        for solo_instrument in solo_instruments:
-            artist_without_instrument = sub(
-                BRACKET_SOLO_INSTRUMENT, "", solo_instrument
-            )
-            modification = get_modify_tracks_modification(
-                "artist", artist_without_instrument
-            )
-            modify_tracks(query + modification, album=False)
+    for solo_instrument in solo_instruments:
+        artist_without_instrument = sub(BRACKET_SOLO_INSTRUMENT, "", solo_instrument)
+        modification = get_modify_tracks_modification(
+            "artist", artist_without_instrument
+        )
+        modify_tracks(query + modification, album=False)
     return error
 
 
