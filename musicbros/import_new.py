@@ -246,27 +246,28 @@ def has_solo_instrument(artist: str) -> bool:
 
 def check_artist(
     tracks: Tracks, skip_confirm_artist_overwrite: bool, prompt: bool
-) -> Optional[str]:
+) -> Optional[list[str]]:
     artists = get_artists(tracks)
     artists_with_solo_instruments = {
         artist for artist in artists if has_solo_instrument(artist)
     }
     if not artists_with_solo_instruments:
         return None
-    solo_instrument = next(iter(artists_with_solo_instruments), "")
-    if not solo_instrument:
-        return None
-    skip_prompts = not skip_confirm_artist_overwrite or not prompt
-    if skip_prompts:
-        raise Exception
-    remove_solo_instrument = Prompt.ask(
-        "Remove bracketed solo instrument indication [bold"
-        f" yellow]{solo_instrument}[/bold yellow] from the artist field and add to"
-        " comments?"
-    )
-    if not remove_solo_instrument:
-        return None
-    return solo_instrument
+    solo_instruments = []
+    for solo_instrument in artists_with_solo_instruments:
+        if not solo_instrument:
+            return None
+        skip_prompts = not skip_confirm_artist_overwrite or not prompt
+        if skip_prompts:
+            raise Exception
+        remove_solo_instrument = Prompt.ask(
+            "Remove bracketed solo instrument indication [bold"
+            f" yellow]{solo_instrument}[/bold yellow] from the artist field and add to"
+            " comments?"
+        )
+        if remove_solo_instrument:
+            solo_instruments.append(solo_instrument)
+    return solo_instruments
 
 
 def get_modify_tracks_query(artist: str, field: str, album_title: str) -> BeetsQuery:
@@ -303,7 +304,7 @@ def import_album(
             disc_number, disc_total, remove_bracket_disc = check_disc(
                 tracks, album_title, skip_confirm_disc_overwrite, prompt
             )
-            solo_instrument = check_artist(
+            solo_instruments = check_artist(
                 tracks, skip_confirm_artist_overwrite, prompt
             )
         except Exception:
@@ -329,14 +330,15 @@ def import_album(
                 f"album={discless_album_title}",
             ]
             modify_tracks(query)
-        if solo_instrument:
-            artist_without_instrument = sub(
-                BRACKET_SOLO_INSTRUMENT, "", solo_instrument
-            )
-            modification = get_modify_tracks_modification(
-                "artist", artist_without_instrument
-            )
-            modify_tracks(query + modification, album=False)
+        if solo_instruments:
+            for solo_instrument in solo_instruments:
+                artist_without_instrument = sub(
+                    BRACKET_SOLO_INSTRUMENT, "", solo_instrument
+                )
+                modification = get_modify_tracks_modification(
+                    "artist", artist_without_instrument
+                )
+                modify_tracks(query + modification, album=False)
     elif track_message:
         error = track_message
     elif isinstance(track_total, int) and track_count > track_total:
