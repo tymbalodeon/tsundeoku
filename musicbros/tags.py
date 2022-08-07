@@ -33,8 +33,9 @@ def get_track_totals(tracks: Tracks) -> Tags:
     return {TinyTag.get(track).track_total for track in tracks}
 
 
-def get_discs(tracks: Tracks) -> Tags:
-    return {TinyTag.get(track).disc for track in tracks}
+def get_disc_number(tracks: Tracks) -> Tag:
+    disc_numbers = {TinyTag.get(track).disc for track in tracks}
+    return get_album_wide_tag(disc_numbers)
 
 
 def get_disc_total(tracks: Tracks) -> Tag:

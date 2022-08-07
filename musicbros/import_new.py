@@ -23,8 +23,8 @@ from .tags import (
     get_album_wide_tag,
     get_albumartist,
     get_artists,
+    get_disc_number,
     get_disc_total,
-    get_discs,
     get_track_totals,
     get_years,
 )
@@ -39,6 +39,7 @@ class ImportError(Enum):
     MISSING_TRACKS = "missing tracks"
     NO_TRACKS = "no tracks"
     WAV_FILES = "wav files"
+    MISSING_ALBUM_TITLE = "missing album title"
     SKIP = "skip"
 
 
@@ -130,13 +131,13 @@ def get_escaped_album(album: str) -> str:
     return f"{quote_character}{album}{quote_character}"
 
 
-def beet_import(album: str) -> bool:
+def beet_import(album: str) -> Optional[ImportError]:
     album = get_escaped_album(album)
     try:
         system(f"beet import {album}")
-        return True
+        return None
     except Exception:
-        return False
+        return ImportError.ESCAPE_ERROR
 
 
 def import_wav_files(album: str):
@@ -162,12 +163,12 @@ def get_artist_and_artist_field_name(
 
 
 def should_update(
-    field: str, bracket_value: str, existing_value: str, album: str
+    field: str, bracket_value: str, existing_value: str, album_title: str
 ) -> bool:
     return Prompt.ask(
         f"Use bracket {field} [bold yellow]{bracket_value}[/bold yellow] instead of"
         f" {field} ([bold yellow]{existing_value}[/bold yellow]) for album:"
-        f" [blue]{album}[/blue]?"
+        f" [blue]{album_title}[/blue]?"
     )
 
 
@@ -179,68 +180,58 @@ def get_bracket_number(match: Optional[Match[str]]) -> Optional[str]:
     return "".join(numeric_characters)
 
 
-def check_year(tracks: Tracks, album: str, prompt: bool) -> tuple[str, bool]:
-    update_year = False
+def check_year(tracks: Tracks, album_title: str, prompt: bool) -> Optional[str]:
     years = get_years(tracks)
-    year = get_album_wide_tag(years)
     single_year = len(years) == 1
-    if single_year:
-        match = search(BRACKET_YEAR_REGEX, album)
-        bracket_year = get_bracket_number(match)
-        if (
-            bracket_year
-            and bracket_year != year
-            and prompt
-            and should_update("year", bracket_year, year, album)
-        ):
-            year = bracket_year
-            update_year = True
-    return year, update_year
+    if not single_year:
+        return None
+    match = search(BRACKET_YEAR_REGEX, album_title)
+    bracket_year = get_bracket_number(match)
+    year = get_album_wide_tag(years)
+    if not bracket_year or bracket_year == year:
+        return None
+    if not prompt:
+        raise Exception
+    update_year = should_update("year", bracket_year, year, album_title)
+    if not update_year:
+        return None
+    return bracket_year
 
 
 def check_disc(
-    tracks: Tracks,
-    album: str,
-    skip_confirm_disc_overwrite: bool,
-    prompt: bool,
-) -> tuple[str, str, bool, bool]:
-    update_disc = False
+    tracks: Tracks, album_title: str, skip_confirm_disc_overwrite: bool, prompt: bool
+) -> tuple[Optional[str], Optional[str], bool]:
+    disc_number = get_disc_number(tracks)
+    disc_total = None
     remove_bracket_disc = False
-    discs = get_discs(tracks)
-    disc = get_album_wide_tag(discs)
-    disc_total = ""
-    if album:
-        match = search(BRACKET_DISC_REGEX, album)
-        bracket_disc = get_bracket_number(match)
-    else:
-        bracket_disc = None
-    update_with_bracket_disc = (
-        bracket_disc
-        and bracket_disc != disc
-        and prompt
-        and should_update("disc", bracket_disc, disc, album)
-    )
-    if update_with_bracket_disc and bracket_disc:
-        disc = bracket_disc
-        update_disc = True
-    elif not disc:
-        disc_total = get_disc_total(tracks)
-        if not disc_total and (
-            skip_confirm_disc_overwrite
-            or prompt
-            and Prompt.ask(
-                'Apply default disc and disc total value of [bold yellow]"1"[/bold'
-                " yellow] to album with missing disc and disc total:"
-                f" [blue]{album}[/blue]?",
-            )
-        ):
-            disc = "1"
-            disc_total = "1"
-            update_disc = True
-    elif bracket_disc and bracket_disc == disc:
-        remove_bracket_disc = True
-    remove_bracket_disc = remove_bracket_disc or bool(update_disc and bracket_disc)
-    return disc, disc_total, update_disc, remove_bracket_disc
+    match = search(BRACKET_DISC_REGEX, album_title)
+    bracket_disc = get_bracket_number(match)
+    if not bracket_disc:
+        if not disc_number:
+            disc_total = get_disc_total(tracks)
+            skip_prompts = not skip_confirm_disc_overwrite or not prompt
+            if not disc_total:
+                if skip_prompts:
+                    raise Exception
+                if Prompt.ask(
+                    'Apply default disc and disc total value of [bold yellow]"1"[/bold'
+                    " yellow] to album with missing disc and disc total:"
+                    f" [blue]{album_title}[/blue]?"
+                ):
+                    disc_number = "1"
+                    disc_total = "1"
+                else:
+                    disc_number = None
+        return disc_number, disc_total, remove_bracket_disc
+    if bracket_disc != disc_number:
+        if not prompt:
+            raise Exception
+        if should_update("disc", bracket_disc, disc_number, album_title):
+            disc_number = bracket_disc
+            remove_bracket_disc = True
+        else:
+            disc_number = None
+    return disc_number, disc_total, remove_bracket_disc
 
 
 def has_solo_instrument(artist: str) -> bool:
@@ -254,24 +245,27 @@ def has_solo_instrument(artist: str) -> bool:
 
 def check_artist(
     tracks: Tracks, skip_confirm_artist_overwrite: bool, prompt: bool
-) -> tuple[str, bool]:
-    update_artist = False
+) -> Optional[str]:
     artists = get_artists(tracks)
-    artists_with_solo_instruments = (
+    artists_with_solo_instruments = {
         artist for artist in artists if has_solo_instrument(artist)
+    }
+    if not artists_with_solo_instruments:
+        return None
+    solo_instrument = next(iter(artists_with_solo_instruments), "")
+    if not solo_instrument:
+        return None
+    skip_prompts = not skip_confirm_artist_overwrite or not prompt
+    if skip_prompts:
+        raise Exception
+    remove_solo_instrument = Prompt.ask(
+        "Remove bracketed solo instrument indication [bold"
+        f" yellow]{solo_instrument}[/bold yellow] from the artist field and add to"
+        " comments?"
     )
-    solo_instrument = next(artists_with_solo_instruments, "")
-    if solo_instrument and (
-        skip_confirm_artist_overwrite
-        or prompt
-        and Prompt.ask(
-            "Remove bracketed solo instrument indication [bold"
-            f" yellow]{solo_instrument}[/bold yellow] from the artist field and add to"
-            " comments?"
-        )
-    ):
-        update_artist = True
-    return solo_instrument, update_artist
+    if not remove_solo_instrument:
+        return None
+    return solo_instrument
 
 
 def get_modify_tracks_query(artist: str, field: str, album_title: str) -> BeetsQuery:
@@ -299,31 +293,34 @@ def import_album(
     is_complete_album = track_count and track_total and track_count == track_total
     if import_all or is_complete_album:
         album_title = get_album_title(tracks)
-        year, update_year = check_year(tracks, album_title, prompt=prompt)
-        disc, disc_total, update_disc, remove_bracket_disc = check_disc(
-            tracks, album_title, skip_confirm_disc_overwrite, prompt
-        )
-        solo_instrument, update_artist = check_artist(
-            tracks, skip_confirm_artist_overwrite, prompt
-        )
-        requires_prompt = not update_year or not update_disc or not update_artist
-        if not prompt and requires_prompt:
+        if not album_title:
+            return ImportError.MISSING_ALBUM_TITLE
+        if as_is:
+            return beet_import(album)
+        try:
+            year = check_year(tracks, album_title, prompt=prompt)
+            disc_number, disc_total, remove_bracket_disc = check_disc(
+                tracks, album_title, skip_confirm_disc_overwrite, prompt
+            )
+            solo_instrument = check_artist(
+                tracks, skip_confirm_artist_overwrite, prompt
+            )
+        except Exception:
             return ImportError.SKIP
-        error = None if beet_import(album) else ImportError.ESCAPE_ERROR
-        if error or as_is or not album_title:
+        error = beet_import(album)
+        if error:
             return error
         artist, field = get_artist_and_artist_field_name(tracks)
         query = get_modify_tracks_query(artist, field, escape(album_title))
-        if update_year and year:
+        if year:
             modification = get_modify_tracks_modification("year", year)
             modify_tracks(query + modification)
-        if update_disc:
-            if disc:
-                modification = get_modify_tracks_modification("disc", disc)
-                modify_tracks(query + modification, album=False)
-            if disc_total:
-                modification = get_modify_tracks_modification("disctotal", disc_total)
-                modify_tracks(query + modification)
+        if disc_number:
+            modification = get_modify_tracks_modification("disc", disc_number)
+            modify_tracks(query + modification, album=False)
+        if disc_total:
+            modification = get_modify_tracks_modification("disctotal", disc_total)
+            modify_tracks(query + modification)
         if remove_bracket_disc:
             discless_album_title = sub(BRACKET_DISC_REGEX, "", album_title)
             query = [
@@ -331,7 +328,7 @@ def import_album(
                 f"album={discless_album_title}",
             ]
             modify_tracks(query)
-        if update_artist and solo_instrument:
+        if solo_instrument:
             artist_without_instrument = sub(
                 BRACKET_SOLO_INSTRUMENT, "", solo_instrument
             )
