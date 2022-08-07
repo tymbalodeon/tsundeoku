@@ -2,7 +2,7 @@ from enum import Enum
 from os import system, walk
 from pathlib import Path
 from pickle import load
-from re import Match, escape, search, sub
+from re import escape, search, sub
 from typing import Optional
 
 from beets.importer import history_add
@@ -160,7 +160,8 @@ def should_update(
     )
 
 
-def get_bracket_number(match: Optional[Match[str]]) -> Optional[str]:
+def get_bracket_number(regex: str, album_title: str) -> Optional[str]:
+    match = search(regex, album_title)
     if not match:
         return None
     group = match.group()
@@ -173,8 +174,7 @@ def check_year(tracks: Tracks, album_title: str, prompt: bool) -> Optional[str]:
     single_year = len(years) == 1
     if not single_year:
         return None
-    match = search(BRACKET_YEAR_REGEX, album_title)
-    bracket_year = get_bracket_number(match)
+    bracket_year = get_bracket_number(BRACKET_YEAR_REGEX, album_title)
     year = get_album_wide_tag(years)
     if not bracket_year or bracket_year == year:
         return None
@@ -193,8 +193,7 @@ def check_disc(
     new_disc_total = None
     remove_bracket_disc = False
     disc_number: Optional[str] = get_disc_number(tracks)
-    match = search(BRACKET_DISC_REGEX, album_title)
-    bracket_disc = get_bracket_number(match)
+    bracket_disc = get_bracket_number(BRACKET_DISC_REGEX, album_title)
     if not bracket_disc:
         if disc_number:
             new_disc_number = None
