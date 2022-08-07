@@ -91,17 +91,14 @@ def has_wav_tracks(album: str) -> bool:
     return bool(wav_tracks)
 
 
-def get_track_total(tracks: Tracks) -> tuple[Optional[int], Optional[ImportError]]:
-    message = None
+def get_track_total(tracks: Tracks) -> int | ImportError:
     track_totals = get_track_totals(tracks)
     track_total: Optional[str] | int = get_album_wide_tag(track_totals)
-    if track_total is not None:
-        track_total = int(track_total)
     if len(track_totals) > 1:
-        message = ImportError.CONFLICTING_TRACK_TOTALS
-    elif not track_total:
-        message = ImportError.MISSING_TRACK_TOTAL
-    return track_total, message
+        return ImportError.CONFLICTING_TRACK_TOTALS
+    if not track_total:
+        return ImportError.MISSING_TRACK_TOTAL
+    return int(track_total)
 
 
 def is_in_ignored_directory(album: str) -> bool:
@@ -291,7 +288,9 @@ def import_album(
     prompt: bool,
 ) -> Optional[ImportError]:
     track_count = len(tracks)
-    track_total, track_message = get_track_total(tracks)
+    track_total = get_track_total(tracks)
+    if isinstance(track_total, ImportError):
+        return track_total
     is_complete_album = track_count and track_total and track_count == track_total
     if import_all or is_complete_album:
         album_title = get_album_title(tracks)
@@ -339,13 +338,10 @@ def import_album(
                     "artist", artist_without_instrument
                 )
                 modify_tracks(query + modification, album=False)
-    elif track_message:
-        error = track_message
-    elif isinstance(track_total, int) and track_count > track_total:
-        error = ImportError.CONFLICTING_TRACK_TOTALS
-    else:
-        error = ImportError.MISSING_TRACKS
-    return error
+        return error
+    elif track_count > track_total:
+        return ImportError.CONFLICTING_TRACK_TOTALS
+    return ImportError.MISSING_TRACKS
 
 
 def import_albums(
