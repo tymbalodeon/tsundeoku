@@ -163,8 +163,9 @@ def get_artist_and_artist_field_name(
 
 
 def should_update(
-    field: str, bracket_value: str, existing_value: str, album_title: str
+    field: str, bracket_value: str, existing_value: Optional[str], album_title: str
 ) -> bool:
+    existing_value = existing_value or ""
     return Prompt.ask(
         f"Use bracket {field} [bold yellow]{bracket_value}[/bold yellow] instead of"
         f" {field} ([bold yellow]{existing_value}[/bold yellow]) for album:"
@@ -201,7 +202,7 @@ def check_year(tracks: Tracks, album_title: str, prompt: bool) -> Optional[str]:
 def check_disc(
     tracks: Tracks, album_title: str, skip_confirm_disc_overwrite: bool, prompt: bool
 ) -> tuple[Optional[str], Optional[str], bool]:
-    disc_number = get_disc_number(tracks)
+    disc_number: Optional[str] = get_disc_number(tracks)
     disc_total = None
     remove_bracket_disc = False
     match = search(BRACKET_DISC_REGEX, album_title)
