@@ -23,7 +23,7 @@ beets:
 
 .PHONY: build
 build: ## Build the CLI and isntall it in your global pip packages
-	poetry build && pip install $(WHEEL) --force-reinstall
+	poetry build && pipx install $(WHEEL) --force --pip-args='--force-reinstall'
 
 check: ## Check for problems
 	$(POETRY) $(PRE_COMMIT) -a

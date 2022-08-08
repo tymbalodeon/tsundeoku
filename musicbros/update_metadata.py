@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from re import escape, sub
 
-from typer import echo
+from rich import print
 
-from .helpers import BRACKET_YEAR_REGEX, LIBRARY, modify_tracks
+from .library import LIBRARY, modify_tracks
+from .regex import BRACKET_YEAR_REGEX
 
 
 @dataclass
@@ -11,85 +12,71 @@ class Action:
     message: str
     find: str
     replace: str
-    tag: str
-    operate_on_albums: bool
+    tag: str = "album"
+    operate_on_albums: bool = True
 
 
 ACTIONS = [
     Action(
-        'Removing bracketed years from all "album" tags...',
-        BRACKET_YEAR_REGEX,
-        "",
-        "album",
-        True,
+        message='Removing bracketed years from all "album" tags...',
+        find=BRACKET_YEAR_REGEX,
+        replace="",
     ),
     Action(
-        'Replacing "Rec.s" with "Recordings" in all "album" tags...',
-        r"\bRec\.s",
-        "Recordings",
-        "album",
-        True,
+        message='Replacing "Rec.s" with "Recordings" in all "album" tags...',
+        find=r"\bRec\.s",
+        replace="Recordings",
     ),
     Action(
-        "",
-        r"\bRec\.s\s",
-        "Recordings ",
-        "album",
-        True,
+        message="",
+        find=r"\bRec\.s\s",
+        replace="Recordings ",
     ),
     Action(
-        'Replacing "Rec." with "Recording" in all "album" tags...',
-        r"\bRec\.s?",
-        "Recording",
-        "album",
-        True,
+        message='Replacing "Rec." with "Recording" in all "album" tags...',
+        find=r"\bRec\.s?",
+        replace="Recording",
     ),
     Action(
-        "",
-        r"\bRec\.s?\s",
-        "Recording ",
-        "album",
-        True,
+        message="",
+        find=r"\bRec\.s?\s",
+        replace="Recording ",
     ),
     Action(
-        'Replacing "Orig." with "Original" in all "album" tags...',
-        r"\bOrig\.\s",
-        "Original ",
-        "album",
-        True,
+        message='Replacing "Orig." with "Original" in all "album" tags...',
+        find=r"\bOrig\.\s",
+        replace="Original ",
     ),
     Action(
-        'Removing bracketed solo instrument indications from all "artist" tags...',
-        r"\s\[solo.+\]",
-        "",
-        "artist",
-        False,
+        message=(
+            'Removing bracketed solo instrument indications from all "artist" tags...'
+        ),
+        find=r"\s\[solo.+\]",
+        replace="",
+        tag="artist",
+        operate_on_albums=False,
     ),
 ]
 
 
 def list_items(
-    query_tag: str,
-    query: str,
-    operate_on_albums: bool,
-    library=LIBRARY,
+    query_tag: str, query: str, operate_on_albums: bool, library=LIBRARY
 ) -> list[str]:
     query_string = f"'{query_tag}::{query}'"
-    albums_or_items = (
-        library.albums(query_string)
-        if operate_on_albums
-        else library.items(query_string)
-    )
+    if operate_on_albums:
+        albums_or_items = library.albums(query_string)
+    else:
+        albums_or_items = library.items(query_string)
     return [album_or_item.get(query_tag) for album_or_item in albums_or_items]
 
 
 def update_metadata(action: Action):
     if action.message:
-        echo(action.message)
+        print(action.message)
     items = list_items(action.tag, action.find, action.operate_on_albums)
     tags = [(escape(tag), sub(action.find, action.replace, tag)) for tag in items]
     if not tags:
-        echo("No albums to update.")
+        print("No albums to update.")
         return
     for found_value, replacement_value in tags:
         query = [
@@ -103,8 +90,3 @@ def update_metadata_main(solo_instruments=False):
     actions = ACTIONS if solo_instruments else ACTIONS[:-1]
     for action in actions:
         update_metadata(action)
-
-
-def update_metadata_if_as_is(imports: bool, as_is: bool):
-    if imports and not as_is:
-        update_metadata_main()
