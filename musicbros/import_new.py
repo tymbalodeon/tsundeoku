@@ -246,8 +246,9 @@ def check_artist(
     artists_with_instruments = [
         artist for artist in artists if has_solo_instrument(artist)
     ]
+    artists_to_update: list[str] = []
     if not artists_with_instruments:
-        return artists_with_instruments
+        return artists_to_update
     for artist_with_instrument in artists_with_instruments:
         skip_prompts = ask_before_artist_update and not prompt
         if skip_prompts:
@@ -261,8 +262,8 @@ def check_artist(
                 " and add to comments?"
             )
         ):
-            artists_with_instruments.append(artist_with_instrument)
-    return artists_with_instruments
+            artists_to_update.append(artist_with_instrument)
+    return artists_to_update
 
 
 def get_modify_tracks_query(
@@ -287,16 +288,22 @@ def get_bracket_solo_instrument(artist_with_instrument: str) -> str:
 
 def add_solo_instrument_to_comments(artist_with_instrument, album_title):
     tracks = get_comments(artist_with_instrument, album_title)
-    solo_instrument = get_bracket_solo_instrument(artist_with_instrument)
-    query = get_modify_tracks_query(album_title, "artist", artist_with_instrument)
+    solo_instrument = get_bracket_solo_instrument(artist_with_instrument).strip()
     for track in tracks:
         comments = track.comments
         if comments:
             comments = f"{comments}; {solo_instrument}"
         else:
             comments = solo_instrument
+        artist_with_instrument = escape(artist_with_instrument)
+        album_title = escape(album_title)
+        title = escape(track.title)
+        artist_query = f"artist::^{artist_with_instrument}$"
+        album_query = f"album::^{album_title}$"
+        title_query = f"title::^{title}$"
+        query = [artist_query, album_query, title_query]
         modification = get_modify_tracks_modification("comments", comments)
-        modify_tracks(query + modification)
+        modify_tracks(query + modification, album=False)
 
 
 def import_album(

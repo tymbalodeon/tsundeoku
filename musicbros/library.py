@@ -1,3 +1,4 @@
+from re import escape
 from beets import config
 from beets.ui import _configure, _open_library, decargs
 from beets.ui.commands import modify_items, modify_parse_args
@@ -8,8 +9,10 @@ LIBRARY = _open_library(_configure(library_config))
 
 
 def get_comments(artist: str, album: str, library=LIBRARY) -> list:
-    artist_query = f"artist:{artist}"
-    album_query = f"album:{album}"
+    artist = escape(artist)
+    album = escape(album)
+    artist_query = f"'artist::^{artist}$'"
+    album_query = f"'album::^{album}$'"
     query = f"{artist_query} {album_query}"
     tracks = list(library.items(query))
     return tracks
