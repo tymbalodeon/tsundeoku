@@ -269,6 +269,7 @@ def check_artist(
 def get_modify_tracks_query(
     album_title: str, artist_field_type: str, artist: str
 ) -> BeetsQuery:
+    album_title = escape(album_title)
     query = [f"album::^{album_title}$"]
     if artist_field_type and artist:
         query = [f"{artist_field_type}::^{artist}$"] + query
@@ -343,7 +344,7 @@ def import_album(
     if error:
         return error
     artist, artist_field_type = get_artist_and_artist_field_name(tracks)
-    query = get_modify_tracks_query(escape(album_title), artist_field_type, artist)
+    query = get_modify_tracks_query(album_title, artist_field_type, artist)
     if year:
         modification = get_modify_tracks_modification("year", year)
         modify_tracks(query + modification)
@@ -355,11 +356,8 @@ def import_album(
         modify_tracks(query + modification)
     if remove_bracket_disc:
         discless_album_title = sub(BRACKET_DISC_REGEX, "", album_title)
-        query = [
-            f"album::^{escape(album_title)}$",
-            f"album={discless_album_title}",
-        ]
-        modify_tracks(query)
+        modification = get_modify_tracks_modification("album", discless_album_title)
+        modify_tracks(query + modification)
     for artist_with_instrument in artists_with_instruments:
         add_solo_instrument_to_comments(artist_with_instrument, album_title)
         artist_without_instrument = sub(
