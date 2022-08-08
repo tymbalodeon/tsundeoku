@@ -78,6 +78,7 @@ def import_new(
         import_new(
             as_is=as_is,
             ask_before_disc_update=ask_before_disc_update,
+            ask_before_artist_update=ask_before_artist_update,
             albums=importable_error_albums,
         )
 
