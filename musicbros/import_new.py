@@ -152,9 +152,8 @@ def get_artist_and_artist_field_name(
 def should_update(
     field: str, bracket_value: str, existing_value: Optional[str], album_title: str
 ) -> bool:
-    existing_value = existing_value or ""
     return Prompt.ask(
-        f"Use bracket {field} [bold yellow]{bracket_value}[/bold yellow] instead of"
+        f"Use bracket {field} [[bold yellow]{bracket_value}[/bold yellow]] instead of"
         f" {field} ([bold yellow]{existing_value}[/bold yellow]) for album:"
         f" [blue]{album_title}[/blue]?"
     )
