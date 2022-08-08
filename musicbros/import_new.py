@@ -187,7 +187,7 @@ def check_year(tracks: Tracks, album_title: str, prompt: bool) -> Optional[str]:
 
 
 def check_disc(
-    tracks: Tracks, album_title: str, skip_confirm_disc_overwrite: bool, prompt: bool
+    tracks: Tracks, album_title: str, ask_before_disc_update: bool, prompt: bool
 ) -> tuple[Optional[str], Optional[str], bool]:
     new_disc_number = None
     new_disc_total = None
@@ -199,12 +199,12 @@ def check_disc(
             new_disc_number = None
         else:
             disc_total = get_disc_total(tracks)
-            skip_prompts = not skip_confirm_disc_overwrite and not prompt
+            skip_prompts = ask_before_disc_update and not prompt
             if not disc_total:
                 if skip_prompts:
                     raise Exception
                 if (
-                    skip_confirm_disc_overwrite
+                    not ask_before_disc_update
                     or prompt
                     and Prompt.ask(
                         "Apply default disc and disc total value of [bold"
@@ -240,7 +240,7 @@ def has_solo_instrument(artist: str) -> bool:
 
 
 def check_artist(
-    tracks: Tracks, skip_confirm_artist_overwrite: bool, prompt: bool
+    tracks: Tracks, ask_before_artist_update: bool, prompt: bool
 ) -> list[str]:
     artists = get_artists(tracks)
     artists_with_instruments = [
@@ -249,11 +249,11 @@ def check_artist(
     if not artists_with_instruments:
         return artists_with_instruments
     for artist_with_instrument in artists_with_instruments:
-        skip_prompts = not skip_confirm_artist_overwrite and not prompt
+        skip_prompts = ask_before_artist_update and not prompt
         if skip_prompts:
             raise Exception
         if (
-            skip_confirm_artist_overwrite
+            not ask_before_artist_update
             or prompt
             and Prompt.ask(
                 "Remove bracketed solo instrument indication [bold"
@@ -304,8 +304,8 @@ def import_album(
     tracks: Tracks,
     import_all: bool,
     as_is: bool,
-    skip_confirm_disc_overwrite: bool,
-    skip_confirm_artist_overwrite: bool,
+    ask_before_disc_update: bool,
+    ask_before_artist_update: bool,
     prompt: bool,
 ) -> Optional[ImportError]:
     track_count = len(tracks)
@@ -325,10 +325,10 @@ def import_album(
     try:
         year = check_year(tracks, album_title, prompt=prompt)
         disc_number, disc_total, remove_bracket_disc = check_disc(
-            tracks, album_title, skip_confirm_disc_overwrite, prompt
+            tracks, album_title, ask_before_disc_update, prompt
         )
         artists_with_instruments = check_artist(
-            tracks, skip_confirm_artist_overwrite, prompt
+            tracks, ask_before_artist_update, prompt
         )
     except Exception:
         return ImportError.SKIP
@@ -368,8 +368,8 @@ def import_album(
 def import_albums(
     albums: list[str],
     as_is: bool,
-    skip_confirm_disc_overwrite: bool,
-    skip_confirm_artist_overwrite: bool,
+    ask_before_disc_update: bool,
+    ask_before_artist_update: bool,
     import_all=False,
     prompt=True,
 ):
@@ -392,8 +392,8 @@ def import_albums(
                 tracks,
                 import_all,
                 as_is,
-                skip_confirm_disc_overwrite,
-                skip_confirm_artist_overwrite,
+                ask_before_disc_update,
+                ask_before_artist_update,
                 prompt=prompt,
             )
             if error:

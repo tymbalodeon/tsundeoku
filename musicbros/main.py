@@ -30,23 +30,26 @@ def import_new(
     as_is: bool = Option(
         False, "--as-is", help="Import new albums without altering metadata"
     ),
-    skip_confirm_disc_overwrite: bool = Option(
-        True,
-        " /--confirm-overwrite-discs",
+    ask_before_disc_update: bool = Option(
+        False,
+        "--ask-before-disc-update",
         help=(
             'Prompt for confirmation to apply default disc and disc total values of "1'
             ' out of 1"'
         ),
     ),
-    skip_confirm_artist_overwrite: bool = Option(
-        True,
-        " /--confirm-overwrite-artist",
-        help="Prompt for confirmation to remove bracketed solo instrument indications",
+    ask_before_artist_update: bool = Option(
+        False,
+        "--ask-before-artist-update",
+        help=(
+            'Prompt for confirmation to remove bracketed "[solo <instrument>]"'
+            " indications"
+        ),
     ),
     prompt: bool = Option(
         True,
-        " /--no-prompt",
-        help="Skip importing albums requiring prompt for user decision",
+        " /--disallow-prompt",
+        help="Allow prompts for user confirmation to update metadata",
     ),
     albums: Optional[list[str]] = Argument(None, hidden=False),
 ):
@@ -59,8 +62,8 @@ def import_new(
     imports, errors, importable_error_albums = import_albums(
         albums,
         as_is,
-        skip_confirm_disc_overwrite,
-        skip_confirm_artist_overwrite,
+        ask_before_disc_update,
+        ask_before_artist_update,
         import_all=not first_time,
         prompt=prompt,
     )
@@ -74,7 +77,7 @@ def import_new(
     ):
         import_new(
             as_is=as_is,
-            skip_confirm_disc_overwrite=skip_confirm_disc_overwrite,
+            ask_before_disc_update=ask_before_disc_update,
             albums=importable_error_albums,
         )
 
@@ -131,7 +134,7 @@ def version(
     subcommand = context.invoked_subcommand
     if is_valid:
         if not subcommand:
-            import_new(as_is=False, skip_confirm_disc_overwrite=True, albums=None)
+            import_new(as_is=False, ask_before_disc_update=True, albums=None)
         return
     if subcommand in {"import-new", "update-metadata"}:
         raise Exit()
