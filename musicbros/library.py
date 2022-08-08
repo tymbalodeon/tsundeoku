@@ -1,4 +1,5 @@
 from re import escape
+
 from beets import config
 from beets.ui import _configure, _open_library, decargs
 from beets.ui.commands import modify_items, modify_parse_args
