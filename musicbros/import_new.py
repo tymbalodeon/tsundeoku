@@ -216,6 +216,7 @@ def check_disc(
                 else:
                     new_disc_number = None
         return new_disc_number, new_disc_total, remove_bracket_disc
+    remove_bracket_disc = True
     if bracket_disc == disc_number:
         new_disc_number = None
     else:
@@ -223,9 +224,9 @@ def check_disc(
             raise Exception
         if should_update("disc", bracket_disc, disc_number, album_title):
             new_disc_number = bracket_disc
-            remove_bracket_disc = True
         else:
             new_disc_number = None
+            remove_bracket_disc = False
     return new_disc_number, new_disc_total, remove_bracket_disc
 
 
