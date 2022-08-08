@@ -317,12 +317,11 @@ def import_album(
 ) -> Optional[ImportError]:
     track_count = len(tracks)
     track_total = get_track_total(tracks)
-    track_total_error = isinstance(track_total, ImportError)
-    if not import_all and track_total_error:
+    if isinstance(track_total, ImportError) and not import_all:
         return track_total
     is_complete_album = track_count and track_count == track_total
     if not is_complete_album and not import_all:
-        if track_total_error or track_count > track_total:
+        if isinstance(track_total, int) and track_count > track_total:
             return ImportError.CONFLICTING_TRACK_TOTALS
         return ImportError.MISSING_TRACKS
     album_title = get_album_title(tracks)
