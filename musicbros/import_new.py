@@ -386,8 +386,9 @@ def import_albums(
     importable_error_albums = []
     albums = [album for album in albums if not is_in_ignored_directory(album)]
     for album in albums:
-        if not import_all and is_already_imported(album):
-            skipped_count += 1
+        if is_already_imported(album):
+            if not import_all:
+                skipped_count += 1
             continue
         tracks = get_tracks(album)
         wav_tracks = has_wav_tracks(album)
