@@ -198,9 +198,9 @@ def check_disc(
             new_disc_number = None
         else:
             disc_total = get_disc_total(tracks)
-            skip_prompts = ask_before_disc_update and not prompt
+            skip = ask_before_disc_update and not prompt
             if not disc_total:
-                if skip_prompts:
+                if skip:
                     raise Exception
                 if (
                     not ask_before_disc_update
@@ -249,8 +249,8 @@ def check_artist(
     if not artists_with_instruments:
         return artists_to_update
     for artist_with_instrument in artists_with_instruments:
-        skip_prompts = ask_before_artist_update and not prompt
-        if skip_prompts:
+        skip = ask_before_artist_update and not prompt
+        if skip:
             raise Exception
         if (
             not ask_before_artist_update
