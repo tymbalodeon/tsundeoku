@@ -84,10 +84,10 @@ def has_wav_tracks(album: str) -> bool:
 def get_track_total(tracks: Tracks) -> int | ImportError:
     track_totals = get_track_totals(tracks)
     track_total: Optional[str] | int = get_album_wide_tag(track_totals)
-    if len(track_totals) > 1:
-        return ImportError.CONFLICTING_TRACK_TOTALS
     if not track_total:
         return ImportError.MISSING_TRACK_TOTAL
+    if len(track_totals) > 1:
+        return ImportError.CONFLICTING_TRACK_TOTALS
     return int(track_total)
 
 
@@ -316,11 +316,12 @@ def import_album(
 ) -> Optional[ImportError]:
     track_count = len(tracks)
     track_total = get_track_total(tracks)
-    if isinstance(track_total, ImportError):
+    track_total_error = isinstance(track_total, ImportError)
+    if not import_all and track_total_error:
         return track_total
     is_complete_album = track_count and track_count == track_total
     if not is_complete_album and not import_all:
-        if track_count > track_total:
+        if track_total_error or track_count > track_total:
             return ImportError.CONFLICTING_TRACK_TOTALS
         return ImportError.MISSING_TRACKS
     album_title = get_album_title(tracks)
