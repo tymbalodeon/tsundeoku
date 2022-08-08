@@ -168,12 +168,24 @@ def get_music_player() -> Optional[ConfigValue]:
         return add_missing_config_option(option, default_value)
 
 
+def get_directory_display(directory: Optional[str]) -> str:
+    if directory:
+        return f' "{directory}" '
+    return ""
+
+
+def get_shared_directory_error_message(shared_directory: Optional[str]) -> ErrorMessage:
+    directory_display = get_directory_display(shared_directory)
+    return (
+        f"ERROR: Shared directory{directory_display}does not exist. Please create the"
+        f" directory or update your config with `{CONFIG_SECTION_NAME} config"
+        " --update`."
+    )
+
+
 def validate_shared_directory() -> Optional[ErrorMessage]:
     shared_directory = get_shared_directory()
-    error_message = (
-        "ERROR: Shared directory does not exist. Please create the directory or"
-        f" update your config with `{CONFIG_SECTION_NAME} config --update`."
-    )
+    error_message = get_shared_directory_error_message(shared_directory)
     if not shared_directory:
         return error_message
     shared_directory_exists = Path(shared_directory).is_dir()
@@ -182,17 +194,25 @@ def validate_shared_directory() -> Optional[ErrorMessage]:
     return None
 
 
-def validate_ignored_directories() -> Optional[ErrorMessage]:
-    shared_directory = get_shared_directory()
-    error_message = (
-        "ERROR: Shared directory does not exist. Please create the directory or"
-        f" update your config with `{CONFIG_SECTION_NAME} config --update`."
+def get_ignored_directory_error_message(
+    ignored_directory: Optional[str],
+) -> ErrorMessage:
+    directory_display = get_directory_display(ignored_directory)
+    return (
+        f"ERROR: Ignored directory{directory_display}does not exist. Please add a valid"
+        f" directory  to your config with `{CONFIG_SECTION_NAME} config --update`."
     )
-    if not shared_directory:
-        return error_message
-    shared_directory_exists = Path(shared_directory).is_dir()
-    if not shared_directory_exists:
-        return error_message
+
+
+def validate_ignored_directories() -> Optional[ErrorMessage]:
+    ignored_directories = get_ignored_directories()
+    if not ignored_directories:
+        return None
+    for directory in ignored_directories:
+        ignored_directory_exists = Path(directory).is_dir()
+        if not ignored_directory_exists:
+            error_message = get_ignored_directory_error_message(directory)
+            return error_message
     return None
 
 
