@@ -1,3 +1,4 @@
+from sys import argv
 from typing import Optional
 
 from rich import print
@@ -15,6 +16,42 @@ app = Typer(
     context_settings={"help_option_names": ["-h", "--help"]},
     add_completion=False,
 )
+
+
+def display_version(version: bool):
+    if version:
+        print(f"musicbros {__version__}")
+        raise Exit()
+
+
+@app.callback(invoke_without_command=True)
+def version(
+    context: Context,
+    version: bool = Option(
+        False,
+        "--version",
+        "-V",
+        callback=display_version,
+        help="Display version number",
+    ),
+):
+    if version:
+        return
+    help_option_names = context.help_option_names
+    display_help = False
+    for option in help_option_names:
+        if option in argv:
+            display_help = True
+    if display_help:
+        return
+    is_valid = validate_config()
+    subcommand = context.invoked_subcommand
+    if is_valid:
+        if not subcommand:
+            import_new(as_is=False, ask_before_disc_update=True, albums=None)
+        return
+    if subcommand in {"import-new", "update-metadata"}:
+        raise Exit()
 
 
 @app.command()
@@ -110,32 +147,3 @@ def update_metadata(
       piano]") from artist fields.
     """
     update_metadata_main(solo_instruments)
-
-
-def display_version(version: bool):
-    if version:
-        print(f"musicbros {__version__}")
-        raise Exit()
-
-
-@app.callback(invoke_without_command=True)
-def version(
-    context: Context,
-    version: bool = Option(
-        False,
-        "--version",
-        "-V",
-        callback=display_version,
-        help="Display version number",
-    ),
-):
-    if version:
-        return
-    is_valid = validate_config()
-    subcommand = context.invoked_subcommand
-    if is_valid:
-        if not subcommand:
-            import_new(as_is=False, ask_before_disc_update=True, albums=None)
-        return
-    if subcommand in {"import-new", "update-metadata"}:
-        raise Exit()
