@@ -7,6 +7,14 @@ library_config = {"verbose": 0, "replace": {}, "timeout": 5}
 LIBRARY = _open_library(_configure(library_config))
 
 
+def get_comments(artist: str, album: str, library=LIBRARY) -> list:
+    artist_query = f"artist:{artist}"
+    album_query = f"album:{album}"
+    query = f"{artist_query} {album_query}"
+    tracks = list(library.items(query))
+    return tracks
+
+
 def modify_tracks(args: list, album=True, confirm=False, library=LIBRARY):
     query, modifications, deletions = modify_parse_args(decargs(args))
     if not modifications and not deletions:

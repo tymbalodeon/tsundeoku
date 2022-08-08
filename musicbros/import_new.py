@@ -14,7 +14,7 @@ from .config import (
     get_pickle_file,
     get_shared_directory,
 )
-from .library import modify_tracks
+from .library import get_comments, modify_tracks
 from .regex import BRACKET_DISC_REGEX, BRACKET_SOLO_INSTRUMENT, BRACKET_YEAR_REGEX
 from .style import PrintLevel, print_with_color
 from .tags import (
@@ -199,14 +199,18 @@ def check_disc(
             new_disc_number = None
         else:
             disc_total = get_disc_total(tracks)
-            skip_prompts = not skip_confirm_disc_overwrite or not prompt
+            skip_prompts = not skip_confirm_disc_overwrite and not prompt
             if not disc_total:
                 if skip_prompts:
                     raise Exception
-                if Prompt.ask(
-                    'Apply default disc and disc total value of [bold yellow]"1"[/bold'
-                    " yellow] to album with missing disc and disc total:"
-                    f" [blue]{album_title}[/blue]?"
+                if (
+                    skip_confirm_disc_overwrite
+                    or prompt
+                    and Prompt.ask(
+                        "Apply default disc and disc total value of [bold"
+                        ' yellow]"1"[/bold yellow] to album with missing disc and disc'
+                        f" total: [blue]{album_title}[/blue]?"
+                    )
                 ):
                     new_disc_number = "1"
                     new_disc_total = "1"
@@ -239,30 +243,30 @@ def check_artist(
     tracks: Tracks, skip_confirm_artist_overwrite: bool, prompt: bool
 ) -> list[str]:
     artists = get_artists(tracks)
-    artists_with_solo_instruments = {
+    artists_with_instruments = [
         artist for artist in artists if has_solo_instrument(artist)
-    }
-    solo_instruments = []
-    if not artists_with_solo_instruments:
-        return solo_instruments
-    for solo_instrument in artists_with_solo_instruments:
-        if not solo_instrument:
-            return solo_instruments
-        skip_prompts = not skip_confirm_artist_overwrite or not prompt
+    ]
+    if not artists_with_instruments:
+        return artists_with_instruments
+    for artist_with_instrument in artists_with_instruments:
+        skip_prompts = not skip_confirm_artist_overwrite and not prompt
         if skip_prompts:
             raise Exception
-        remove_solo_instrument = Prompt.ask(
-            "Remove bracketed solo instrument indication [bold"
-            f" yellow]{solo_instrument}[/bold yellow] from the artist field and add to"
-            " comments?"
-        )
-        if remove_solo_instrument:
-            solo_instruments.append(solo_instrument)
-    return solo_instruments
+        if (
+            skip_confirm_artist_overwrite
+            or prompt
+            and Prompt.ask(
+                "Remove bracketed solo instrument indication [bold"
+                f" yellow]{artist_with_instrument}[/bold yellow] from the artist field"
+                " and add to comments?"
+            )
+        ):
+            artists_with_instruments.append(artist_with_instrument)
+    return artists_with_instruments
 
 
 def get_modify_tracks_query(
-    album_title: str, artist: str, artist_field_type: str
+    album_title: str, artist_field_type: str, artist: str
 ) -> BeetsQuery:
     query = [f"album::^{album_title}$"]
     if artist_field_type and artist:
@@ -274,8 +278,25 @@ def get_modify_tracks_modification(field: str, new_value: str) -> BeetsQuery:
     return [f"{field}={new_value}"]
 
 
-def add_solo_instrument_to_comments():
-    pass
+def get_bracket_solo_instrument(artist_with_instrument: str) -> str:
+    match = search(BRACKET_SOLO_INSTRUMENT, artist_with_instrument)
+    if not match:
+        return ""
+    return match.group()
+
+
+def add_solo_instrument_to_comments(artist_with_instrument, album_title):
+    tracks = get_comments(artist_with_instrument, album_title)
+    solo_instrument = get_bracket_solo_instrument(artist_with_instrument)
+    query = get_modify_tracks_query(album_title, "artist", artist_with_instrument)
+    for track in tracks:
+        comments = track.comments
+        if comments:
+            comments = f"{comments}; {solo_instrument}"
+        else:
+            comments = solo_instrument
+        modification = get_modify_tracks_modification("comments", comments)
+        modify_tracks(query + modification)
 
 
 def import_album(
@@ -306,14 +327,16 @@ def import_album(
         disc_number, disc_total, remove_bracket_disc = check_disc(
             tracks, album_title, skip_confirm_disc_overwrite, prompt
         )
-        solo_instruments = check_artist(tracks, skip_confirm_artist_overwrite, prompt)
+        artists_with_instruments = check_artist(
+            tracks, skip_confirm_artist_overwrite, prompt
+        )
     except Exception:
         return ImportError.SKIP
     error = beet_import(album)
     if error:
         return error
     artist, artist_field_type = get_artist_and_artist_field_name(tracks)
-    query = get_modify_tracks_query(escape(album_title), artist, artist_field_type)
+    query = get_modify_tracks_query(escape(album_title), artist_field_type, artist)
     if year:
         modification = get_modify_tracks_modification("year", year)
         modify_tracks(query + modification)
@@ -330,8 +353,11 @@ def import_album(
             f"album={discless_album_title}",
         ]
         modify_tracks(query)
-    for solo_instrument in solo_instruments:
-        artist_without_instrument = sub(BRACKET_SOLO_INSTRUMENT, "", solo_instrument)
+    for artist_with_instrument in artists_with_instruments:
+        add_solo_instrument_to_comments(artist_with_instrument, album_title)
+        artist_without_instrument = sub(
+            BRACKET_SOLO_INSTRUMENT, "", artist_with_instrument
+        )
         modification = get_modify_tracks_modification(
             "artist", artist_without_instrument
         )
