@@ -208,7 +208,7 @@ def check_disc(
                     and Prompt.ask(
                         "Apply default disc and disc total value of [bold"
                         ' yellow]"1"[/bold yellow] to album with missing disc and disc'
-                        f" total: [blue]{album_title}[/blue]?"
+                        f" total: [blue]{escape(album_title)}[/blue]?"
                     )
                 ):
                     new_disc_number = "1"
