@@ -117,6 +117,7 @@ def import_new(
             ask_before_disc_update=ask_before_disc_update,
             ask_before_artist_update=ask_before_artist_update,
             albums=importable_error_albums,
+            prompt=prompt,
         )
 
 
