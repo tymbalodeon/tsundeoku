@@ -43,12 +43,12 @@ class ImportError(Enum):
     SKIP = "skip"
 
 
-IMPORTABLE_ERROR_KEYS = [
+IMPORTABLE_ERROR_KEYS = {
     ImportError.CONFLICTING_TRACK_TOTALS,
     ImportError.MISSING_TRACK_TOTAL,
     ImportError.MISSING_TRACKS,
     ImportError.WAV_FILES,
-]
+}
 AUDIO_FILE_TYPES = ("*.mp3", "*.Mp3", "*.m4a", "*.flac", "*.aif*")
 
 
