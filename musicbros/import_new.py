@@ -155,7 +155,7 @@ def should_update(
     return Prompt.ask(
         f"Use bracket {field} [[bold yellow]{bracket_value}[/bold yellow]] instead of"
         f" {field} ([bold yellow]{existing_value}[/bold yellow]) for album:"
-        f" [blue]{album_title}[/blue]?"
+        f" [blue]{escape(album_title)}[/blue]?"
     )
 
 
