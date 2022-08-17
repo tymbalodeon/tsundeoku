@@ -219,8 +219,9 @@ def validate_ignored_directories() -> Optional[ErrorMessage]:
 def validate_pickle_file() -> Optional[ErrorMessage]:
     pickle_file = get_pickle_file()
     error_message = (
-        "ERROR: Pickle file does not exist. Please initialize your beets library"
-        " following the beets documentation."
+        "ERROR: Pickle file does not exist. Please initialize your beets library by"
+        " following the instructions in the"
+        " [link=https://beets.readthedocs.io/en/stable/]beets documentation.[/link]"
     )
     if not pickle_file:
         return error_message
