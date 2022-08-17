@@ -27,8 +27,12 @@ except Exception:
     THEME = DEFAULT_THEME
 
 
+def format_int_with_commas(number: int) -> str:
+    return f"{number:,}"
+
+
 def print_with_color(text: str | int, style=PrintLevel.WARNING):
     if isinstance(text, int):
-        text = f"{text:,}"
+        text = format_int_with_commas(text)
     console = Console(theme=THEME)
     console.print(text, style=style.value)

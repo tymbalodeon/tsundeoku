@@ -2,6 +2,7 @@ from typer.testing import CliRunner
 
 from musicbros import __version__
 from musicbros.main import app
+from musicbros.style import format_int_with_commas
 
 EXPECTED_VERSION = "0.3.0"
 CLI_RUNNER = CliRunner()
@@ -26,9 +27,9 @@ def test_help():
 
 
 def test_config_help():
-    config_help = "Create, update, and display config values"
+    config_help_text = "Create, update, and display config values"
     result = CLI_RUNNER.invoke(app, ["config", "-h"])
-    assert config_help in result.stdout
+    assert config_help_text in result.stdout
     assert result.exit_code == 0
 
 
@@ -42,3 +43,9 @@ def test_config():
         option = f"{option} = "
         assert option in stdout
     assert result.exit_code == 0
+
+
+def test_style_int():
+    one_thousand = 1000
+    one_thousand_with_comma = format_int_with_commas(one_thousand)
+    assert one_thousand_with_comma == "1,000"
