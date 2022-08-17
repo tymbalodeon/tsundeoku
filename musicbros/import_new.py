@@ -6,6 +6,7 @@ from re import escape, search, sub
 from typing import Optional
 
 from beets.importer import history_add
+from rich.markup import escape as rich_escape
 from rich.prompt import Prompt
 
 from .config import (
@@ -155,7 +156,7 @@ def should_update(
     return Prompt.ask(
         f"Use bracket {field} [[bold yellow]{bracket_value}[/bold yellow]] instead of"
         f" {field} ([bold yellow]{existing_value}[/bold yellow]) for album:"
-        f" [blue]{escape(album_title)}[/blue]?"
+        f" [blue]{rich_escape(album_title)}[/blue]?"
     )
 
 
@@ -208,7 +209,7 @@ def check_disc(
                     and Prompt.ask(
                         "Apply default disc and disc total value of [bold"
                         ' yellow]"1"[/bold yellow] to album with missing disc and disc'
-                        f" total: [blue]{escape(album_title)}[/blue]?"
+                        f" total: [blue]{rich_escape(album_title)}[/blue]?"
                     )
                 ):
                     new_disc_number = "1"
