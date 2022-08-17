@@ -5,7 +5,8 @@ VERSION := $(shell awk -F '[ ="]+' '$$1 == "version" { print $$2 }' $(PYPROJECT)
 WHEEL := ./dist/$(COMMAND)-$(VERSION)-py3-none-any.whl
 POETRY = poetry run
 PRE_COMMIT = pre-commit run
-BEETS_CONFIG_PATH = ~/.config/beets/config.yaml
+BEETS_CONFIG_FOLDER = ~/.config/beets
+BEETS_CONFIG_PATH = $(BEETS_CONFIG_FOLDER)/config.yaml
 
 define BEETS_CONFIG_VALUES
 directory: ~/Music
@@ -19,6 +20,7 @@ all: help
 
 export BEETS_CONFIG_VALUES
 beets:
+	mkdir -p $(BEETS_CONFIG_FOLDER)
 	echo "$$BEETS_CONFIG_VALUES" > $(BEETS_CONFIG_PATH)
 
 .PHONY: build
