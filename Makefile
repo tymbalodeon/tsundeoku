@@ -7,6 +7,8 @@ POETRY = poetry run
 PRE_COMMIT = pre-commit run
 BEETS_CONFIG_FOLDER = ~/.config/beets
 BEETS_CONFIG_PATH = $(BEETS_CONFIG_FOLDER)/config.yaml
+TEST = $(POETRY) coverage run -m pytest
+COVERAGE = $(POETRY) coverage report -m
 
 define BEETS_CONFIG_VALUES
 directory: ~/Music
@@ -30,6 +32,15 @@ build: ## Build the CLI and isntall it in your global pip packages
 check: ## Check for problems
 	$(POETRY) $(PRE_COMMIT) -a
 
+coverage: test ## Run coverage report (options: "fail-under=<percentage>", "search=<term>")
+ifdef fail-under
+	$(COVERAGE) --fail-under $(fail-under)
+else ifdef search
+	$(COVERAGE) | grep $(search)
+else
+	$(COVERAGE)
+endif
+
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 	| sort \
@@ -39,6 +50,13 @@ shell: ## Run bpython in project virtual environment
 	$(POETRY) bpython
 
 start: beets build ## Add beets config before installing musicbros
+
+test: ## Run tests (option: "print=true")
+ifdef print
+	$(TEST) -s
+else
+	$(TEST)
+endif
 
 try: ## Try a command using the current state of the files without building
 ifdef args

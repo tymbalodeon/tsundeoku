@@ -25,9 +25,9 @@ def display_version(version: bool):
 
 
 @app.callback(invoke_without_command=True)
-def version(
+def callback(
     context: Context,
-    version: bool = Option(
+    _: bool = Option(
         False,
         "--version",
         "-V",
@@ -35,8 +35,6 @@ def version(
         help="Display version number",
     ),
 ):
-    if version:
-        return
     help_option_names = context.help_option_names
     display_help = False
     for option in help_option_names:
@@ -50,8 +48,8 @@ def version(
         if not subcommand:
             import_new(as_is=False, ask_before_disc_update=True, albums=None)
         return
-    if subcommand in {"import-new", "update-metadata"}:
-        raise Exit()
+    if not subcommand or subcommand in {"import-new", "update-metadata"}:
+        raise Exit(1)
 
 
 @app.command()

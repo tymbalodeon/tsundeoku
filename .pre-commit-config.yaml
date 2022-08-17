@@ -44,3 +44,10 @@ repos:
     hooks:
       - id: mypy
         args: [--ignore-missing-imports]
+  - repo: local
+    hooks:
+      - id: test
+        name: test
+        entry: make test
+        language: system
+        pass_filenames: false
