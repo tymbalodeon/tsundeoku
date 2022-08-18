@@ -4,16 +4,16 @@ from musicbros import __version__
 from musicbros.main import app
 from musicbros.style import format_int_with_commas
 
-EXPECTED_VERSION = "0.3.0"
 CLI_RUNNER = CliRunner()
 
 
 def test_version():
-    assert __version__ == EXPECTED_VERSION
+    expected_version = "0.3.0"
+    assert __version__ == expected_version
     for option in ["--version", "-V"]:
-        result = CLI_RUNNER.invoke(app, [option])
+        result = CLI_RUNNER.invoke(app, option)
         assert result.exit_code == 0
-        assert result.stdout == f"musicbros {EXPECTED_VERSION}\n"
+        assert result.stdout == f"musicbros {expected_version}\n"
 
 
 def test_help():
@@ -21,7 +21,7 @@ def test_help():
         'CLI for managing imports from a shared folder to a "beets" library'
     )
     for option in ["--help", "-h"]:
-        result = CLI_RUNNER.invoke(app, [option])
+        result = CLI_RUNNER.invoke(app, option)
         assert app_description in result.stdout
         assert result.exit_code == 0
 
@@ -34,7 +34,7 @@ def test_config_help():
 
 
 def test_config():
-    result = CLI_RUNNER.invoke(app, ["config"])
+    result = CLI_RUNNER.invoke(app, "config")
     stdout = result.stdout
     section = "[musicbros]"
     assert section in stdout
@@ -49,3 +49,35 @@ def test_style_int():
     one_thousand = 1000
     one_thousand_with_comma = format_int_with_commas(one_thousand)
     assert one_thousand_with_comma == "1,000"
+
+
+def test_import_new_help():
+    import_new_help_text = (
+        'Copy new adds from your shared folder to your "beets" library'
+    )
+    result = CLI_RUNNER.invoke(app, ["import-new", "-h"])
+    assert import_new_help_text in result.stdout
+    assert result.exit_code == 0
+
+
+def test_update_metadata_help():
+    update_metadata_help_text = "Update metadata according to the following rules:"
+    remove_bracket_year_help_text = (
+        'Remove bracketed years (e.g., "[2022]") from album fields'
+    )
+    expand_abbreviation_help_text = (
+        'Expand the abbreviations "Rec.," "Rec.s," and "Orig." to "Recording,"'
+    )
+    remove_bracket_solo_help_text = (
+        "[Optional] Remove bracketed solo instrument indications"
+    )
+    result = CLI_RUNNER.invoke(app, ["update-metadata", "-h"])
+    stdout = result.stdout
+    for help_text in [
+        update_metadata_help_text,
+        remove_bracket_year_help_text,
+        expand_abbreviation_help_text,
+        remove_bracket_solo_help_text,
+    ]:
+        assert help_text in stdout
+    assert result.exit_code == 0
