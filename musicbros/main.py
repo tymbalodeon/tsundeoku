@@ -46,7 +46,13 @@ def callback(
     subcommand = context.invoked_subcommand
     if is_valid:
         if not subcommand:
-            import_new(as_is=False, ask_before_disc_update=True, albums=None)
+            import_new(
+                as_is=False,
+                ask_before_disc_update=False,
+                ask_before_artist_update=False,
+                prompt=True,
+                albums=None,
+            )
         return
     if not subcommand or subcommand in {"import-new", "update-metadata"}:
         raise Exit(1)
