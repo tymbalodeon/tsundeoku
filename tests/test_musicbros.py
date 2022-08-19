@@ -9,11 +9,12 @@ CLI_RUNNER = CliRunner()
 
 def test_version():
     expected_version = "0.3.0"
+    expected_version_display = f"musicbros {expected_version}\n"
     assert __version__ == expected_version
     for option in ["--version", "-V"]:
         result = CLI_RUNNER.invoke(app, option)
+        assert result.stdout == expected_version_display
         assert result.exit_code == 0
-        assert result.stdout == f"musicbros {expected_version}\n"
 
 
 def test_help():
@@ -35,8 +36,8 @@ def test_config_help():
 
 def test_config():
     result = CLI_RUNNER.invoke(app, "config")
-    stdout = result.stdout
     section = "[musicbros]"
+    stdout = result.stdout
     assert section in stdout
     options = ["shared_directory", "pickle_file", "ignored_directories", "music_player"]
     for option in options:
@@ -47,8 +48,9 @@ def test_config():
 
 def test_style_int():
     one_thousand = 1000
+    expected_formatting = "1,000"
     one_thousand_with_comma = format_int_with_commas(one_thousand)
-    assert one_thousand_with_comma == "1,000"
+    assert one_thousand_with_comma == expected_formatting
 
 
 def test_import_new_help():
