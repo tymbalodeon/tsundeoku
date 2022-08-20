@@ -231,7 +231,7 @@ def check_disc(
     return new_disc_number, new_disc_total, remove_bracket_disc
 
 
-def has_solo_instrument(artist: str) -> bool:
+def has_solo_instrument(artist: str | None) -> bool:
     if not artist:
         return False
     match = search(BRACKET_SOLO_INSTRUMENT, artist)
@@ -242,12 +242,12 @@ def has_solo_instrument(artist: str) -> bool:
 
 def check_artist(
     tracks: Tracks, ask_before_artist_update: bool, prompt: bool
-) -> list[str]:
+) -> list[str | None]:
     artists = get_artists(tracks)
     artists_with_instruments = [
         artist for artist in artists if has_solo_instrument(artist)
     ]
-    artists_to_update: list[str] = []
+    artists_to_update: list[str | None] = []
     if not artists_with_instruments:
         return artists_to_update
     for artist_with_instrument in artists_with_instruments:
@@ -360,6 +360,7 @@ def import_album(
         modification = get_modify_tracks_modification("album", discless_album_title)
         modify_tracks(query + modification)
     for artist_with_instrument in artists_with_instruments:
+        artist_with_instrument = artist_with_instrument or ""
         add_solo_instrument_to_comments(artist_with_instrument, album_title)
         artist_without_instrument = sub(
             BRACKET_SOLO_INSTRUMENT, "", artist_with_instrument
