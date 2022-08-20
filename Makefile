@@ -8,7 +8,7 @@ PRE_COMMIT = pre-commit run
 BEETS_CONFIG_FOLDER = ~/.config/beets
 BEETS_CONFIG_PATH = $(BEETS_CONFIG_FOLDER)/config.yaml
 TEST = $(POETRY) coverage run -m pytest
-COVERAGE = $(POETRY) coverage report -m --skip-covered
+COVERAGE = $(POETRY) coverage report -m --skip-covered --sort=cover
 
 define BEETS_CONFIG_VALUES
 directory: ~/Music
