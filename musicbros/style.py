@@ -24,9 +24,16 @@ def format_int_with_commas(number: int) -> str:
     return f"{number:,}"
 
 
+def get_theme_config() -> str:
+    home = Path.home()
+    config_path = home / ".config/musicbros"
+    theme_config = config_path / "theme.ini"
+    return str(theme_config)
+
+
 def get_theme() -> Theme:
     try:
-        theme_config = str(Path.home() / ".config/musicbros/theme.ini")
+        theme_config = get_theme_config()
         return Theme.read(theme_config)
     except Exception:
         return DEFAULT_THEME

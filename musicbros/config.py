@@ -16,7 +16,8 @@ ErrorMessage = str
 ConfigOptionAndValue = tuple[ConfigOption, Optional[ConfigValue]]
 ConfigOptions = list[ConfigOptionAndValue]
 
-CONFIG_DIRECTORY = Path.home() / ".config" / "musicbros"
+CONFIG_PATH = ".config/musicbros"
+CONFIG_DIRECTORY = Path.home() / CONFIG_PATH
 CONFIG_FILE = CONFIG_DIRECTORY / "musicbros.ini"
 CONFIG_SECTION_NAME = "musicbros"
 SHARED_DIRECTORY_OPTION_NAME = "shared_directory"
