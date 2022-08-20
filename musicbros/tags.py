@@ -4,11 +4,14 @@ from tinytag import TinyTag
 
 Tracks = list[Path]
 Tag = str
-Tags = set[Tag]
+Tags = set[Tag | None]
 
 
 def get_album_wide_tag(tags: Tags) -> Tag:
-    return next(iter(tags), "")
+    album_wide_tag = next(iter(tags))
+    if album_wide_tag is None:
+        return ""
+    return album_wide_tag
 
 
 def get_albumartist(tracks: Tracks) -> Tag:
