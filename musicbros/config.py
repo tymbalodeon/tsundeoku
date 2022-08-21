@@ -4,7 +4,7 @@ from pathlib import Path
 from subprocess import run
 from typing import Optional
 
-from rich.console import Console
+from rich import print
 from rich.prompt import Confirm, Prompt
 from rich.syntax import Syntax
 
@@ -115,10 +115,10 @@ def write_config_options(first_time=False) -> ConfigOptions:
 
 
 def print_config_values():
-    console = Console()
     config_path = str(CONFIG_FILE)
     syntax = Syntax.from_path(config_path, lexer="yaml", theme="ansi_dark")
-    console.print(syntax)
+    print(f"{config_path}\n")
+    print(syntax)
 
 
 def add_missing_config_option(option: ConfigOption, value: ConfigValue) -> ConfigValue:
