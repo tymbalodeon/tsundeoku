@@ -17,8 +17,6 @@ ConfigOptionAndValue = tuple[ConfigOption, Optional[ConfigValue]]
 ConfigOptions = list[ConfigOptionAndValue]
 
 CONFIG_PATH = ".config/musicbros"
-CONFIG_DIRECTORY = Path.home() / CONFIG_PATH
-CONFIG_FILE = CONFIG_DIRECTORY / "musicbros.ini"
 CONFIG_SECTION_NAME = "musicbros"
 SHARED_DIRECTORY_OPTION_NAME = "shared_directory"
 PICKLE_FILE_OPTION_NAME = "pickle_file"
@@ -32,16 +30,26 @@ CONFIG_OPTIONS = (
 )
 
 
-if not CONFIG_DIRECTORY.exists():
-    Path.mkdir(CONFIG_DIRECTORY, parents=True)
-if not CONFIG_FILE.is_file():
-    with open(CONFIG_FILE, "w") as config_file:
-        config_file.write(f"[{CONFIG_SECTION_NAME}]\n")
+def get_config_directory():
+    config_directory = Path.home() / CONFIG_PATH
+    if not config_directory.exists():
+        Path.mkdir(config_directory, parents=True)
+    return config_directory
 
 
-def get_config_file() -> ConfigParser:
+def get_config_file():
+    config_directory = get_config_directory()
+    config_path = config_directory / "musicbros.ini"
+    if not config_path.is_file():
+        with open(config_path, "w") as config_file:
+            config_file.write(f"[{CONFIG_SECTION_NAME}]\n")
+    return config_path
+
+
+def get_config() -> ConfigParser:
     config = ConfigParser()
-    config.read(CONFIG_FILE)
+    config_file = get_config_file()
+    config.read(config_file)
     return config
 
 
@@ -76,7 +84,7 @@ def get_config_value(
     if new:
         return get_new_config_value(option, first_time)
     if not config:
-        config = get_config_file()
+        config = get_config()
     return config.get(CONFIG_SECTION_NAME, option)
 
 
@@ -91,7 +99,7 @@ def get_option_and_value(
 
 
 def get_config_options() -> ConfigOptions:
-    config = get_config_file()
+    config = get_config()
     options = config.options(CONFIG_SECTION_NAME)
     return [get_option_and_value(option, config) for option in options]
 
@@ -105,17 +113,19 @@ def write_config_options(first_time=False) -> ConfigOptions:
         config = ConfigParser()
         config[CONFIG_SECTION_NAME] = {}
     else:
-        config = get_config_file()
+        config = get_config()
     for option, value in new_options_and_Values:
         if value is not None:
             config[CONFIG_SECTION_NAME][option] = value
-    with open(CONFIG_FILE, "w") as config_file:
+    config_file_path = get_config_file()
+    with open(config_file_path, "w") as config_file:
         config.write(config_file)
     return get_config_options()
 
 
 def print_config_values():
-    config_path = str(CONFIG_FILE)
+    config_file_path = get_config_file()
+    config_path = str(config_file_path)
     syntax = Syntax.from_path(config_path, lexer="yaml", theme="ansi_dark")
     print(f"{config_path}\n")
     print(syntax)
@@ -123,7 +133,8 @@ def print_config_values():
 
 def add_missing_config_option(option: ConfigOption, value: ConfigValue) -> ConfigValue:
     option_and_value = f"{option} = {value}\n"
-    with open(CONFIG_FILE, "a") as config_file:
+    config_file_path = get_config_file()
+    with open(config_file_path, "a") as config_file:
         config_file.write(option_and_value)
     return value
 
@@ -137,7 +148,7 @@ def get_shared_directory() -> Optional[ConfigValue]:
         return add_missing_config_option(option, default_value)
 
 
-def get_pickle_file() -> Optional[ConfigValue]:
+def get_pickle_path() -> Optional[ConfigValue]:
     option = PICKLE_FILE_OPTION_NAME
     try:
         return get_config_value(option)
@@ -218,7 +229,7 @@ def validate_ignored_directories() -> Optional[ErrorMessage]:
 
 
 def validate_pickle_file() -> Optional[ErrorMessage]:
-    pickle_file = get_pickle_file()
+    pickle_file = get_pickle_path()
     error_message = (
         "ERROR: Pickle file does not exist. Please initialize your beets library by"
         " following the instructions in the"

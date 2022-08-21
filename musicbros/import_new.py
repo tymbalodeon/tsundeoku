@@ -54,11 +54,11 @@ AUDIO_FILE_TYPES = ("*.mp3", "*.Mp3", "*.m4a", "*.flac", "*.aif*")
 
 
 def get_imported_albums() -> set[str]:
-    pickle_file = get_pickle_file()
-    if not pickle_file:
+    pickle_path = get_pickle_file()
+    if not pickle_path:
         return set()
-    with open(pickle_file, "rb") as raw_pickle:
-        unpickled = load(raw_pickle)["taghistory"]
+    with open(pickle_path, "rb") as pickle_file:
+        unpickled = load(pickle_file)["taghistory"]
         return {album[0].decode() for album in unpickled}
 
 
