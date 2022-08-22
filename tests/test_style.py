@@ -7,6 +7,7 @@ from musicbros.style import (
     get_theme,
     get_theme_config,
 )
+from tests.mocks import set_mock_home
 
 
 def test_get_theme(monkeypatch, tmp_path):
@@ -24,12 +25,9 @@ def test_get_theme(monkeypatch, tmp_path):
     assert theme != DEFAULT_THEME
 
 
-def test_get_theme_config(monkeypatch):
-    def mock_home():
-        return Path("/test_home")
-
-    monkeypatch.setattr(Path, "home", mock_home)
-    expected_theme_config = "/test_home/.config/musicbros/theme.ini"
+def test_get_theme_config(monkeypatch, tmp_path):
+    set_mock_home(monkeypatch, tmp_path)
+    expected_theme_config = str(tmp_path / ".config/musicbros/theme.ini")
     theme_config = get_theme_config()
     assert theme_config == expected_theme_config
 

@@ -39,11 +39,10 @@ def get_config_directory():
 
 def get_config_file():
     config_directory = get_config_directory()
-    config_path = config_directory / "musicbros.ini"
-    if not config_path.is_file():
-        with open(config_path, "w") as config_file:
-            config_file.write(f"[{CONFIG_SECTION_NAME}]\n")
-    return config_path
+    config_file = config_directory / "musicbros.ini"
+    if not config_file.is_file():
+        config_file.write_text(f"[{CONFIG_SECTION_NAME}]\n")
+    return config_file
 
 
 def get_config() -> ConfigParser:
