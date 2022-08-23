@@ -7,6 +7,7 @@ from musicbros.config import (
     get_config_directory,
     get_config_file,
     get_config_options,
+    get_directory_display,
     get_ignored_directories,
     get_option_and_value,
     validate_config,
@@ -38,8 +39,7 @@ def test_get_config_file(monkeypatch, tmp_path):
     expected_ignored_directories = []
     expected_music_player = "Swinsian"
     assert (
-        text
-        == "[musicbros]\n"
+        text == "[musicbros]\n"
         f"shared_directory = {expected_shared_directory}\n"
         f"pickle_file = {expected_pickle_file}\n"
         f"ignored_directories = {expected_ignored_directories}\n"
@@ -92,8 +92,9 @@ def test_get_ignored_directories(monkeypatch):
     assert ignored_directories == []
 
 
-def test_validate_config():
-    validate_config()
+def test_get_directory_display():
+    directory_display = get_directory_display(None)
+    assert directory_display == ""
 
 
 def test_config_help():
