@@ -1,6 +1,5 @@
-from collections.abc import Callable
-from json import loads
 from configparser import ConfigParser
+from json import loads
 from pathlib import Path
 from subprocess import run
 from typing import Optional
@@ -53,7 +52,7 @@ def get_config_file() -> Path:
         section = f"[{CONFIG_SECTION_NAME}]"
         default_shared_directory = get_default_shared_directory()
         default_pickle_file = get_default_pickle_file()
-        default_ignored_directories = []
+        default_ignored_directories: list[str] = []
         default_music_player = "Swinsian"
         config_base = (
             f"{section}\n"
@@ -155,7 +154,7 @@ def get_shared_directory() -> Optional[ConfigValue]:
     return get_config_value(SHARED_DIRECTORY_OPTION_NAME)
 
 
-def get_pickle_path() -> Optional[ConfigValue]:
+def get_pickle_file() -> Optional[ConfigValue]:
     return get_config_value(PICKLE_FILE_OPTION_NAME)
 
 
@@ -188,10 +187,7 @@ def get_shared_directory_error_message(shared_directory: Optional[str]) -> Error
 def validate_shared_directory() -> Optional[ErrorMessage]:
     shared_directory = get_shared_directory()
     error_message = get_shared_directory_error_message(shared_directory)
-    if not shared_directory:
-        return error_message
-    shared_directory_exists = Path(shared_directory).is_dir()
-    if not shared_directory_exists:
+    if not shared_directory or not Path(shared_directory).is_dir():
         return error_message
     return None
 
@@ -211,24 +207,20 @@ def validate_ignored_directories() -> Optional[ErrorMessage]:
     if not ignored_directories:
         return None
     for directory in ignored_directories:
-        ignored_directory_exists = Path(directory).is_dir()
-        if not ignored_directory_exists:
+        if not Path(directory).is_dir():
             error_message = get_ignored_directory_error_message(directory)
             return error_message
     return None
 
 
 def validate_pickle_file() -> Optional[ErrorMessage]:
-    pickle_file = get_pickle_path()
+    pickle_file = get_pickle_file()
     error_message = (
         "ERROR: Pickle file does not exist. Please initialize your beets library by"
         " following the instructions in the"
         " [link=https://beets.readthedocs.io/en/stable/]beets documentation.[/link]"
     )
-    if not pickle_file:
-        return error_message
-    pickle_file_exists = Path(pickle_file).is_file()
-    if not pickle_file_exists:
+    if not pickle_file or not Path(pickle_file).is_file():
         return error_message
     return None
 
@@ -248,18 +240,14 @@ def validate_music_player() -> Optional[ErrorMessage]:
     return None
 
 
-def get_validators() -> list[Callable]:
-    return [
+def validate_config() -> bool:
+    error_messages = []
+    validators = [
         validate_shared_directory,
         validate_pickle_file,
         validate_ignored_directories,
         validate_music_player,
     ]
-
-
-def validate_config() -> bool:
-    error_messages = []
-    validators = get_validators()
     for validate in validators:
         error_message = validate()
         if error_message:

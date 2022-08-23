@@ -40,8 +40,6 @@ def get_theme() -> Theme:
 
 
 def print_with_color(text: str | int, style=PrintLevel.WARNING):
-    if isinstance(text, int):
-        text = format_int_with_commas(text)
     theme = get_theme()
     console = Console(theme=theme)
     console.print(text, style=style.value)

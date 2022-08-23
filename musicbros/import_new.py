@@ -12,7 +12,7 @@ from rich.prompt import Prompt
 from .config import (
     get_ignored_directories,
     get_music_player,
-    get_pickle_path,
+    get_pickle_file,
     get_shared_directory,
 )
 from .library import get_comments, modify_tracks
@@ -54,7 +54,7 @@ AUDIO_FILE_TYPES = ("*.mp3", "*.Mp3", "*.m4a", "*.flac", "*.aif*")
 
 
 def get_imported_albums() -> set[str]:
-    pickle_path = get_pickle_path()
+    pickle_path = get_pickle_file()
     if not pickle_path:
         return set()
     with open(pickle_path, "rb") as pickle_file:
