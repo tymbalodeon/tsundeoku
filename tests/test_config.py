@@ -25,40 +25,53 @@ def test_get_config_file(monkeypatch, tmp_path):
     config_file = get_config_file()
     assert config_file.exists()
     text = config_file.read_text()
+    expected_shared_directory = tmp_path / "Dropbox"
+    expected_pickle_file = tmp_path / ".config/beets/state.pickle"
+    expected_ignored_directories = []
+    expected_music_player = "Swinsian"
     assert text == (
         "[musicbros]\n"
-        "shared_directory =\n"
-        "pickle_file =\n"
-        "ignored_directories =\n"
-        "music_player =\n"
+        f"shared_directory = {expected_shared_directory}\n"
+        f"pickle_file = {expected_pickle_file}\n"
+        f"ignored_directories = {expected_ignored_directories}\n"
+        f"music_player = {expected_music_player}\n"
     )
 
 
-def check_option_and_value(option):
-    config_option, value = get_option_and_value(option)
-    assert config_option == option
-    assert value == ""
+def get_expected_options_and_vaues():
+    home = Path.home()
+    expected_shared_directory = str(home / "Dropbox")
+    expected_pickle_file = str(home / ".config/beets/state.pickle")
+    expected_ignored_directories = "[]"
+    expected_music_player = "Swinsian"
+    return [
+        ("shared_directory", expected_shared_directory),
+        ("pickle_file", expected_pickle_file),
+        ("ignored_directories", expected_ignored_directories),
+        ("music_player", expected_music_player),
+    ]
+
+
+def check_option_and_value(expected_option, expected_value):
+    option, value = get_option_and_value(expected_option)
+    assert option == expected_option
+    assert value == expected_value
 
 
 def test_option_and_value_defaults(monkeypatch, tmp_path):
     set_mock_home(monkeypatch, tmp_path)
-    for option in [
-        "shared_directory",
-        "pickle_file",
-        "ignored_directories",
-        "music_player",
-    ]:
-        check_option_and_value(option)
+    expected_options_and_values = get_expected_options_and_vaues()
+    for expected_option, expected_value in expected_options_and_values:
+        check_option_and_value(expected_option, expected_value)
 
 
 def test_get_config_options(monkeypatch, tmp_path):
     set_mock_home(monkeypatch, tmp_path)
-    config_options = get_config_options()
-    expected_config_options = [
-        ("shared_directory", ""),
-        ("pickle_file", ""),
-        ("ignored_directories", ""),
-        ("music_player", ""),
-    ]
-    actual_and_expected = zip(config_options, expected_config_options)
+    actual_options_and_values = get_config_options()
+    expected_options_and_values = get_expected_options_and_vaues()
+    actual_and_expected = zip(actual_options_and_values, expected_options_and_values)
     assert all(actual == expected for actual, expected in actual_and_expected)
+
+
+def test_get_ignored_directories():
+    pass

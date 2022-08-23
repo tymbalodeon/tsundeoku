@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from json import loads
 from configparser import ConfigParser
 from pathlib import Path
 from subprocess import run
@@ -30,24 +31,36 @@ CONFIG_OPTIONS = (
 )
 
 
-def get_config_directory():
+def get_config_directory() -> Path:
     config_directory = Path.home() / CONFIG_PATH
     if not config_directory.exists():
         Path.mkdir(config_directory, parents=True)
     return config_directory
 
 
-def get_config_file():
+def get_default_shared_directory() -> str:
+    return str(Path.home() / "Dropbox")
+
+
+def get_default_pickle_file() -> str:
+    return str(Path.home() / ".config/beets/state.pickle")
+
+
+def get_config_file() -> Path:
     config_directory = get_config_directory()
     config_file = config_directory / "musicbros.ini"
     if not config_file.is_file():
         section = f"[{CONFIG_SECTION_NAME}]"
+        default_shared_directory = get_default_shared_directory()
+        default_pickle_file = get_default_pickle_file()
+        default_ignored_directories = []
+        default_music_player = "Swinsian"
         config_base = (
             f"{section}\n"
-            f"{SHARED_DIRECTORY_OPTION_NAME} =\n"
-            f"{PICKLE_FILE_OPTION_NAME} =\n"
-            f"{IGNORED_DIRECTORIES_OPTION_NAME} =\n"
-            f"{MUSIC_PLAYER_OPTION_NAME} =\n"
+            f"{SHARED_DIRECTORY_OPTION_NAME} = {default_shared_directory}\n"
+            f"{PICKLE_FILE_OPTION_NAME} = {default_pickle_file}\n"
+            f"{IGNORED_DIRECTORIES_OPTION_NAME} = {default_ignored_directories}\n"
+            f"{MUSIC_PLAYER_OPTION_NAME} = {default_music_player}\n"
         )
         config_file.write_text(config_base)
     return config_file
@@ -138,53 +151,23 @@ def print_config_values():
     print(syntax)
 
 
-def add_missing_config_option(option: ConfigOption, value: ConfigValue) -> ConfigValue:
-    option_and_value = f"{option} = {value}\n"
-    config_file_path = get_config_file()
-    with open(config_file_path, "a") as config_file:
-        config_file.write(option_and_value)
-    return value
-
-
 def get_shared_directory() -> Optional[ConfigValue]:
-    option = SHARED_DIRECTORY_OPTION_NAME
-    try:
-        return get_config_value(option)
-    except Exception:
-        default_value = str(Path.home() / "Dropbox")
-        return add_missing_config_option(option, default_value)
+    return get_config_value(SHARED_DIRECTORY_OPTION_NAME)
 
 
 def get_pickle_path() -> Optional[ConfigValue]:
-    option = PICKLE_FILE_OPTION_NAME
-    try:
-        return get_config_value(option)
-    except Exception:
-        default_value = str(Path.home() / ".config/beets/state.pickle")
-        return add_missing_config_option(option, default_value)
+    return get_config_value(PICKLE_FILE_OPTION_NAME)
 
 
 def get_ignored_directories() -> list[ConfigValue]:
-    option = IGNORED_DIRECTORIES_OPTION_NAME
-    try:
-        ignored_directories_value = get_config_value(IGNORED_DIRECTORIES_OPTION_NAME)
-    except Exception:
-        default_value = ""
-        ignored_directories_value = add_missing_config_option(option, default_value)
-    if ignored_directories_value:
-        ignored_directories = ignored_directories_value.split(",")
-    else:
-        ignored_directories = []
-    return [directory for directory in ignored_directories]
+    ignored_directories = get_config_value(IGNORED_DIRECTORIES_OPTION_NAME)
+    if not ignored_directories:
+        return []
+    return loads(ignored_directories)
 
 
 def get_music_player() -> Optional[ConfigValue]:
-    option = MUSIC_PLAYER_OPTION_NAME
-    try:
-        return get_config_value(MUSIC_PLAYER_OPTION_NAME)
-    except Exception:
-        default_value = "Swinsian"
-        return add_missing_config_option(option, default_value)
+    return get_config_value(MUSIC_PLAYER_OPTION_NAME)
 
 
 def get_directory_display(directory: Optional[str]) -> str:
