@@ -41,7 +41,15 @@ def get_config_file():
     config_directory = get_config_directory()
     config_file = config_directory / "musicbros.ini"
     if not config_file.is_file():
-        config_file.write_text(f"[{CONFIG_SECTION_NAME}]\n")
+        section = f"[{CONFIG_SECTION_NAME}]"
+        config_base = (
+            f"{section}\n"
+            f"{SHARED_DIRECTORY_OPTION_NAME} =\n"
+            f"{PICKLE_FILE_OPTION_NAME} =\n"
+            f"{IGNORED_DIRECTORIES_OPTION_NAME} =\n"
+            f"{MUSIC_PLAYER_OPTION_NAME} =\n"
+        )
+        config_file.write_text(config_base)
     return config_file
 
 

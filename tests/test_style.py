@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from musicbros import style
 from musicbros.style import (
     DEFAULT_THEME,

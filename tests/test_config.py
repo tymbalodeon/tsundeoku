@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from musicbros.config import get_config_directory, get_config_file
+from musicbros.config import get_config_directory, get_config_file, get_option_and_value
 from tests.mocks import set_mock_home
 
 
@@ -20,4 +20,27 @@ def test_get_config_file(monkeypatch, tmp_path):
     config_file = get_config_file()
     assert config_file.exists()
     text = config_file.read_text()
-    assert text == "[musicbros]\n"
+    assert text == (
+        "[musicbros]\n"
+        "shared_directory =\n"
+        "pickle_file =\n"
+        "ignored_directories =\n"
+        "music_player =\n"
+    )
+
+
+def check_option_and_value(option):
+    config_option, value = get_option_and_value(option)
+    assert config_option == option
+    assert value == ""
+
+
+def test_option_and_value_defaults(monkeypatch, tmp_path):
+    set_mock_home(monkeypatch, tmp_path)
+    for option in [
+        "shared_directory",
+        "pickle_file",
+        "ignored_directories",
+        "music_player",
+    ]:
+        check_option_and_value(option)
