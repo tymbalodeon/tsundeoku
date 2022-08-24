@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from typer.testing import CliRunner
 
@@ -10,7 +11,6 @@ from musicbros.config import (
     get_directory_display,
     get_ignored_directories,
     get_option_and_value,
-    validate_config,
 )
 from musicbros.main import app
 from tests.mocks import set_mock_home
@@ -26,29 +26,9 @@ def test_get_config_directory(monkeypatch, tmp_path):
     assert config_directory.exists()
 
 
-def test_get_config_file(monkeypatch, tmp_path):
-    set_mock_home(monkeypatch, tmp_path)
-    config_directory = get_config_directory()
-    config_file = config_directory / "musicbros.ini"
-    assert not config_file.exists()
-    config_file = get_config_file()
-    assert config_file.exists()
-    text = config_file.read_text()
-    expected_shared_directory = tmp_path / "Dropbox"
-    expected_pickle_file = tmp_path / ".config/beets/state.pickle"
-    expected_ignored_directories = []
-    expected_music_player = "Swinsian"
-    assert (
-        text == "[musicbros]\n"
-        f"shared_directory = {expected_shared_directory}\n"
-        f"pickle_file = {expected_pickle_file}\n"
-        f"ignored_directories = {expected_ignored_directories}\n"
-        f"music_player = {expected_music_player}\n"
-    )
-
-
-def get_expected_options_and_vaues() -> list[tuple]:
-    home = Path.home()
+def get_expected_options_and_vaues(home: Optional[Path] = None) -> list[tuple]:
+    if not home:
+        home = Path.home()
     expected_shared_directory = str(home / "Dropbox")
     expected_pickle_file = str(home / ".config/beets/state.pickle")
     expected_ignored_directories = "[]"
@@ -59,6 +39,22 @@ def get_expected_options_and_vaues() -> list[tuple]:
         ("ignored_directories", expected_ignored_directories),
         ("music_player", expected_music_player),
     ]
+
+
+def test_get_config_file(monkeypatch, tmp_path):
+    set_mock_home(monkeypatch, tmp_path)
+    config_directory = get_config_directory()
+    config_file = config_directory / "musicbros.ini"
+    assert not config_file.exists()
+    config_file = get_config_file()
+    assert config_file.exists()
+    text = config_file.read_text()
+    expected_options_and_values = get_expected_options_and_vaues(home=tmp_path)
+    expected_options_and_values = [
+        f"{option} = {value}" for option, value in expected_options_and_values
+    ]
+    expected_options_and_values = "\n".join(expected_options_and_values)
+    assert text == f"[musicbros]\n{expected_options_and_values}\n"
 
 
 def check_option_and_value(expected_option: str, expected_value: str):
