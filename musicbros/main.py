@@ -8,6 +8,7 @@ from rich.prompt import Confirm
 from typer import Argument, Context, Exit, Option, Typer
 
 from musicbros import __version__
+from musicbros.style import PrintLevel, print_with_color
 
 from .config import get_config_path, print_config_values, validate_config
 from .import_new import get_album_directories, import_albums
@@ -26,6 +27,14 @@ def display_version(version: bool):
         raise Exit()
 
 
+def skip_validation(context) -> bool:
+    option = context.help_option_names + ["--path", "-p", "--edit", "-e"]
+    for option in option:
+        if option in argv:
+            return True
+    return False
+
+
 @app.callback(invoke_without_command=True)
 def callback(
     context: Context,
@@ -37,12 +46,7 @@ def callback(
         help="Display version number",
     ),
 ):
-    help_option_names = context.help_option_names
-    display_help = False
-    for option in help_option_names:
-        if option in argv:
-            display_help = True
-    if display_help:
+    if skip_validation(context):
         return
     is_valid = validate_config()
     subcommand = context.invoked_subcommand
@@ -57,6 +61,7 @@ def callback(
             )
         return
     if not subcommand or subcommand in {"import-new", "update-metadata"}:
+        print_with_color("ERROR: invalid config", PrintLevel.ERROR)
         raise Exit(1)
 
 

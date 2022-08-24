@@ -141,7 +141,7 @@ def mock_get_music_player():
 def test_validate_music_player(monkeypatch):
     monkeypatch.setattr(config, "get_music_player", mock_get_music_player)
     error_message = validate_music_player()
-    assert error_message and "ERROR" in error_message
+    assert error_message and "WARNING" in error_message
 
 
 def test_bad_config(monkeypatch, tmp_path):
@@ -152,7 +152,7 @@ def test_bad_config(monkeypatch, tmp_path):
     config_path.write_text(bad_config_values)
     result = CliRunner().invoke(app, "config")
     stdout = result.stdout
-    assert "ERROR" in stdout
+    assert "WARNING" in stdout
     assert result.exit_code == 0
 
 
@@ -166,5 +166,5 @@ def test_good_config(monkeypatch, tmp_path):
     pickle_file.touch()
     result = CliRunner().invoke(app, "config")
     stdout = result.stdout
-    assert "ERROR" not in stdout
+    assert "WARNING" not in stdout
     assert result.exit_code == 0

@@ -130,7 +130,7 @@ def get_directory_display(directory: Optional[str]) -> str:
 def get_shared_directory_error_message(shared_directory: Optional[str]) -> ErrorMessage:
     directory_display = get_directory_display(shared_directory)
     return (
-        f"ERROR: Shared directory{directory_display}does not exist. Please create the"
+        f"WARNING: Shared directory{directory_display}does not exist. Please create the"
         f" directory or update your config with `{CONFIG_SECTION_NAME} config"
         " --update`."
     )
@@ -149,8 +149,9 @@ def get_ignored_directory_error_message(
 ) -> ErrorMessage:
     directory_display = get_directory_display(ignored_directory)
     return (
-        f"ERROR: Ignored directory{directory_display}does not exist. Please add a valid"
-        f" directory  to your config with `{CONFIG_SECTION_NAME} config --update`."
+        f"WARNING: Ignored directory{directory_display}does not exist. Please add a"
+        f" valid directory  to your config with `{CONFIG_SECTION_NAME} config"
+        " --update`."
     )
 
 
@@ -168,7 +169,7 @@ def validate_ignored_directories() -> Optional[ErrorMessage]:
 def validate_pickle_file() -> Optional[ErrorMessage]:
     pickle_file = get_pickle_file()
     error_message = (
-        "ERROR: Pickle file does not exist. Please initialize your beets library by"
+        "WARNING: Pickle file does not exist. Please initialize your beets library by"
         " following the instructions in the"
         " [link=https://beets.readthedocs.io/en/stable/]beets documentation.[/link]"
     )
@@ -184,7 +185,7 @@ def application_exists(command):
 def validate_music_player() -> Optional[ErrorMessage]:
     music_player = get_music_player()
     error_message = (
-        "ERROR: Music player does not exist. Please install it or"
+        "WARNING: Music player does not exist. Please install it or"
         f" update your config with `{CONFIG_SECTION_NAME} config --update`."
     )
     if not music_player:
