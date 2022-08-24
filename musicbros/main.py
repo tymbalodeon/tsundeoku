@@ -28,8 +28,8 @@ def display_version(version: bool):
 
 
 def skip_validation(context) -> bool:
-    option = context.help_option_names + ["--path", "-p", "--edit", "-e"]
-    for option in option:
+    options = context.help_option_names + ["--path", "-p", "--edit", "-e"]
+    for option in options:
         if option in argv:
             return True
     return False
