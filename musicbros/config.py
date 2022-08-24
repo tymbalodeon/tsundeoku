@@ -5,8 +5,6 @@ from subprocess import run
 from typing import Optional
 
 from rich import print
-from rich.prompt import Confirm, Prompt
-from rich.syntax import Syntax
 
 from .style import print_with_color
 
@@ -22,12 +20,6 @@ SHARED_DIRECTORY_OPTION_NAME = "shared_directory"
 PICKLE_FILE_OPTION_NAME = "pickle_file"
 IGNORED_DIRECTORIES_OPTION_NAME = "ignored_directories"
 MUSIC_PLAYER_OPTION_NAME = "music_player"
-CONFIG_OPTIONS = (
-    SHARED_DIRECTORY_OPTION_NAME,
-    PICKLE_FILE_OPTION_NAME,
-    IGNORED_DIRECTORIES_OPTION_NAME,
-    MUSIC_PLAYER_OPTION_NAME,
-)
 
 
 def get_config_directory() -> Path:
@@ -45,22 +37,30 @@ def get_default_pickle_file() -> str:
     return str(Path.home() / ".config/beets/state.pickle")
 
 
-def get_config_file() -> Path:
+def get_config_path() -> Path:
     config_directory = get_config_directory()
-    config_file = config_directory / "musicbros.ini"
+    return config_directory / "musicbros.ini"
+
+
+def get_config_defaults() -> str:
+    default_shared_directory = get_default_shared_directory()
+    default_pickle_file = get_default_pickle_file()
+    default_ignored_directories: list[str] = []
+    default_music_player = "Swinsian"
+    return (
+        f"{SHARED_DIRECTORY_OPTION_NAME} = {default_shared_directory}\n"
+        f"{PICKLE_FILE_OPTION_NAME} = {default_pickle_file}\n"
+        f"{IGNORED_DIRECTORIES_OPTION_NAME} = {default_ignored_directories}\n"
+        f"{MUSIC_PLAYER_OPTION_NAME} = {default_music_player}\n"
+    )
+
+
+def get_config_file() -> Path:
+    config_file = get_config_path()
     if not config_file.is_file():
         section = f"[{CONFIG_SECTION_NAME}]"
-        default_shared_directory = get_default_shared_directory()
-        default_pickle_file = get_default_pickle_file()
-        default_ignored_directories: list[str] = []
-        default_music_player = "Swinsian"
-        config_base = (
-            f"{section}\n"
-            f"{SHARED_DIRECTORY_OPTION_NAME} = {default_shared_directory}\n"
-            f"{PICKLE_FILE_OPTION_NAME} = {default_pickle_file}\n"
-            f"{IGNORED_DIRECTORIES_OPTION_NAME} = {default_ignored_directories}\n"
-            f"{MUSIC_PLAYER_OPTION_NAME} = {default_music_player}\n"
-        )
+        config_defaults = get_config_defaults()
+        config_base = f"{section}\n{config_defaults}"
         config_file.write_text(config_base)
     return config_file
 
@@ -72,36 +72,10 @@ def get_config() -> ConfigParser:
     return config
 
 
-def get_new_config_value(
-    option: ConfigOption, first_time: bool
-) -> Optional[ConfigValue]:
-    option_display = option.replace("_", " ").upper()
-    updating = True
-    if not first_time:
-        confirm_message = f"Would you like to update the {option_display} value?"
-        updating = Confirm.ask(confirm_message)
-    is_list_option = option == IGNORED_DIRECTORIES_OPTION_NAME
-    clear = False
-    empty_value = None
-    confirm_clear = not first_time and updating and is_list_option
-    if confirm_clear:
-        clear = Confirm.ask("Would you like to CLEAR the existing list?")
-        if clear:
-            empty_value = ""
-    if updating:
-        prompt_message = f"Please provide your {option_display} value"
-        return Prompt.ask(prompt_message)
-    return empty_value
-
-
 def get_config_value(
     option: ConfigOption,
     config: Optional[ConfigParser] = None,
-    new=False,
-    first_time=False,
 ) -> Optional[ConfigValue]:
-    if new:
-        return get_new_config_value(option, first_time)
     if not config:
         config = get_config()
     return config.get(CONFIG_SECTION_NAME, option)
@@ -110,10 +84,8 @@ def get_config_value(
 def get_option_and_value(
     option: ConfigOption,
     config: Optional[ConfigParser] = None,
-    new=False,
-    first_time=False,
 ) -> ConfigOptionAndValue:
-    value = get_config_value(option, config, new=new, first_time=first_time)
+    value = get_config_value(option, config)
     return (option, value)
 
 
@@ -123,31 +95,11 @@ def get_config_options() -> ConfigOptions:
     return [get_option_and_value(option, config) for option in options]
 
 
-def write_config_options(first_time=False) -> ConfigOptions:
-    new_options_and_Values = [
-        get_option_and_value(option, new=True, first_time=first_time)
-        for option in CONFIG_OPTIONS
-    ]
-    if first_time:
-        config = ConfigParser()
-        config[CONFIG_SECTION_NAME] = {}
-    else:
-        config = get_config()
-    for option, value in new_options_and_Values:
-        if value is not None:
-            config[CONFIG_SECTION_NAME][option] = value
-    config_file_path = get_config_file()
-    with open(config_file_path, "w") as config_file:
-        config.write(config_file)
-    return get_config_options()
-
-
 def print_config_values():
     config_file_path = get_config_file()
-    config_path = str(config_file_path)
-    syntax = Syntax.from_path(config_path, lexer="yaml", theme="ansi_dark")
-    print(f"{config_path}\n")
-    print(syntax)
+    config = config_file_path.read_text().splitlines()[1:]
+    for option in config:
+        print(option)
 
 
 def get_shared_directory() -> Optional[ConfigValue]:

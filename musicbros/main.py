@@ -1,3 +1,5 @@
+from os import environ
+from subprocess import call
 from sys import argv
 from typing import Optional
 
@@ -7,7 +9,7 @@ from typer import Argument, Context, Exit, Option, Typer
 
 from musicbros import __version__
 
-from .config import print_config_values, validate_config, write_config_options
+from .config import get_config_path, print_config_values, validate_config
 from .import_new import get_album_directories, import_albums
 from .update_metadata import update_metadata_main
 
@@ -59,11 +61,19 @@ def callback(
 
 
 @app.command()
-def config(update: bool = Option(False, "--update", "-u", help="Update config values")):
+def config(
+    path: bool = Option(False, "--path", "-p", help="Show config file path"),
+    edit: bool = Option(False, "--edit", "-e", help="Edit config file with $EDITOR"),
+):
     """Create, update, and display config values"""
-    if update:
-        write_config_options()
-    print_config_values()
+    config_path = get_config_path()
+    if path:
+        print(config_path)
+    elif edit:
+        editor = environ.get("EDITOR", "vim")
+        call([editor, config_path])
+    else:
+        print_config_values()
 
 
 @app.command()
