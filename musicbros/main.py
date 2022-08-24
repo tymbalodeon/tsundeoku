@@ -65,7 +65,7 @@ def config(
     path: bool = Option(False, "--path", "-p", help="Show config file path"),
     edit: bool = Option(False, "--edit", "-e", help="Edit config file with $EDITOR"),
 ):
-    """Create, update, and display config values"""
+    """Display config [default], display config path, edit config file in $EDITOR"""
     config_path = get_config_path()
     if path:
         print(config_path)
