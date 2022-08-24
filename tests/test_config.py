@@ -105,7 +105,9 @@ def test_get_directory_display():
 
 
 def test_config_help():
-    config_help_text = "Create, update, and display config values"
+    config_help_text = (
+        "Display config [default], display config path, edit config file in $EDITOR"
+    )
     result = CLI_RUNNER.invoke(app, ["config", "-h"])
     assert config_help_text in result.stdout
     assert result.exit_code == 0
