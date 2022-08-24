@@ -30,6 +30,5 @@ in order to get started and generate the pickle file.
 - To import new audio files from your shared folder to your music library:
   `musicbros` (or `musicbros import-new --as-is` to leave the metadata untouched)
 - To update metadata for all previously imported tracks: `musicbros update-metadata`
-- To create, update, and view your config file storing the location of your
-  shared folder and beets pickle file: `musicbros config` (or `musicbros config --update`)
+- Musicbros uses a config file that can be viewed and edited with: `musicbros config` and `musicbros config --edit`
 - For more information: `musicbros --help` or `musicbros <command> --help`
