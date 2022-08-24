@@ -25,162 +25,103 @@ class MockTinyTag:
     disc_total: Optional[str] = None
 
 
-class TestGetAlbumArtist:
-    @staticmethod
-    def set_mock_get_albumartist(value, monkeypatch):
-        if value:
-            mock_tiny_tag = MockTinyTag(albumartist=value)
-        else:
-            mock_tiny_tag = MockTinyTag()
-
-        def mock_get(_):
-            return mock_tiny_tag
-
-        monkeypatch.setattr(TinyTag, "get", mock_get)
-
-    def test_get_albumartist(self, monkeypatch, tmp_path):
-        tracks = [tmp_path]
-        self.set_mock_get_albumartist("albumartist", monkeypatch)
-        albumartist = get_albumartist(tracks)
-        assert albumartist == "albumartist"
-        self.set_mock_get_albumartist("", monkeypatch)
-        albumartist = get_albumartist(tracks)
-        assert albumartist == ""
+def mock_get_none(_) -> MockTinyTag:
+    return MockTinyTag()
 
 
-class TestGetArtists:
-    @staticmethod
-    def set_mock_get_artists(value, monkeypatch):
-        if value:
-            mock_tiny_tag = MockTinyTag(artist=value)
-        else:
-            mock_tiny_tag = MockTinyTag()
-
-        def mock_get(_):
-            return mock_tiny_tag
-
-        monkeypatch.setattr(TinyTag, "get", mock_get)
-
-    def test_get_artists(self, monkeypatch, tmp_path):
-        tracks = [tmp_path]
-        self.set_mock_get_artists("artist", monkeypatch)
-        artists = get_artists(tracks)
-        assert artists == {"artist"}
-        self.set_mock_get_artists("", monkeypatch)
-        artists = get_artists(tracks)
-        assert artists == {None}
+def mock_get_albumartist(_) -> MockTinyTag:
+    return MockTinyTag(albumartist="albumartist")
 
 
-class TestGetAlbumTitle:
-    @staticmethod
-    def set_mock_get_album_title(value, monkeypatch):
-        if value:
-            mock_tiny_tag = MockTinyTag(album=value)
-        else:
-            mock_tiny_tag = MockTinyTag()
-
-        def mock_get(_):
-            return mock_tiny_tag
-
-        monkeypatch.setattr(TinyTag, "get", mock_get)
-
-    def test_get_album_title(self, monkeypatch, tmp_path):
-        tracks = [tmp_path]
-        self.set_mock_get_album_title("album title", monkeypatch)
-        album_title = get_album_title(tracks)
-        assert album_title == "album title"
-        self.set_mock_get_album_title("", monkeypatch)
-        album_title = get_album_title(tracks)
-        assert album_title == ""
+def mock_get_artist(_) -> MockTinyTag:
+    return MockTinyTag(artist="artist")
 
 
-class TestGetYears:
-    @staticmethod
-    def set_mock_get_years(value, monkeypatch):
-        if value:
-            mock_tiny_tag = MockTinyTag(year=value)
-        else:
-            mock_tiny_tag = MockTinyTag()
-
-        def mock_get(_):
-            return mock_tiny_tag
-
-        monkeypatch.setattr(TinyTag, "get", mock_get)
-
-    def test_get_years(self, monkeypatch, tmp_path):
-        tracks = [tmp_path]
-        self.set_mock_get_years("2022", monkeypatch)
-        years = get_years(tracks)
-        assert years == {"2022"}
-        self.set_mock_get_years("", monkeypatch)
-        years = get_years(tracks)
-        assert years == {None}
+def mock_get_album(_) -> MockTinyTag:
+    return MockTinyTag(album="album")
 
 
-class TestGetTrackTotals:
-    @staticmethod
-    def set_mock_get_track_totals(value, monkeypatch):
-        if value:
-            mock_tiny_tag = MockTinyTag(track_total=value)
-        else:
-            mock_tiny_tag = MockTinyTag()
-
-        def mock_get(_):
-            return mock_tiny_tag
-
-        monkeypatch.setattr(TinyTag, "get", mock_get)
-
-    def test_get_track_totals(self, monkeypatch, tmp_path):
-        tracks = [tmp_path]
-        self.set_mock_get_track_totals("10", monkeypatch)
-        track_totals = get_track_totals(tracks)
-        assert track_totals == {"10"}
-        self.set_mock_get_track_totals("", monkeypatch)
-        track_totals = get_track_totals(tracks)
-        assert track_totals == {None}
+def mock_get_year(_) -> MockTinyTag:
+    return MockTinyTag(year="2022")
 
 
-class TestGetDiscNumber:
-    @staticmethod
-    def set_mock_get_disc_number(value, monkeypatch):
-        if value:
-            mock_tiny_tag = MockTinyTag(disc=value)
-        else:
-            mock_tiny_tag = MockTinyTag()
-
-        def mock_get(_):
-            return mock_tiny_tag
-
-        monkeypatch.setattr(TinyTag, "get", mock_get)
-
-    def test_get_disc_number(self, monkeypatch, tmp_path):
-        tracks = [tmp_path]
-        self.set_mock_get_disc_number("5", monkeypatch)
-        disc_number = get_disc_number(tracks)
-        assert disc_number == "5"
-        self.set_mock_get_disc_number("", monkeypatch)
-        disc_number = get_disc_number(tracks)
-        assert disc_number == ""
+def mock_get_track_totals(_) -> MockTinyTag:
+    return MockTinyTag(track_total="10")
 
 
-class TestGetDiscTOtal:
-    @staticmethod
-    def set_mock_get_disc_total(value, monkeypatch):
-        if value:
-            mock_tiny_tag = MockTinyTag(disc_total=value)
-        else:
-            mock_tiny_tag = MockTinyTag()
+def mock_get_disc(_) -> MockTinyTag:
+    return MockTinyTag(disc="5")
 
-        def mock_get(_):
-            return mock_tiny_tag
 
-        monkeypatch.setattr(TinyTag, "get", mock_get)
+def mock_get_disc_total(_) -> MockTinyTag:
+    return MockTinyTag(disc_total="10")
 
-    def test_get_disc_total(self, monkeypatch, tmp_path):
-        tracks = [tmp_path]
-        self.set_mock_get_disc_total("10", monkeypatch)
-        disc_total = get_disc_total(tracks)
-        assert disc_total == "10"
-        self.set_mock_get_disc_total("", monkeypatch)
-        disc_total = get_disc_total(tracks)
-        assert disc_total == ""
+
+def test_get_albumartist(monkeypatch, tmp_path):
+    tracks = [tmp_path]
+    monkeypatch.setattr(TinyTag, "get", mock_get_albumartist)
+    albumartist = get_albumartist(tracks)
+    assert albumartist == "albumartist"
+    monkeypatch.setattr(TinyTag, "get", mock_get_none)
+    albumartist = get_albumartist(tracks)
+    assert albumartist == ""
+
+
+def test_get_artists(monkeypatch, tmp_path):
+    tracks = [tmp_path]
+    monkeypatch.setattr(TinyTag, "get", mock_get_artist)
+    artists = get_artists(tracks)
+    assert artists == {"artist"}
+    monkeypatch.setattr(TinyTag, "get", mock_get_none)
+    artists = get_artists(tracks)
+    assert artists == {None}
+
+
+def test_get_album_title(monkeypatch, tmp_path):
+    tracks = [tmp_path]
+    monkeypatch.setattr(TinyTag, "get", mock_get_album)
+    album_title = get_album_title(tracks)
+    assert album_title == "album"
+    monkeypatch.setattr(TinyTag, "get", mock_get_none)
+    album_title = get_album_title(tracks)
+    assert album_title == ""
+
+
+def test_get_years(monkeypatch, tmp_path):
+    tracks = [tmp_path]
+    monkeypatch.setattr(TinyTag, "get", mock_get_year)
+    years = get_years(tracks)
+    assert years == {"2022"}
+    monkeypatch.setattr(TinyTag, "get", mock_get_none)
+    years = get_years(tracks)
+    assert years == {None}
+
+
+def test_get_track_totals(monkeypatch, tmp_path):
+    tracks = [tmp_path]
+    monkeypatch.setattr(TinyTag, "get", mock_get_track_totals)
+    track_totals = get_track_totals(tracks)
+    assert track_totals == {"10"}
+    monkeypatch.setattr(TinyTag, "get", mock_get_none)
+    track_totals = get_track_totals(tracks)
+    assert track_totals == {None}
+
+
+def test_get_disc_number(monkeypatch, tmp_path):
+    tracks = [tmp_path]
+    monkeypatch.setattr(TinyTag, "get", mock_get_disc)
+    disc_number = get_disc_number(tracks)
+    assert disc_number == "5"
+    monkeypatch.setattr(TinyTag, "get", mock_get_none)
+    disc_number = get_disc_number(tracks)
+    assert disc_number == ""
+
+
+def test_get_disc_total(monkeypatch, tmp_path):
+    tracks = [tmp_path]
+    monkeypatch.setattr(TinyTag, "get", mock_get_disc_total)
+    disc_total = get_disc_total(tracks)
+    assert disc_total == "10"
+    monkeypatch.setattr(TinyTag, "get", mock_get_none)
+    disc_total = get_disc_total(tracks)
+    assert disc_total == ""

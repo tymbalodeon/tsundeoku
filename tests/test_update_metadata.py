@@ -2,8 +2,6 @@ from typer.testing import CliRunner
 
 from musicbros.main import app
 
-CLI_RUNNER = CliRunner()
-
 
 def test_update_metadata_help():
     update_metadata_help_text = "Update metadata according to the following rules:"
@@ -16,7 +14,7 @@ def test_update_metadata_help():
     remove_bracket_solo_help_text = (
         "[Optional] Remove bracketed solo instrument indications"
     )
-    result = CLI_RUNNER.invoke(app, ["update-metadata", "-h"])
+    result = CliRunner().invoke(app, ["update-metadata", "-h"])
     stdout = result.stdout
     for help_text in [
         update_metadata_help_text,

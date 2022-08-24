@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from re import escape, sub
+from typing import Optional
 
+from beets.library import Library
 from rich import print
 
-from .library import LIBRARY, modify_tracks
+from .library import get_library, modify_tracks
 from .regex import BRACKET_YEAR_REGEX
 
 
@@ -60,8 +62,13 @@ ACTIONS = [
 
 
 def list_items(
-    query_tag: str, query: str, operate_on_albums: bool, library=LIBRARY
+    query_tag: str,
+    query: str,
+    operate_on_albums: bool,
+    library: Optional[Library] = None,
 ) -> list[str]:
+    if not library:
+        library = get_library()
     query_string = f"'{query_tag}::{query}'"
     if operate_on_albums:
         albums_or_items = library.albums(query_string)

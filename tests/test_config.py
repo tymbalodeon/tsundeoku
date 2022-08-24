@@ -11,12 +11,11 @@ from musicbros.config import (
     get_directory_display,
     get_ignored_directories,
     get_option_and_value,
+    validate_ignored_directories,
     validate_music_player,
 )
 from musicbros.main import app
 from tests.mocks import set_mock_home
-
-CLI_RUNNER = CliRunner()
 
 
 def test_get_config_directory(monkeypatch, tmp_path):
@@ -56,8 +55,8 @@ def format_options_and_values(default=True) -> str:
 
 
 def get_mock_config(default=True) -> str:
-    expected_options_and_values = format_options_and_values(default)
-    return f"[musicbros]\n{expected_options_and_values}\n"
+    options_and_values = format_options_and_values(default)
+    return f"[musicbros]\n{options_and_values}\n"
 
 
 def test_get_config_file(monkeypatch, tmp_path):
@@ -93,8 +92,12 @@ def test_get_config_options(monkeypatch, tmp_path):
     assert all(actual == expected for actual, expected in actual_and_expected)
 
 
+def mock_get_config_value(_):
+    return None
+
+
 def test_get_ignored_directories(monkeypatch):
-    monkeypatch.setattr(config, "get_config_value", lambda _: None)
+    monkeypatch.setattr(config, "get_config_value", mock_get_config_value)
     ignored_directories = get_ignored_directories()
     assert ignored_directories == []
 
@@ -108,7 +111,7 @@ def test_config_help():
     config_help_text = (
         "Display config [default], display config path, edit config file in $EDITOR"
     )
-    result = CLI_RUNNER.invoke(app, ["config", "-h"])
+    result = CliRunner().invoke(app, ["config", "-h"])
     assert config_help_text in result.stdout
     assert result.exit_code == 0
 
@@ -119,8 +122,24 @@ def mock_application_exists(command: str) -> bool:
     return False
 
 
-def test_valudate_music_player(monkeypatch):
-    monkeypatch.setattr(config, "get_music_player", lambda: None)
+def test_validate_ignored_directories(monkeypatch, tmp_path):
+    ignored_directory = tmp_path / "ignored_directory"
+
+    def mock_get_ignored_directories():
+        return [ignored_directory]
+
+    Path.mkdir(ignored_directory)
+    monkeypatch.setattr(config, "get_ignored_directories", mock_get_ignored_directories)
+    error_message = validate_ignored_directories()
+    assert error_message is None
+
+
+def mock_get_music_player():
+    return None
+
+
+def test_validate_music_player(monkeypatch):
+    monkeypatch.setattr(config, "get_music_player", mock_get_music_player)
     error_message = validate_music_player()
     assert error_message and "ERROR" in error_message
 
@@ -131,7 +150,7 @@ def test_bad_config(monkeypatch, tmp_path):
     config_path = get_config_path()
     bad_config_values = get_mock_config(default=False)
     config_path.write_text(bad_config_values)
-    result = CLI_RUNNER.invoke(app, "config")
+    result = CliRunner().invoke(app, "config")
     stdout = result.stdout
     assert "ERROR" in stdout
     assert result.exit_code == 0
@@ -145,7 +164,7 @@ def test_good_config(monkeypatch, tmp_path):
     pickle_file = get_mock_pickle_file()
     Path.mkdir(pickle_file.parent, parents=True)
     pickle_file.touch()
-    result = CLI_RUNNER.invoke(app, "config")
+    result = CliRunner().invoke(app, "config")
     stdout = result.stdout
     assert "ERROR" not in stdout
     assert result.exit_code == 0

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from musicbros import style
 from musicbros.style import (
     DEFAULT_THEME,
@@ -11,7 +13,7 @@ from tests.mocks import set_mock_home
 def test_get_theme(monkeypatch, tmp_path):
     custom_theme_path = tmp_path / "theme.ini"
 
-    def mock_get_theme_config():
+    def mock_get_theme_config() -> Path:
         return custom_theme_path
 
     monkeypatch.setattr(style, "get_theme_config", mock_get_theme_config)
