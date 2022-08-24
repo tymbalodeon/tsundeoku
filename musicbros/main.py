@@ -27,10 +27,14 @@ def display_version(version: bool):
         raise Exit()
 
 
+def get_argv() -> list[str]:
+    return argv
+
+
 def skip_validation(context) -> bool:
-    options = context.help_option_names + ["--path", "-p", "--edit", "-e"]
-    for option in options:
-        if option in argv:
+    info_options = context.help_option_names + ["--path", "-p", "--edit", "-e"]
+    for option in info_options:
+        if option in get_argv():
             return True
     return False
 
