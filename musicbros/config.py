@@ -177,6 +177,10 @@ def validate_pickle_file() -> Optional[ErrorMessage]:
     return None
 
 
+def application_exists(command):
+    return run(command, shell=True, capture_output=True).stdout
+
+
 def validate_music_player() -> Optional[ErrorMessage]:
     music_player = get_music_player()
     error_message = (
@@ -186,7 +190,7 @@ def validate_music_player() -> Optional[ErrorMessage]:
     if not music_player:
         return error_message
     command = f'mdfind "kMDItemKind == \'Application\'" | grep "{music_player}"'
-    application = run(command, shell=True, capture_output=True).stdout
+    application = application_exists(command)
     if not application:
         return error_message
     return None
