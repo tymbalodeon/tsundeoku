@@ -74,8 +74,8 @@ def get_config() -> ConfigParser:
 
 def get_config_value(
     option: ConfigOption,
-    config: Optional[ConfigParser] = None,
-) -> Optional[ConfigValue]:
+    config: ConfigParser | None = None,
+) -> ConfigValue | None:
     if not config:
         config = get_config()
     return config.get(CONFIG_SECTION_NAME, option)
@@ -83,7 +83,7 @@ def get_config_value(
 
 def get_option_and_value(
     option: ConfigOption,
-    config: Optional[ConfigParser] = None,
+    config: ConfigParser | None = None,
 ) -> ConfigOptionAndValue:
     value = get_config_value(option, config)
     return (option, value)
@@ -102,11 +102,11 @@ def print_config_values():
         print(option)
 
 
-def get_shared_directory() -> Optional[ConfigValue]:
+def get_shared_directory() -> ConfigValue | None:
     return get_config_value(SHARED_DIRECTORY_OPTION_NAME)
 
 
-def get_pickle_file() -> Optional[ConfigValue]:
+def get_pickle_file() -> ConfigValue | None:
     return get_config_value(PICKLE_FILE_OPTION_NAME)
 
 
@@ -117,17 +117,17 @@ def get_ignored_directories() -> list[ConfigValue]:
     return loads(ignored_directories)
 
 
-def get_music_player() -> Optional[ConfigValue]:
+def get_music_player() -> ConfigValue | None:
     return get_config_value(MUSIC_PLAYER_OPTION_NAME)
 
 
-def get_directory_display(directory: Optional[str]) -> str:
+def get_directory_display(directory: str | None) -> str:
     if directory:
         return f' "{directory}" '
     return ""
 
 
-def get_shared_directory_error_message(shared_directory: Optional[str]) -> ErrorMessage:
+def get_shared_directory_error_message(shared_directory: str | None) -> ErrorMessage:
     directory_display = get_directory_display(shared_directory)
     return (
         f"WARNING: Shared directory{directory_display}does not exist. Please create the"
@@ -136,7 +136,7 @@ def get_shared_directory_error_message(shared_directory: Optional[str]) -> Error
     )
 
 
-def validate_shared_directory() -> Optional[ErrorMessage]:
+def validate_shared_directory() -> ErrorMessage | None:
     shared_directory = get_shared_directory()
     error_message = get_shared_directory_error_message(shared_directory)
     if not shared_directory or not Path(shared_directory).is_dir():
@@ -145,7 +145,7 @@ def validate_shared_directory() -> Optional[ErrorMessage]:
 
 
 def get_ignored_directory_error_message(
-    ignored_directory: Optional[str],
+    ignored_directory: str | None,
 ) -> ErrorMessage:
     directory_display = get_directory_display(ignored_directory)
     return (
@@ -155,7 +155,7 @@ def get_ignored_directory_error_message(
     )
 
 
-def validate_ignored_directories() -> Optional[ErrorMessage]:
+def validate_ignored_directories() -> ErrorMessage | None:
     ignored_directories = get_ignored_directories()
     if not ignored_directories:
         return None
@@ -166,7 +166,7 @@ def validate_ignored_directories() -> Optional[ErrorMessage]:
     return None
 
 
-def validate_pickle_file() -> Optional[ErrorMessage]:
+def validate_pickle_file() -> ErrorMessage | None:
     pickle_file = get_pickle_file()
     error_message = (
         "WARNING: Pickle file does not exist. Please initialize your beets library by"
@@ -182,7 +182,7 @@ def application_exists(command):
     return run(command, shell=True, capture_output=True).stdout
 
 
-def validate_music_player() -> Optional[ErrorMessage]:
+def validate_music_player() -> ErrorMessage | None:
     music_player = get_music_player()
     error_message = (
         "WARNING: Music player does not exist. Please install it or"

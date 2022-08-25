@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from re import escape, sub
-from typing import Optional
 
 from beets.library import Library
 from rich import print
@@ -65,7 +64,7 @@ def list_items(
     query_tag: str,
     query: str,
     operate_on_albums: bool,
-    library: Optional[Library] = None,
+    library: Library | None = None,
 ) -> list[str]:
     if not library:
         library = get_library()

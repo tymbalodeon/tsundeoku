@@ -1,5 +1,4 @@
 from re import escape
-from typing import Optional
 
 from beets import config
 from beets.library import Library
@@ -13,7 +12,7 @@ def get_library() -> Library:
     return _open_library(_configure(library_config))
 
 
-def get_comments(artist: str, album: str, library: Optional[Library] = None) -> list:
+def get_comments(artist: str, album: str, library: Library | None = None) -> list:
     if not library:
         library = get_library()
     artist = escape(artist)
@@ -26,7 +25,7 @@ def get_comments(artist: str, album: str, library: Optional[Library] = None) -> 
 
 
 def modify_tracks(
-    args: list, album=True, confirm=False, library: Optional[Library] = None
+    args: list, album=True, confirm=False, library: Library | None = None
 ):
     if not library:
         library = get_library()

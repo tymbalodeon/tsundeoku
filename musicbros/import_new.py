@@ -3,7 +3,6 @@ from os import system, walk
 from pathlib import Path
 from pickle import load
 from re import escape, search, sub
-from typing import Optional
 
 from beets.importer import history_add
 from rich.markup import escape as rich_escape
@@ -84,7 +83,7 @@ def has_wav_tracks(album: str) -> bool:
 
 def get_track_total(tracks: Tracks) -> int | ImportError:
     track_totals = get_track_totals(tracks)
-    track_total: Optional[str] | int = get_album_wide_tag(track_totals)
+    track_total: str | None | int = get_album_wide_tag(track_totals)
     if not track_total:
         return ImportError.MISSING_TRACK_TOTAL
     if len(track_totals) > 1:
@@ -119,7 +118,7 @@ def get_escaped_album(album: str) -> str:
     return f"{quote_character}{album}{quote_character}"
 
 
-def beet_import(album: str) -> Optional[ImportError]:
+def beet_import(album: str) -> ImportError | None:
     album = get_escaped_album(album)
     try:
         system(f"beet import {album}")
@@ -151,7 +150,7 @@ def get_artist_and_artist_field_name(
 
 
 def should_update(
-    field: str, bracket_value: str, existing_value: Optional[str], album_title: str
+    field: str, bracket_value: str, existing_value: str | None, album_title: str
 ) -> bool:
     return Prompt.ask(
         f"Use bracket {field} [[bold yellow]{bracket_value}[/bold yellow]] instead of"
@@ -160,7 +159,7 @@ def should_update(
     )
 
 
-def get_bracket_number(regex: str, album_title: str) -> Optional[str]:
+def get_bracket_number(regex: str, album_title: str) -> str | None:
     match = search(regex, album_title)
     if not match:
         return None
@@ -169,7 +168,7 @@ def get_bracket_number(regex: str, album_title: str) -> Optional[str]:
     return "".join(numeric_characters)
 
 
-def check_year(tracks: Tracks, album_title: str, prompt: bool) -> Optional[str]:
+def check_year(tracks: Tracks, album_title: str, prompt: bool) -> str | None:
     years = get_years(tracks)
     single_year = len(years) == 1
     if not single_year:
@@ -188,11 +187,11 @@ def check_year(tracks: Tracks, album_title: str, prompt: bool) -> Optional[str]:
 
 def check_disc(
     tracks: Tracks, album_title: str, ask_before_disc_update: bool, prompt: bool
-) -> tuple[Optional[str], Optional[str], bool]:
+) -> tuple[str | None, str | None, bool]:
     new_disc_number = None
     new_disc_total = None
     remove_bracket_disc = False
-    disc_number: Optional[str] = get_disc_number(tracks)
+    disc_number: str | None = get_disc_number(tracks)
     bracket_disc = get_bracket_number(BRACKET_DISC_REGEX, album_title)
     if not bracket_disc:
         if disc_number:
@@ -316,7 +315,7 @@ def import_album(
     ask_before_disc_update: bool,
     ask_before_artist_update: bool,
     prompt: bool,
-) -> Optional[ImportError]:
+) -> ImportError | None:
     track_count = len(tracks)
     track_total = get_track_total(tracks)
     if isinstance(track_total, ImportError) and not import_all:

@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 from tinytag import TinyTag
 
@@ -16,13 +15,13 @@ from musicbros.tags import (
 
 @dataclass
 class MockTinyTag:
-    albumartist: Optional[str] = None
-    artist: Optional[str] = None
-    album: Optional[str] = None
-    year: Optional[str] = None
-    track_total: Optional[str] = None
-    disc: Optional[str] = None
-    disc_total: Optional[str] = None
+    albumartist: str | None = None
+    artist: str | None = None
+    album: str | None = None
+    year: str | None = None
+    track_total: str | None = None
+    disc: str | None = None
+    disc_total: str | None = None
 
 
 def mock_get_none(_) -> MockTinyTag:

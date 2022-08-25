@@ -1,7 +1,6 @@
 from os import environ
 from subprocess import call
 from sys import argv
-from typing import Optional
 
 from rich import print
 from rich.prompt import Confirm
@@ -111,7 +110,7 @@ def import_new(
         " /--disallow-prompt",
         help="Allow prompts for user confirmation to update metadata",
     ),
-    albums: Optional[list[str]] = Argument(None, hidden=False),
+    albums: list[str] = Argument(None, hidden=False),
 ):
     """Copy new adds from your shared folder to your "beets" library"""
     print("Importing newly added albums...")
