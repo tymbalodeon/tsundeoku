@@ -1,8 +1,8 @@
 from typer.testing import CliRunner
 
-from musicbros import main
-from musicbros.main import app
 from tests.mocks import set_mock_home
+from tsundeoku import main
+from tsundeoku.main import app
 
 
 def test_update_metadata_help(monkeypatch, tmp_path):

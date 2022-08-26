@@ -14,8 +14,8 @@ ErrorMessage = str
 ConfigOptionAndValue = tuple[ConfigOption, Optional[ConfigValue]]
 ConfigOptions = list[ConfigOptionAndValue]
 
-CONFIG_PATH = ".config/musicbros"
-CONFIG_SECTION_NAME = "musicbros"
+CONFIG_PATH = ".config/tsundeoku"
+CONFIG_SECTION_NAME = "tsundeoku"
 SHARED_DIRECTORY_OPTION_NAME = "shared_directory"
 PICKLE_FILE_OPTION_NAME = "pickle_file"
 IGNORED_DIRECTORIES_OPTION_NAME = "ignored_directories"
@@ -39,7 +39,7 @@ def get_default_pickle_file() -> str:
 
 def get_config_path() -> Path:
     config_directory = get_config_directory()
-    return config_directory / "musicbros.ini"
+    return config_directory / "tsundeoku.ini"
 
 
 def get_config_defaults() -> str:

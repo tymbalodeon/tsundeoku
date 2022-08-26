@@ -1,12 +1,12 @@
 from typer.testing import CliRunner
 
-from musicbros import __version__
-from musicbros.main import app
+from tsundeoku import __version__
+from tsundeoku.main import app
 
 
 def test_version():
     expected_version = "0.3.0"
-    expected_version_display = f"musicbros {expected_version}\n"
+    expected_version_display = f"tsundeoku {expected_version}\n"
     assert __version__ == expected_version
     for option in ["--version", "-v"]:
         result = CliRunner().invoke(app, option)

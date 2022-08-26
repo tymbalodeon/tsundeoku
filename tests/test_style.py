@@ -1,13 +1,13 @@
 from pathlib import Path
 
-from musicbros import style
-from musicbros.style import (
+from tests.mocks import set_mock_home
+from tsundeoku import style
+from tsundeoku.style import (
     DEFAULT_THEME,
     format_int_with_commas,
     get_theme,
     get_theme_config,
 )
-from tests.mocks import set_mock_home
 
 
 def test_get_theme(monkeypatch, tmp_path):
@@ -27,7 +27,7 @@ def test_get_theme(monkeypatch, tmp_path):
 
 def test_get_theme_config(monkeypatch, tmp_path):
     set_mock_home(monkeypatch, tmp_path)
-    expected_theme_config = str(tmp_path / ".config/musicbros/theme.ini")
+    expected_theme_config = str(tmp_path / ".config/tsundeoku/theme.ini")
     theme_config = get_theme_config()
     assert theme_config == expected_theme_config
 

@@ -8,8 +8,8 @@ from rich.markup import escape
 from rich.prompt import Confirm
 from typer import Argument, Context, Exit, Option, Typer, launch
 
-from musicbros import __version__
-from musicbros.style import PrintLevel, print_with_color
+from tsundeoku import __version__
+from tsundeoku.style import PrintLevel, print_with_color
 
 from .config import get_config_path, print_config_values, validate_config
 from .import_new import get_album_directories, import_albums
@@ -26,7 +26,7 @@ app = Typer(
 
 def display_version(version: bool):
     if version:
-        print(f"musicbros {__version__}")
+        print(f"tsundeoku {__version__}")
         raise Exit()
 
 

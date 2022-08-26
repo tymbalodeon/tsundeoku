@@ -2,8 +2,9 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from musicbros import config
-from musicbros.config import (
+from tests.mocks import set_mock_home
+from tsundeoku import config
+from tsundeoku.config import (
     get_config_directory,
     get_config_file,
     get_config_options,
@@ -14,13 +15,12 @@ from musicbros.config import (
     validate_ignored_directories,
     validate_music_player,
 )
-from musicbros.main import app
-from tests.mocks import set_mock_home
+from tsundeoku.main import app
 
 
 def test_get_config_directory(monkeypatch, tmp_path):
     set_mock_home(monkeypatch, tmp_path)
-    config_directory = Path.home() / ".config/musicbros"
+    config_directory = Path.home() / ".config/tsundeoku"
     assert not config_directory.exists()
     config_directory = get_config_directory()
     assert config_directory.exists()
@@ -56,19 +56,19 @@ def format_options_and_values(default=True) -> str:
 
 def get_mock_config(default=True) -> str:
     options_and_values = format_options_and_values(default)
-    return f"[musicbros]\n{options_and_values}\n"
+    return f"[tsundeoku]\n{options_and_values}\n"
 
 
 def test_get_config_file(monkeypatch, tmp_path):
     set_mock_home(monkeypatch, tmp_path)
     config_directory = get_config_directory()
-    config_file = config_directory / "musicbros.ini"
+    config_file = config_directory / "tsundeoku.ini"
     assert not config_file.exists()
     config_file = get_config_file()
     assert config_file.exists()
     config = config_file.read_text()
     expected_config_values = format_options_and_values(tmp_path)
-    assert config == f"[musicbros]\n{expected_config_values}\n"
+    assert config == f"[tsundeoku]\n{expected_config_values}\n"
 
 
 def check_option_and_value(expected_option: str, expected_value: str):

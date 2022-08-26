@@ -1,7 +1,7 @@
 from typer.testing import CliRunner
 
-from musicbros import main
-from musicbros.main import app
+from tsundeoku import main
+from tsundeoku.main import app
 
 from .mocks import set_mock_home
 

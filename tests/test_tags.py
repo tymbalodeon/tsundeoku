@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from tinytag import TinyTag
 
-from musicbros.tags import (
+from tsundeoku.tags import (
     get_album_title,
     get_albumartist,
     get_artists,

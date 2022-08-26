@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "musicbros"
+name = "tsundeoku"
 version = "0.3.0"
 description = 'CLI for managing imports from a shared folder to a "beets" library'
 authors = ["Ben Rosen <benjamin.j.rosen@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.scripts]
-musicbros = "musicbros.main:app"
+tsundeoku = "tsundeoku.main:app"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.11"

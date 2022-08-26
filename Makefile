@@ -27,7 +27,7 @@ beets:
 
 .PHONY: build
 build: ## Build the CLI and isntall it in your global pip packages
-	poetry build && pipx install $(WHEEL) --force --pip-args='--force-reinstall'
+	poetry install && poetry build && pipx install $(WHEEL) --force --pip-args='--force-reinstall'
 
 check: ## Check for problems
 	$(POETRY) $(PRE_COMMIT) -a
@@ -49,7 +49,7 @@ help:
 shell: ## Run bpython in project virtual environment
 	$(POETRY) bpython
 
-start: beets build ## Add beets config before installing musicbros
+start: beets build ## Add beets config before installing tsundeoku
 
 test: ## Run tests (option: "print=true")
 ifdef print

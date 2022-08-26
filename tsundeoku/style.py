@@ -26,7 +26,7 @@ def format_int_with_commas(number: int) -> str:
 
 def get_theme_config() -> str:
     home = Path.home()
-    config_path = home / ".config/musicbros"
+    config_path = home / ".config/tsundeoku"
     theme_config = config_path / "theme.ini"
     return str(theme_config)
 
