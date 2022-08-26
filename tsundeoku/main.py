@@ -9,13 +9,13 @@ from rich.prompt import Confirm
 from typer import Argument, Context, Exit, Option, Typer, launch
 
 from tsundeoku import __version__
-from tsundeoku.style import PrintLevel, print_with_color
+from tsundeoku.style import PrintLevel, print_with_color, stylize
 
 from .config import get_config_path, print_config_values, validate_config
 from .import_new import get_albums, import_albums
 from .update_metadata import update_metadata_main
 
-beets_link = '[blue][link=https://beets.io/]"beets"[/link][/blue]'
+beets_link = stylize('"beets"', ["blue", "link=https://beets.io/"])
 app = Typer(
     help=f"CLI for managing imports from a shared folder to a {beets_link} library",
     context_settings={"help_option_names": ["-h", "--help"]},

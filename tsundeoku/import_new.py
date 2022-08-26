@@ -16,7 +16,7 @@ from .config import (
 )
 from .library import get_comments, modify_tracks
 from .regex import BRACKET_DISC_REGEX, BRACKET_SOLO_INSTRUMENT, BRACKET_YEAR_REGEX
-from .style import PrintLevel, print_with_color
+from .style import PrintLevel, print_with_color, stylize
 from .tags import (
     Tracks,
     get_album_title,
@@ -88,7 +88,7 @@ def has_wav_tracks(album: str) -> bool:
 
 def get_track_total(tracks: Tracks) -> int | ImportError:
     track_totals = get_track_totals(tracks)
-    track_total: str | None | int = get_album_wide_tag(track_totals)
+    track_total: str | None = get_album_wide_tag(track_totals)
     if not track_total:
         return ImportError.MISSING_TRACK_TOTAL
     if len(track_totals) > 1:
@@ -158,9 +158,9 @@ def should_update(
     field: str, bracket_value: str, existing_value: str | None, album_title: str
 ) -> bool:
     return Prompt.ask(
-        f"Use bracket {field} [[bold yellow]{bracket_value}[/bold yellow]] instead of"
-        f" {field} ([bold yellow]{existing_value}[/bold yellow]) for album:"
-        f" [blue]{rich_escape(album_title)}[/blue]?"
+        f"Use bracket {field} {stylize(bracket_value, ['bold', 'yellow'])}instead of"
+        f" {field} ({stylize(existing_value or '', ['bold', 'yellow'])}) for album:"
+        f" {stylize(rich_escape(album_title), 'blue')}?"
     )
 
 
@@ -211,9 +211,10 @@ def check_disc(
                     not ask_before_disc_update
                     or prompt
                     and Prompt.ask(
-                        "Apply default disc and disc total value of [bold"
-                        ' yellow]"1"[/bold yellow] to album with missing disc and disc'
-                        f" total: [blue]{rich_escape(album_title)}[/blue]?"
+                        "Apply default disc and disc total value of"
+                        f' {stylize("1", ["bold", "yellow"])} to album with'
+                        " missing disc and disc total:"
+                        f" {stylize(rich_escape(album_title), 'blue')}?"
                     )
                 ):
                     new_disc_number = "1"
@@ -262,9 +263,9 @@ def check_artist(
             not ask_before_artist_update
             or prompt
             and Prompt.ask(
-                "Remove bracketed solo instrument indication [bold"
-                f" yellow]{artist_with_instrument}[/bold yellow] from the artist field"
-                " and add to comments?"
+                "Remove bracketed solo instrument indication"
+                f" {stylize(artist_with_instrument or '', ['bold', 'yellow'])} from the"
+                " artist field and add to comments?"
             )
         ):
             artists_to_update.append(artist_with_instrument)

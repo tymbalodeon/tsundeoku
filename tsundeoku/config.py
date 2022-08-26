@@ -6,7 +6,7 @@ from typing import Callable, Optional
 
 from rich import print
 
-from .style import print_with_color
+from .style import print_with_color, stylize
 
 ConfigOption = str
 ConfigValue = str
@@ -172,10 +172,13 @@ def get_validate_directories(
 
 def validate_pickle_file() -> ErrorMessage | None:
     pickle_file = get_pickle_file()
+    beets_documentation_link = stylize(
+        "beets documentation", "link=https://beets.readthedocs.io/en/stable/"
+    )
     error_message = (
         "WARNING: Pickle file does not exist. Please initialize your beets library by"
         " following the instructions in the"
-        " [link=https://beets.readthedocs.io/en/stable/]beets documentation.[/link]"
+        f"{beets_documentation_link}."
     )
     if not pickle_file or not Path(pickle_file).is_file():
         return error_message
