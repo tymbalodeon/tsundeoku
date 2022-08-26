@@ -30,7 +30,7 @@ in order to get started and generate the pickle file.
 # Usage
 
 - To import new audio files from your shared folder to your music library:
-  `tsundeoku` (or `tsundeoku import-new --as-is` to leave the metadata untouched)
+  `tsundeoku` (or `tsundeoku import --as-is` to leave the metadata untouched)
 - To update metadata for all previously imported tracks: `tsundeoku update-metadata`
 - Tsundeoku uses a config file that can be viewed and edited with: `tsundeoku config` and `tsundeoku config --edit`
 - For more information: `tsundeoku --help` or `tsundeoku <command> --help`

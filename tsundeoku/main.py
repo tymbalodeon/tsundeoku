@@ -67,7 +67,7 @@ def callback(
                 albums=None,
             )
         return
-    if not subcommand or subcommand in {"import-new", "update-metadata"}:
+    if not subcommand or subcommand in {"import", "update-metadata"}:
         print_with_color("ERROR: invalid config", PrintLevel.ERROR)
         raise Exit(1)
 
@@ -100,7 +100,10 @@ def config(
 solo_instrument = escape("[solo <instrument>]")
 
 
-@app.command(help=f"Copy new adds from your shared folder to your {beets_link} library")
+@app.command(
+    name="import",
+    help=f"Copy new adds from your shared folder to your {beets_link} library",
+)
 def import_new(
     as_is: bool = Option(
         False, "--as-is", help="Import new albums without altering metadata."
