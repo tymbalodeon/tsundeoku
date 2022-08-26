@@ -3,12 +3,12 @@
 > 積んでおく ("tsundeoku"), "to pile up for later"
 
 Tsundeoku is a CLI tool that helps you take audio files from a shared folder and
-"pile them up for later" in a [beets](https://beets.io/) library. When
-importing, albums in the folder that have already been imported will be skipped
-(not possible with beets alone), and newly added albums will only be imported
-automatically if all tracks have finished syncing. This way, the import command
-can safely be run repeatedly to catch all new additions to the shared folder
-without creating any problems in the beets library.
+"pile them up for later" by importing them to a [beets](https://beets.io/)
+library. When importing, albums in the folder that have already been imported
+will be skipped (not possible with beets alone), and newly added albums will
+only be imported automatically if all tracks have finished syncing. This way,
+the import command can safely be run repeatedly to catch all new additions to
+the shared folder without creating any problems in the beets library.
 
 Metadata can also be changed to suit the user's preferences. For example, there
 are rules to alter common metadata formats that may not be to every user's
