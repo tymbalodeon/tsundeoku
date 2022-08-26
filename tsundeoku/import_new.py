@@ -3,7 +3,6 @@ from os import system, walk
 from pathlib import Path
 from pickle import load
 from re import escape, search, sub
-from typing import Optional
 
 from beets.importer import history_add
 from rich.markup import escape as rich_escape
@@ -13,11 +12,11 @@ from .config import (
     get_ignored_directories,
     get_music_player,
     get_pickle_file,
-    get_shared_directory,
+    get_shared_directories,
 )
 from .library import get_comments, modify_tracks
 from .regex import BRACKET_DISC_REGEX, BRACKET_SOLO_INSTRUMENT, BRACKET_YEAR_REGEX
-from .style import PrintLevel, print_with_color
+from .style import PrintLevel, print_with_color, stylize
 from .tags import (
     Tracks,
     get_album_title,
@@ -57,16 +56,21 @@ def get_imported_albums() -> set[str]:
     pickle_file = get_pickle_file()
     if not pickle_file:
         return set()
-    with open(pickle_file, "rb") as raw_pickle:
-        unpickled = load(raw_pickle)["taghistory"]
-        return {album[0].decode() for album in unpickled}
+    with open(pickle_file, "rb") as pickle_contents:
+        unpickled = load(pickle_contents)["taghistory"]
+    return {album[0].decode() for album in unpickled}
 
 
-def get_album_directories() -> list[str]:
-    shared_directory = get_shared_directory()
-    if not shared_directory:
+def get_albums() -> list[str]:
+    shared_directories = get_shared_directories()
+    if not shared_directories:
         return []
-    return [root for root, dirs, files in walk(shared_directory) if files and not dirs]
+    albums = []
+    for directory in shared_directories:
+        albums.extend(
+            [root for root, dirs, files in walk(directory) if files and not dirs]
+        )
+    return albums
 
 
 def get_tracks(album: str) -> Tracks:
@@ -84,7 +88,7 @@ def has_wav_tracks(album: str) -> bool:
 
 def get_track_total(tracks: Tracks) -> int | ImportError:
     track_totals = get_track_totals(tracks)
-    track_total: Optional[str] | int = get_album_wide_tag(track_totals)
+    track_total: str | None = get_album_wide_tag(track_totals)
     if not track_total:
         return ImportError.MISSING_TRACK_TOTAL
     if len(track_totals) > 1:
@@ -119,7 +123,7 @@ def get_escaped_album(album: str) -> str:
     return f"{quote_character}{album}{quote_character}"
 
 
-def beet_import(album: str) -> Optional[ImportError]:
+def beet_import(album: str) -> ImportError | None:
     album = get_escaped_album(album)
     try:
         system(f"beet import {album}")
@@ -151,16 +155,20 @@ def get_artist_and_artist_field_name(
 
 
 def should_update(
-    field: str, bracket_value: str, existing_value: Optional[str], album_title: str
+    field: str, bracket_value: str, existing_value: str | None, album_title: str
 ) -> bool:
+    bracket_value = stylize(bracket_value, ["bold", "yellow"])
+    existing_value = existing_value or ""
+    existing_value = stylize(existing_value, ["bold", "yellow"])
+    album_title = stylize(rich_escape(album_title), "blue")
     return Prompt.ask(
-        f"Use bracket {field} [[bold yellow]{bracket_value}[/bold yellow]] instead of"
-        f" {field} ([bold yellow]{existing_value}[/bold yellow]) for album:"
-        f" [blue]{rich_escape(album_title)}[/blue]?"
+        f"Use bracket {field} {bracket_value} instead of"
+        f" {field} ({existing_value}) for album:"
+        f" {album_title}?"
     )
 
 
-def get_bracket_number(regex: str, album_title: str) -> Optional[str]:
+def get_bracket_number(regex: str, album_title: str) -> str | None:
     match = search(regex, album_title)
     if not match:
         return None
@@ -169,7 +177,7 @@ def get_bracket_number(regex: str, album_title: str) -> Optional[str]:
     return "".join(numeric_characters)
 
 
-def check_year(tracks: Tracks, album_title: str, prompt: bool) -> Optional[str]:
+def check_year(tracks: Tracks, album_title: str, prompt: bool) -> str | None:
     years = get_years(tracks)
     single_year = len(years) == 1
     if not single_year:
@@ -188,11 +196,11 @@ def check_year(tracks: Tracks, album_title: str, prompt: bool) -> Optional[str]:
 
 def check_disc(
     tracks: Tracks, album_title: str, ask_before_disc_update: bool, prompt: bool
-) -> tuple[Optional[str], Optional[str], bool]:
+) -> tuple[str | None, str | None, bool]:
     new_disc_number = None
     new_disc_total = None
     remove_bracket_disc = False
-    disc_number: Optional[str] = get_disc_number(tracks)
+    disc_number: str | None = get_disc_number(tracks)
     bracket_disc = get_bracket_number(BRACKET_DISC_REGEX, album_title)
     if not bracket_disc:
         if disc_number:
@@ -207,9 +215,10 @@ def check_disc(
                     not ask_before_disc_update
                     or prompt
                     and Prompt.ask(
-                        "Apply default disc and disc total value of [bold"
-                        ' yellow]"1"[/bold yellow] to album with missing disc and disc'
-                        f" total: [blue]{rich_escape(album_title)}[/blue]?"
+                        "Apply default disc and disc total value of"
+                        f' {stylize("1", ["bold", "yellow"])} to album with'
+                        " missing disc and disc total:"
+                        f" {stylize(rich_escape(album_title), 'blue')}?"
                     )
                 ):
                     new_disc_number = "1"
@@ -231,7 +240,7 @@ def check_disc(
     return new_disc_number, new_disc_total, remove_bracket_disc
 
 
-def has_solo_instrument(artist: str) -> bool:
+def has_solo_instrument(artist: str | None) -> bool:
     if not artist:
         return False
     match = search(BRACKET_SOLO_INSTRUMENT, artist)
@@ -242,25 +251,27 @@ def has_solo_instrument(artist: str) -> bool:
 
 def check_artist(
     tracks: Tracks, ask_before_artist_update: bool, prompt: bool
-) -> list[str]:
+) -> list[str | None]:
     artists = get_artists(tracks)
     artists_with_instruments = [
         artist for artist in artists if has_solo_instrument(artist)
     ]
-    artists_to_update: list[str] = []
+    artists_to_update: list[str | None] = []
     if not artists_with_instruments:
         return artists_to_update
     for artist_with_instrument in artists_with_instruments:
         skip = ask_before_artist_update and not prompt
         if skip:
             raise Exception
+        artist_with_instrument = artist_with_instrument or ""
+        artist_with_instrument = stylize(artist_with_instrument, ["bold", "yellow"])
         if (
             not ask_before_artist_update
             or prompt
             and Prompt.ask(
-                "Remove bracketed solo instrument indication [bold"
-                f" yellow]{artist_with_instrument}[/bold yellow] from the artist field"
-                " and add to comments?"
+                "Remove bracketed solo instrument indication"
+                f" {artist_with_instrument} from the"
+                " artist field and add to comments?"
             )
         ):
             artists_to_update.append(artist_with_instrument)
@@ -316,7 +327,7 @@ def import_album(
     ask_before_disc_update: bool,
     ask_before_artist_update: bool,
     prompt: bool,
-) -> Optional[ImportError]:
+) -> ImportError | None:
     track_count = len(tracks)
     track_total = get_track_total(tracks)
     if isinstance(track_total, ImportError) and not import_all:
@@ -360,6 +371,7 @@ def import_album(
         modification = get_modify_tracks_modification("album", discless_album_title)
         modify_tracks(query + modification)
     for artist_with_instrument in artists_with_instruments:
+        artist_with_instrument = artist_with_instrument or ""
         add_solo_instrument_to_comments(artist_with_instrument, album_title)
         artist_without_instrument = sub(
             BRACKET_SOLO_INSTRUMENT, "", artist_with_instrument
