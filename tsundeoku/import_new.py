@@ -12,7 +12,7 @@ from .config import (
     get_ignored_directories,
     get_music_player,
     get_pickle_file,
-    get_shared_directory,
+    get_shared_directories,
 )
 from .library import get_comments, modify_tracks
 from .regex import BRACKET_DISC_REGEX, BRACKET_SOLO_INSTRUMENT, BRACKET_YEAR_REGEX
@@ -61,11 +61,16 @@ def get_imported_albums() -> set[str]:
     return {album[0].decode() for album in unpickled}
 
 
-def get_album_directories() -> list[str]:
-    shared_directory = get_shared_directory()
-    if not shared_directory:
+def get_albums() -> list[str]:
+    shared_directories = get_shared_directories()
+    if not shared_directories:
         return []
-    return [root for root, dirs, files in walk(shared_directory) if files and not dirs]
+    albums = []
+    for directory in shared_directories:
+        albums.extend(
+            [root for root, dirs, files in walk(directory) if files and not dirs]
+        )
+    return albums
 
 
 def get_tracks(album: str) -> Tracks:

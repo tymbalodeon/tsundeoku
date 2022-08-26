@@ -2,7 +2,7 @@ from configparser import ConfigParser
 from json import loads
 from pathlib import Path
 from subprocess import run
-from typing import Optional
+from typing import Callable, Optional
 
 from rich import print
 
@@ -13,6 +13,7 @@ ConfigValue = str
 ErrorMessage = str
 ConfigOptionAndValue = tuple[ConfigOption, Optional[ConfigValue]]
 ConfigOptions = list[ConfigOptionAndValue]
+Validator = Callable[[], list[ErrorMessage] | ErrorMessage | None]
 
 CONFIG_PATH = ".config/tsundeoku"
 CONFIG_SECTION_NAME = "tsundeoku"
@@ -30,7 +31,8 @@ def get_config_directory() -> Path:
 
 
 def get_default_shared_directory() -> str:
-    return str(Path.home() / "Dropbox")
+    default_shared_directory = Path.home() / "Dropbox"
+    return f'["{default_shared_directory}"]'
 
 
 def get_default_pickle_file() -> str:
@@ -102,8 +104,11 @@ def print_config_values():
         print(option)
 
 
-def get_shared_directory() -> ConfigValue | None:
-    return get_config_value(SHARED_DIRECTORY_OPTION_NAME)
+def get_shared_directories() -> list[ConfigValue]:
+    shared_directory = get_config_value(SHARED_DIRECTORY_OPTION_NAME)
+    if not shared_directory:
+        return []
+    return loads(shared_directory)
 
 
 def get_pickle_file() -> ConfigValue | None:
@@ -136,14 +141,6 @@ def get_shared_directory_error_message(shared_directory: str | None) -> ErrorMes
     )
 
 
-def validate_shared_directory() -> ErrorMessage | None:
-    shared_directory = get_shared_directory()
-    error_message = get_shared_directory_error_message(shared_directory)
-    if not shared_directory or not Path(shared_directory).is_dir():
-        return error_message
-    return None
-
-
 def get_ignored_directory_error_message(
     ignored_directory: str | None,
 ) -> ErrorMessage:
@@ -155,15 +152,22 @@ def get_ignored_directory_error_message(
     )
 
 
-def validate_ignored_directories() -> ErrorMessage | None:
-    ignored_directories = get_ignored_directories()
-    if not ignored_directories:
-        return None
-    for directory in ignored_directories:
-        if not Path(directory).is_dir():
-            error_message = get_ignored_directory_error_message(directory)
-            return error_message
-    return None
+def get_validate_directories(
+    get_directories: Callable[[], list[ConfigValue]],
+    get_error_message: Callable[[str | None], ErrorMessage],
+) -> Validator:
+    def validate_directories() -> list[ErrorMessage] | None:
+        directories = get_directories()
+        if not directories:
+            return None
+        error_messages = []
+        for directory in directories:
+            if not Path(directory).is_dir():
+                error_message = get_error_message(directory)
+                error_messages.append(error_message)
+        return error_messages or None
+
+    return validate_directories
 
 
 def validate_pickle_file() -> ErrorMessage | None:
@@ -199,6 +203,12 @@ def validate_music_player() -> ErrorMessage | None:
 
 def validate_config() -> bool:
     error_messages = []
+    validate_shared_directory = get_validate_directories(
+        get_shared_directories, get_shared_directory_error_message
+    )
+    validate_ignored_directories = get_validate_directories(
+        get_ignored_directories, get_ignored_directory_error_message
+    )
     validators = [
         validate_shared_directory,
         validate_pickle_file,
@@ -206,9 +216,12 @@ def validate_config() -> bool:
         validate_music_player,
     ]
     for validate in validators:
-        error_message = validate()
-        if error_message:
-            error_messages.append(error_message)
+        error = validate()
+        if error:
+            if isinstance(error, list):
+                error_messages.extend(error)
+            else:
+                error_messages.append(error)
     for message in error_messages:
         print_with_color(message)
     return not error_messages

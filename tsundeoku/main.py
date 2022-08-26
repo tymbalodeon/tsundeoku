@@ -12,7 +12,7 @@ from tsundeoku import __version__
 from tsundeoku.style import PrintLevel, print_with_color
 
 from .config import get_config_path, print_config_values, validate_config
-from .import_new import get_album_directories, import_albums
+from .import_new import get_albums, import_albums
 from .update_metadata import update_metadata_main
 
 beets_link = '[blue][link=https://beets.io/]"beets"[/link][/blue]'
@@ -132,7 +132,7 @@ def import_new(
     first_time = False
     if not albums:
         first_time = True
-        albums = get_album_directories()
+        albums = get_albums()
     imports, errors, importable_error_albums = import_albums(
         albums,
         as_is,

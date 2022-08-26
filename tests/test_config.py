@@ -12,7 +12,7 @@ from tsundeoku.config import (
     get_directory_display,
     get_ignored_directories,
     get_option_and_value,
-    validate_ignored_directories,
+    get_shared_directories,
     validate_music_player,
 )
 from tsundeoku.main import app
@@ -26,13 +26,17 @@ def test_get_config_directory(monkeypatch, tmp_path):
     assert config_directory.exists()
 
 
+def get_mock_shared_directory() -> str:
+    shared_directory = str(Path.home() / "Dropbox")
+    return f'["{shared_directory}"]'
+
+
 def get_mock_pickle_file() -> Path:
     return Path.home() / ".config/beets/state.pickle"
 
 
 def get_options_and_vaues(default=True) -> list[tuple]:
-    home = Path.home()
-    shared_directory = str(home / "Dropbox")
+    shared_directory = get_mock_shared_directory()
     pickle_file = str(get_mock_pickle_file())
     if default:
         ignored_directories = "[]"
@@ -96,6 +100,12 @@ def mock_get_config_value(_):
     return None
 
 
+def test_get_shared_directories(monkeypatch):
+    monkeypatch.setattr(config, "get_config_value", mock_get_config_value)
+    ignored_directories = get_shared_directories()
+    assert ignored_directories == []
+
+
 def test_get_ignored_directories(monkeypatch):
     monkeypatch.setattr(config, "get_config_value", mock_get_config_value)
     ignored_directories = get_ignored_directories()
@@ -120,18 +130,6 @@ def mock_application_exists(command: str) -> bool:
     if "Swinsian" in command:
         return True
     return False
-
-
-def test_validate_ignored_directories(monkeypatch, tmp_path):
-    ignored_directory = tmp_path / "ignored_directory"
-
-    def mock_get_ignored_directories():
-        return [ignored_directory]
-
-    Path.mkdir(ignored_directory)
-    monkeypatch.setattr(config, "get_ignored_directories", mock_get_ignored_directories)
-    error_message = validate_ignored_directories()
-    assert error_message is None
 
 
 def mock_get_music_player():
