@@ -8,7 +8,7 @@ def test_version():
     expected_version = "0.3.0"
     expected_version_display = f"musicbros {expected_version}\n"
     assert __version__ == expected_version
-    for option in ["--version", "-V"]:
+    for option in ["--version", "-v"]:
         result = CliRunner().invoke(app, option)
         assert result.stdout == expected_version_display
         assert result.exit_code == 0
