@@ -122,7 +122,7 @@ def test_config_help():
         "Display config [default], display config path, edit config file in $EDITOR"
     )
     result = CliRunner().invoke(app, ["config", "-h"])
-    assert config_help_text in result.stdout
+    assert config_help_text in result.output
     assert result.exit_code == 0
 
 
@@ -149,8 +149,8 @@ def test_bad_config(monkeypatch, tmp_path):
     bad_config_values = get_mock_config(default=False)
     config_path.write_text(bad_config_values)
     result = CliRunner().invoke(app, "config")
-    stdout = result.stdout
-    assert "WARNING" in stdout
+    output = result.output
+    assert "WARNING" in output
     assert result.exit_code == 0
 
 
@@ -163,6 +163,6 @@ def test_good_config(monkeypatch, tmp_path):
     Path.mkdir(pickle_file.parent, parents=True)
     pickle_file.touch()
     result = CliRunner().invoke(app, "config")
-    stdout = result.stdout
-    assert "WARNING" not in stdout
+    output = result.output
+    assert "WARNING" not in output
     assert result.exit_code == 0

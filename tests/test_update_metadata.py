@@ -22,12 +22,12 @@ def test_update_metadata_help(monkeypatch, tmp_path):
         "[Optional] Remove bracketed solo instrument indications"
     )
     result = CliRunner().invoke(app, ["update-metadata", "-h"])
-    stdout = result.stdout
+    output = result.output
     for help_text in [
         update_metadata_help_text,
         remove_bracket_year_help_text,
         expand_abbreviation_help_text,
         remove_bracket_solo_help_text,
     ]:
-        assert help_text in stdout
+        assert help_text in output
     assert result.exit_code == 0

@@ -16,5 +16,5 @@ def test_import_new_help(monkeypatch, tmp_path):
         'Copy new adds from your shared folder to your "beets" library'
     )
     result = CliRunner().invoke(app, ["import-new", "-h"])
-    assert import_new_help_text in result.stdout
+    assert import_new_help_text in result.output
     assert result.exit_code == 0

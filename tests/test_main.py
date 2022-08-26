@@ -10,7 +10,7 @@ def test_version():
     assert __version__ == expected_version
     for option in ["--version", "-v"]:
         result = CliRunner().invoke(app, option)
-        assert result.stdout == expected_version_display
+        assert result.output == expected_version_display
         assert result.exit_code == 0
 
 
@@ -20,5 +20,5 @@ def test_help():
     )
     for option in ["--help", "-h"]:
         result = CliRunner().invoke(app, option)
-        assert app_description in result.stdout
+        assert app_description in result.output
         assert result.exit_code == 0
