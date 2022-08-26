@@ -157,10 +157,14 @@ def get_artist_and_artist_field_name(
 def should_update(
     field: str, bracket_value: str, existing_value: str | None, album_title: str
 ) -> bool:
+    bracket_value = stylize(bracket_value, ["bold", "yellow"])
+    existing_value = existing_value or ""
+    existing_value = stylize(existing_value, ["bold", "yellow"])
+    album_title = stylize(rich_escape(album_title), "blue")
     return Prompt.ask(
-        f"Use bracket {field} {stylize(bracket_value, ['bold', 'yellow'])}instead of"
-        f" {field} ({stylize(existing_value or '', ['bold', 'yellow'])}) for album:"
-        f" {stylize(rich_escape(album_title), 'blue')}?"
+        f"Use bracket {field} {bracket_value} instead of"
+        f" {field} ({existing_value}) for album:"
+        f" {album_title}?"
     )
 
 
@@ -259,12 +263,14 @@ def check_artist(
         skip = ask_before_artist_update and not prompt
         if skip:
             raise Exception
+        artist_with_instrument = artist_with_instrument or ""
+        artist_with_instrument = stylize(artist_with_instrument, ["bold", "yellow"])
         if (
             not ask_before_artist_update
             or prompt
             and Prompt.ask(
                 "Remove bracketed solo instrument indication"
-                f" {stylize(artist_with_instrument or '', ['bold', 'yellow'])} from the"
+                f" {artist_with_instrument} from the"
                 " artist field and add to comments?"
             )
         ):
