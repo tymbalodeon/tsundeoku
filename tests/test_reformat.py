@@ -5,13 +5,15 @@ from tsundeoku import main
 from tsundeoku.main import app
 
 
-def test_update_metadata_help(monkeypatch, tmp_path):
+def test_reformat_help(monkeypatch, tmp_path):
+    reformat_help_args = ["reformat", "-h"]
+
     def mock_get_argv() -> list[str]:
-        return ["update-metadata", "-h"]
+        return reformat_help_args
 
     monkeypatch.setattr(main, "get_argv", mock_get_argv)
     set_mock_home(monkeypatch, tmp_path)
-    update_metadata_help_text = "Update metadata according to the following rules:"
+    reformat_help_text = "Reformat metadata according to the following rules:"
     remove_bracket_year_help_text = (
         'Remove bracketed years (e.g., "[2022]") from album fields'
     )
@@ -21,10 +23,10 @@ def test_update_metadata_help(monkeypatch, tmp_path):
     remove_bracket_solo_help_text = (
         "[Optional] Remove bracketed solo instrument indications"
     )
-    result = CliRunner().invoke(app, ["update-metadata", "-h"])
+    result = CliRunner().invoke(app, reformat_help_args)
     output = result.output
     for help_text in [
-        update_metadata_help_text,
+        reformat_help_text,
         remove_bracket_year_help_text,
         expand_abbreviation_help_text,
         remove_bracket_solo_help_text,
