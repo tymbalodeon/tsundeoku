@@ -1,17 +1,20 @@
 from configparser import ConfigParser
 from json import loads
+from os import environ
 from pathlib import Path
-from subprocess import run
-from typing import Callable, Optional
+from subprocess import call, run
+from typing import Callable
 
 from rich import print
+from rich.markup import escape
+from typer import Argument, Context, Option, Typer, launch
 
-from .style import print_with_color, stylize
+from .style import get_theme_config, print_with_color, stylize
 
 ConfigOption = str
 ConfigValue = str
 ErrorMessage = str
-ConfigOptionAndValue = tuple[ConfigOption, Optional[ConfigValue]]
+ConfigOptionAndValue = tuple[ConfigOption, ConfigValue | None]
 ConfigOptions = list[ConfigOptionAndValue]
 Validator = Callable[[], list[ErrorMessage] | ErrorMessage | None]
 
@@ -21,6 +24,39 @@ SHARED_DIRECTORY_OPTION_NAME = "shared_directory"
 PICKLE_FILE_OPTION_NAME = "pickle_file"
 IGNORED_DIRECTORIES_OPTION_NAME = "ignored_directories"
 MUSIC_PLAYER_OPTION_NAME = "music_player"
+
+config_app = Typer(
+    help=(
+        f"Show config {escape('[default]')}, show config path, edit config file"
+        " in $EDITOR"
+    ),
+    context_settings={"help_option_names": ["-h", "--help"]},
+    rich_markup_mode="rich",
+    add_completion=False,
+)
+
+
+@config_app.callback(invoke_without_command=True)
+def config(
+    context: Context,
+    path: bool = Option(False, "--path", "-p", help="Show config file path."),
+    file: bool = Option(
+        False, "--file", "-f", help="Open config file in file browser."
+    ),
+    edit: bool = Option(False, "--edit", "-e", help="Edit config file with $EDITOR."),
+):
+    if context.invoked_subcommand:
+        return
+    config_path = get_config_path()
+    if path:
+        print(config_path)
+    elif file:
+        launch(str(config_path), locate=True)
+    elif edit:
+        editor = environ.get("EDITOR", "vim")
+        call([editor, config_path])
+    else:
+        print_config_values()
 
 
 def get_config_directory() -> Path:
@@ -97,11 +133,20 @@ def get_config_options() -> ConfigOptions:
     return [get_option_and_value(option, config) for option in options]
 
 
-def print_config_values():
-    config_file_path = get_config_file()
-    config = config_file_path.read_text().splitlines()[1:]
+def print_values(config_path):
+    config = config_path.read_text().splitlines()[1:]
     for option in config:
         print(option)
+
+
+def print_config_values():
+    config_path = get_config_file()
+    print_values(config_path)
+
+
+def print_theme_config_values():
+    theme_config_path = Path(get_theme_config())
+    print_values(theme_config_path)
 
 
 def get_shared_directories() -> list[ConfigValue]:
@@ -228,3 +273,80 @@ def validate_config() -> bool:
     for message in error_messages:
         print_with_color(message)
     return not error_messages
+
+
+@config_app.command(help="Show shared directories value.")
+def shared_directories(
+    directories: list[str] = Argument(
+        None, help="New directories to add to or replace the existing value."
+    ),
+    add: bool = Option(
+        False,
+        "--add",
+        "-a",
+        help="Add to existing values rather than replace all values.",
+        hidden=False,
+    ),
+):
+    shared_directoires = get_shared_directories()
+    print(shared_directoires)
+
+
+@config_app.command(help="Show pickle file value.")
+def pickle_file(
+    path: str = Argument(
+        None, help="New path to beets pickle file to replace the existing value."
+    ),
+):
+    print(path)
+    pickle_file = get_pickle_file()
+    print(pickle_file)
+
+
+@config_app.command(help="Show ignored directories value.")
+def ignored_directories(
+    directories: list[str] = Argument(
+        None, help="New directories to add to or replace the existing value."
+    ),
+    add: bool = Option(
+        False,
+        "--add",
+        "-a",
+        help="Add to existing values rather than replace all values.",
+        hidden=False,
+    ),
+):
+    ignored_directories = get_ignored_directories()
+    print(ignored_directories)
+
+
+@config_app.command(help="Show music player value.")
+def music_player(
+    path: str = Argument(
+        None, help="New default music player to replace the existing value."
+    ),
+):
+    music_player = get_music_player()
+    print(music_player)
+
+
+@config_app.command(help="Show theme config.")
+def theme(
+    path: bool = Option(False, "--path", "-p", help="Show theme config file path."),
+    file: bool = Option(
+        False, "--file", "-f", help="Open theme config file in file browser."
+    ),
+    edit: bool = Option(
+        False, "--edit", "-e", help="Edit theme config file with $EDITOR."
+    ),
+):
+    theme_config = get_theme_config()
+    if path:
+        print(theme_config)
+    elif file:
+        launch(theme_config, locate=True)
+    elif edit:
+        editor = environ.get("EDITOR", "vim")
+        call([editor, theme_config])
+    else:
+        print_theme_config_values()
