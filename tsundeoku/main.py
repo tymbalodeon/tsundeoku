@@ -18,7 +18,6 @@ app = Typer(
     help=f"CLI for managing imports from a shared folder to a {beets_link} library",
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="rich",
-    add_completion=False,
 )
 app.add_typer(config_app, name="config")
 

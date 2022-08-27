@@ -32,7 +32,6 @@ config_app = Typer(
     ),
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="rich",
-    add_completion=False,
 )
 
 
