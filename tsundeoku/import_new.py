@@ -63,9 +63,9 @@ def get_imported_albums() -> set[str]:
 
 def get_albums() -> list[str]:
     shared_directories = get_shared_directories()
+    albums: list[str] = []
     if not shared_directories:
-        return []
-    albums = []
+        return albums
     for directory in shared_directories:
         albums.extend(
             [root for root, dirs, files in walk(directory) if files and not dirs]
