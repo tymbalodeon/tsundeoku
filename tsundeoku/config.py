@@ -275,7 +275,7 @@ def validate_config() -> bool:
     return not error_messages
 
 
-@config_app.command(help="Show shared directories value.")
+@config_app.command()
 def shared_directories(
     directories: list[str] = Argument(
         None, help="New directories to add to or replace the existing value."
@@ -288,22 +288,24 @@ def shared_directories(
         hidden=False,
     ),
 ):
+    """Show shared directories value."""
     shared_directoires = get_shared_directories()
     print(shared_directoires)
 
 
-@config_app.command(help="Show pickle file value.")
+@config_app.command()
 def pickle_file(
     path: str = Argument(
         None, help="New path to beets pickle file to replace the existing value."
     ),
 ):
+    """Show pickle file value."""
     print(path)
     pickle_file = get_pickle_file()
     print(pickle_file)
 
 
-@config_app.command(help="Show ignored directories value.")
+@config_app.command()
 def ignored_directories(
     directories: list[str] = Argument(
         None, help="New directories to add to or replace the existing value."
@@ -316,21 +318,23 @@ def ignored_directories(
         hidden=False,
     ),
 ):
+    """Show ignored directories value."""
     ignored_directories = get_ignored_directories()
     print(ignored_directories)
 
 
-@config_app.command(help="Show music player value.")
+@config_app.command()
 def music_player(
     path: str = Argument(
         None, help="New default music player to replace the existing value."
     ),
 ):
+    """Show music player value."""
     music_player = get_music_player()
     print(music_player)
 
 
-@config_app.command(help="Show theme config.")
+@config_app.command()
 def theme(
     path: bool = Option(False, "--path", "-p", help="Show theme config file path."),
     file: bool = Option(
@@ -340,6 +344,7 @@ def theme(
         False, "--edit", "-e", help="Edit theme config file with $EDITOR."
     ),
 ):
+    """Show theme config."""
     theme_config = get_theme_config()
     if path:
         print(theme_config)
