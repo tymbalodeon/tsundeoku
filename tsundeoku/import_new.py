@@ -15,7 +15,7 @@ from .config import (
     get_shared_directories,
 )
 from .library import get_comments, modify_tracks
-from .regex import BRACKET_DISC_REGEX, BRACKET_SOLO_INSTRUMENT, BRACKET_YEAR_REGEX
+from .regex import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, SOLO_INSTRUMENT_REGEX
 from .style import PrintLevel, print_with_color, stylize
 from .tags import (
     Tracks,
@@ -243,7 +243,7 @@ def check_disc(
 def has_solo_instrument(artist: str | None) -> bool:
     if not artist:
         return False
-    match = search(BRACKET_SOLO_INSTRUMENT, artist)
+    match = search(SOLO_INSTRUMENT_REGEX, artist)
     if not match:
         return False
     return bool(match.group())
@@ -293,7 +293,7 @@ def get_modify_tracks_modification(field: str, new_value: str) -> BeetsQuery:
 
 
 def get_bracket_solo_instrument(artist_with_instrument: str) -> str:
-    match = search(BRACKET_SOLO_INSTRUMENT, artist_with_instrument)
+    match = search(SOLO_INSTRUMENT_REGEX, artist_with_instrument)
     if not match:
         return ""
     return match.group()
@@ -374,7 +374,7 @@ def import_album(
         artist_with_instrument = artist_with_instrument or ""
         add_solo_instrument_to_comments(artist_with_instrument, album_title)
         artist_without_instrument = sub(
-            BRACKET_SOLO_INSTRUMENT, "", artist_with_instrument
+            SOLO_INSTRUMENT_REGEX, "", artist_with_instrument
         )
         modification = get_modify_tracks_modification(
             "artist", artist_without_instrument
