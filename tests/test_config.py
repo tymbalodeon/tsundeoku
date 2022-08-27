@@ -119,7 +119,7 @@ def test_get_directory_display():
 
 def test_config_help():
     config_help_text = (
-        "Display config [default], display config path, edit config file in $EDITOR"
+        "Show config [default], show config path, edit config file in $EDITOR"
     )
     result = CliRunner().invoke(app, ["config", "-h"])
     assert config_help_text in result.output

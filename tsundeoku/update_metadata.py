@@ -5,7 +5,13 @@ from beets.library import Library
 from rich import print
 
 from .library import get_library, modify_tracks
-from .regex import BRACKET_YEAR_REGEX
+from .regex import (
+    BRACKET_YEAR_REGEX,
+    ORIGINAL_REGEX,
+    RECORDING_REGEX,
+    RECORDINGS_REGEX,
+    SOLO_INSTRUMENT_REGEX,
+)
 
 
 @dataclass
@@ -24,35 +30,25 @@ ACTIONS = [
         replace="",
     ),
     Action(
-        message='Replacing "Rec.s" with "Recordings" in all "album" tags...',
-        find=r"\bRec\.s",
-        replace="Recordings",
-    ),
-    Action(
-        message="",
-        find=r"\bRec\.s\s",
-        replace="Recordings ",
-    ),
-    Action(
         message='Replacing "Rec." with "Recording" in all "album" tags...',
-        find=r"\bRec\.s?",
+        find=RECORDING_REGEX,
         replace="Recording",
     ),
     Action(
-        message="",
-        find=r"\bRec\.s?\s",
-        replace="Recording ",
+        message='Replacing "Recs" with "Recordings" in all "album" tags...',
+        find=RECORDINGS_REGEX,
+        replace="Recordings",
     ),
     Action(
         message='Replacing "Orig." with "Original" in all "album" tags...',
-        find=r"\bOrig\.\s",
-        replace="Original ",
+        find=ORIGINAL_REGEX,
+        replace="Original",
     ),
     Action(
         message=(
             'Removing bracketed solo instrument indications from all "artist" tags...'
         ),
-        find=r"\s\[solo.+\]",
+        find=SOLO_INSTRUMENT_REGEX,
         replace="",
         tag="artist",
         operate_on_albums=False,

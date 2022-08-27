@@ -1,17 +1,15 @@
-from os import environ
-from subprocess import call
 from sys import argv
 from typing import Union
 
 from rich import print
 from rich.markup import escape
 from rich.prompt import Confirm
-from typer import Argument, Context, Exit, Option, Typer, launch
+from typer import Argument, Context, Exit, Option, Typer
 
 from tsundeoku import __version__
 from tsundeoku.style import PrintLevel, print_with_color, stylize
 
-from .config import get_config_path, print_config_values, validate_config
+from .config import config_app, validate_config
 from .import_new import get_albums, import_albums
 from .update_metadata import update_metadata_main
 
@@ -22,6 +20,7 @@ app = Typer(
     rich_markup_mode="rich",
     add_completion=False,
 )
+app.add_typer(config_app, name="config")
 
 
 def display_version(version: bool):
@@ -67,40 +66,18 @@ def callback(
                 albums=None,
             )
         return
-    if not subcommand or subcommand in {"import-new", "update-metadata"}:
+    if not subcommand or subcommand in {"import", "update-metadata"}:
         print_with_color("ERROR: invalid config", PrintLevel.ERROR)
         raise Exit(1)
-
-
-@app.command(
-    help=(
-        f"Display config {escape('[default]')}, display config path, edit config file"
-        " in $EDITOR"
-    )
-)
-def config(
-    path: bool = Option(False, "--path", "-p", help="Show config file path."),
-    file: bool = Option(
-        False, "--file", "-f", help="Open config file in file browser."
-    ),
-    edit: bool = Option(False, "--edit", "-e", help="Edit config file with $EDITOR."),
-):
-    config_path = get_config_path()
-    if path:
-        print(config_path)
-    elif file:
-        launch(str(config_path), locate=True)
-    elif edit:
-        editor = environ.get("EDITOR", "vim")
-        call([editor, config_path])
-    else:
-        print_config_values()
 
 
 solo_instrument = escape("[solo <instrument>]")
 
 
-@app.command(help=f"Copy new adds from your shared folder to your {beets_link} library")
+@app.command(
+    name="import",
+    help=f"Copy new adds from your shared folder to your {beets_link} library",
+)
 def import_new(
     as_is: bool = Option(
         False, "--as-is", help="Import new albums without altering metadata."
