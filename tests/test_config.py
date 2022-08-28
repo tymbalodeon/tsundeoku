@@ -26,9 +26,9 @@ def test_get_config_directory(monkeypatch, tmp_path):
     assert config_directory.exists()
 
 
-def get_mock_shared_directory() -> str:
-    shared_directory = str(Path.home() / "Dropbox")
-    return f'["{shared_directory}"]'
+def get_mock_shared_directories() -> str:
+    shared_directories = str(Path.home() / "Dropbox")
+    return f'["{shared_directories}"]'
 
 
 def get_mock_pickle_file() -> Path:
@@ -36,7 +36,7 @@ def get_mock_pickle_file() -> Path:
 
 
 def get_options_and_vaues(default=True) -> list[tuple]:
-    shared_directory = get_mock_shared_directory()
+    shared_directories = get_mock_shared_directories()
     pickle_file = str(get_mock_pickle_file())
     if default:
         ignored_directories = "[]"
@@ -45,7 +45,7 @@ def get_options_and_vaues(default=True) -> list[tuple]:
         ignored_directories = '["/bad_directory"]'
         music_player = "Not An App"
     return [
-        ("shared_directory", shared_directory),
+        ("shared_directories", shared_directories),
         ("pickle_file", pickle_file),
         ("ignored_directories", ignored_directories),
         ("music_player", music_player),
@@ -157,8 +157,8 @@ def test_bad_config(monkeypatch, tmp_path):
 def test_good_config(monkeypatch, tmp_path):
     set_mock_home(monkeypatch, tmp_path)
     monkeypatch.setattr(config, "application_exists", mock_application_exists)
-    shared_directory = tmp_path / "Dropbox"
-    Path.mkdir(shared_directory)
+    shared_directories = tmp_path / "Dropbox"
+    Path.mkdir(shared_directories)
     pickle_file = get_mock_pickle_file()
     Path.mkdir(pickle_file.parent, parents=True)
     pickle_file.touch()

@@ -20,7 +20,7 @@ Validator = Callable[[], list[ErrorMessage] | ErrorMessage | None]
 
 CONFIG_PATH = ".config/tsundeoku"
 CONFIG_SECTION_NAME = "tsundeoku"
-SHARED_DIRECTORY_OPTION_NAME = "shared_directory"
+SHARED_DIRECTORIES_OPTION_NAME = "shared_directories"
 PICKLE_FILE_OPTION_NAME = "pickle_file"
 IGNORED_DIRECTORIES_OPTION_NAME = "ignored_directories"
 MUSIC_PLAYER_OPTION_NAME = "music_player"
@@ -65,9 +65,9 @@ def get_config_directory() -> Path:
     return config_directory
 
 
-def get_default_shared_directory() -> str:
-    default_shared_directory = Path.home() / "Dropbox"
-    return f'["{default_shared_directory}"]'
+def get_default_shared_directories() -> str:
+    default_shared_directories = Path.home() / "Dropbox"
+    return f'["{default_shared_directories}"]'
 
 
 def get_default_pickle_file() -> str:
@@ -80,12 +80,12 @@ def get_config_path() -> Path:
 
 
 def get_config_defaults() -> str:
-    default_shared_directory = get_default_shared_directory()
+    default_shared_directories = get_default_shared_directories()
     default_pickle_file = get_default_pickle_file()
     default_ignored_directories: list[str] = []
     default_music_player = "Swinsian"
     return (
-        f"{SHARED_DIRECTORY_OPTION_NAME} = {default_shared_directory}\n"
+        f"{SHARED_DIRECTORIES_OPTION_NAME} = {default_shared_directories}\n"
         f"{PICKLE_FILE_OPTION_NAME} = {default_pickle_file}\n"
         f"{IGNORED_DIRECTORIES_OPTION_NAME} = {default_ignored_directories}\n"
         f"{MUSIC_PLAYER_OPTION_NAME} = {default_music_player}\n"
@@ -149,10 +149,10 @@ def print_theme_config_values():
 
 
 def get_shared_directories() -> list[ConfigValue]:
-    shared_directory = get_config_value(SHARED_DIRECTORY_OPTION_NAME)
-    if not shared_directory:
+    shared_directories = get_config_value(SHARED_DIRECTORIES_OPTION_NAME)
+    if not shared_directories:
         return []
-    return loads(shared_directory)
+    return loads(shared_directories)
 
 
 def get_pickle_file() -> ConfigValue | None:
@@ -250,14 +250,14 @@ def validate_music_player() -> ErrorMessage | None:
 
 def validate_config() -> bool:
     error_messages = []
-    validate_shared_directory = get_validate_directories(
+    validate_shared_directories = get_validate_directories(
         get_shared_directories, get_shared_directory_error_message
     )
     validate_ignored_directories = get_validate_directories(
         get_ignored_directories, get_ignored_directory_error_message
     )
     validators = [
-        validate_shared_directory,
+        validate_shared_directories,
         validate_pickle_file,
         validate_ignored_directories,
         validate_music_player,

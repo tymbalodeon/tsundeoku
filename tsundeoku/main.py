@@ -101,7 +101,7 @@ def import_new(
         " /--disallow-prompt",
         help="Allow prompts for user confirmation to update metadata.",
     ),
-    albums: list[str] = Argument(..., hidden=True),
+    albums: list[str] = Argument(None, hidden=True),
 ):
     print("Importing newly added albums...")
     first_time = False
