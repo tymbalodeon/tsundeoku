@@ -1,5 +1,4 @@
 from sys import argv
-from typing import Union
 
 from rich import print
 from rich.markup import escape
@@ -62,7 +61,7 @@ def callback(
                 ask_before_disc_update=False,
                 ask_before_artist_update=False,
                 prompt=True,
-                albums=None,
+                albums=[],
             )
         return
     if not subcommand or subcommand in {"import", "update-metadata"}:
@@ -102,7 +101,7 @@ def import_new(
         " /--disallow-prompt",
         help="Allow prompts for user confirmation to update metadata.",
     ),
-    albums: Union[list[str], None] = Argument(None, hidden=True),
+    albums: list[str] = Argument(..., hidden=True),
 ):
     print("Importing newly added albums...")
     first_time = False

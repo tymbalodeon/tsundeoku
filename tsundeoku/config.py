@@ -1,9 +1,9 @@
+from collections.abc import Callable
 from configparser import ConfigParser
 from json import loads
 from os import environ
 from pathlib import Path
 from subprocess import call, run
-from typing import Callable
 
 from rich import print
 from rich.markup import escape
