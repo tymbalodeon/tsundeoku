@@ -4,7 +4,7 @@ from os import environ
 from pathlib import Path
 from subprocess import call, run
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from rich import print
 from rich.console import Console
 from rich.markup import escape
@@ -43,9 +43,11 @@ def get_default_pickle_file() -> str:
 
 
 class Config(BaseModel):
-    shared_directories = get_default_shared_directories()
-    pickle_file = get_default_pickle_file()
-    ignored_directories: list[str] = []
+    shared_directories: list[str] = Field(
+        default_factory=get_default_shared_directories
+    )
+    pickle_file: str = Field(default_factory=get_default_pickle_file)
+    ignored_directories: list[str] = Field(default_factory=list)
     music_player = "Swinsian"
 
 
