@@ -6,11 +6,11 @@ from rich.prompt import Confirm
 from typer import Argument, Context, Exit, Option, Typer
 
 from tsundeoku import __version__
-from tsundeoku.style import PrintLevel, print_with_color, stylize
 
-from .config import config_app, validate_config
+from .config import StyleLevel, config_app, print_with_theme, validate_config
 from .import_new import get_albums, import_albums
 from .reformat import reformat_main
+from .style import stylize
 
 beets_link = stylize('"beets"', ["blue", "link=https://beets.io/"])
 app = Typer(
@@ -31,8 +31,16 @@ def get_argv() -> list[str]:
     return argv
 
 
-def skip_validation(context) -> bool:
-    info_options = context.help_option_names + ["--path", "-p", "--edit", "-e"]
+def skip_validation(context: Context) -> bool:
+    info_options = context.help_option_names + [
+        "--path",
+        "-p",
+        "--file",
+        "-f",
+        "--edit",
+        "-e",
+        "--reset",
+    ]
     for option in info_options:
         if option in get_argv():
             return True
@@ -65,7 +73,7 @@ def callback(
             )
         return
     if not subcommand or subcommand in {"import", "update-metadata"}:
-        print_with_color("ERROR: invalid config", PrintLevel.ERROR)
+        print_with_theme("ERROR: invalid config", level=StyleLevel.ERROR)
         raise Exit(1)
 
 

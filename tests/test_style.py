@@ -2,12 +2,6 @@ from pathlib import Path
 
 from tests.mocks import set_mock_home
 from tsundeoku import style
-from tsundeoku.style import (
-    DEFAULT_THEME,
-    format_int_with_commas,
-    get_theme,
-    get_theme_config,
-)
 
 
 def test_get_theme(monkeypatch, tmp_path):

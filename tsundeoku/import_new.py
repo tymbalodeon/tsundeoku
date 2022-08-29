@@ -9,14 +9,16 @@ from rich.markup import escape as rich_escape
 from rich.prompt import Prompt
 
 from .config import (
+    StyleLevel,
     get_ignored_directories,
     get_music_player,
     get_pickle_file,
     get_shared_directories,
+    print_with_theme,
 )
 from .library import get_comments, modify_tracks
 from .regex import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, SOLO_INSTRUMENT_REGEX
-from .style import PrintLevel, print_with_color, stylize
+from .style import stylize
 from .tags import (
     Tracks,
     get_album_title,
@@ -99,7 +101,7 @@ def get_track_total(tracks: Tracks) -> int | ImportError:
 def is_in_ignored_directory(album: str) -> bool:
     ignored_directories = get_ignored_directories()
     matching_directories = (
-        directory for directory in ignored_directories if directory in album
+        directory for directory in ignored_directories if str(directory) in album
     )
     return any(matching_directories)
 
@@ -450,7 +452,7 @@ def import_albums(
         if error_albums:
             album_plural = "Album" if error_albums == 1 else "Albums"
             error_message = f"{album_plural} {error_name.value}:"
-            print_with_color(error_message, style=PrintLevel.INFO)
+            print_with_theme(error_message, level=StyleLevel.INFO)
             for album in error_albums:
                 print(f"- {album}")
     return imports, errors, importable_error_albums
