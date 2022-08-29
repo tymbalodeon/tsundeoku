@@ -1,6 +1,5 @@
 from enum import Enum
 from pathlib import Path
-from re import escape
 from subprocess import run
 
 from pydantic import BaseModel, DirectoryPath, Field, FilePath, validator
