@@ -1,5 +1,6 @@
 from sys import argv
 
+from pydantic import ValidationError
 from rich import print
 from rich.markup import escape
 from rich.prompt import Confirm
@@ -7,7 +8,8 @@ from typer import Argument, Context, Exit, Option, Typer
 
 from tsundeoku import __version__
 
-from .config import StyleLevel, config_app, print_with_theme, validate_config
+from .config.config import StyleLevel, get_config, print_with_theme
+from .config.main import config_app
 from .import_new import get_albums, import_albums
 from .reformat import reformat_main
 from .style import stylize
@@ -32,7 +34,7 @@ def get_argv() -> list[str]:
 
 
 def skip_validation(context: Context) -> bool:
-    info_options = context.help_option_names + [
+    skip_options = context.help_option_names + [
         "--path",
         "-p",
         "--file",
@@ -41,7 +43,7 @@ def skip_validation(context: Context) -> bool:
         "-e",
         "--reset",
     ]
-    for option in info_options:
+    for option in skip_options:
         if option in get_argv():
             return True
     return False
@@ -60,7 +62,16 @@ def callback(
 ):
     if skip_validation(context):
         return
-    is_valid = validate_config()
+    is_valid = True
+    try:
+        get_config()
+    except ValidationError as error:
+        is_valid = False
+        errors = error.errors()
+        for error in errors:
+            message = f"WARNING: {error['msg']}"
+            print_with_theme(message, level=StyleLevel.WARNING)
+        print()
     subcommand = context.invoked_subcommand
     if is_valid:
         if not subcommand:

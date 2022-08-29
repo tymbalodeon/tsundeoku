@@ -8,7 +8,7 @@ from beets.importer import history_add
 from rich.markup import escape as rich_escape
 from rich.prompt import Prompt
 
-from .config import (
+from .config.config import (
     StyleLevel,
     get_ignored_directories,
     get_music_player,

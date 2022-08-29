@@ -3,8 +3,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from tests.mocks import set_mock_home
-from tsundeoku import config
-from tsundeoku.config import get_config_directory, validate_music_player
+from tsundeoku.config.config import get_config_directory
 from tsundeoku.main import app
 
 
@@ -48,15 +47,8 @@ def mock_get_music_player():
     return None
 
 
-def test_validate_music_player(monkeypatch):
-    monkeypatch.setattr(config, "get_music_player", mock_get_music_player)
-    error_message = validate_music_player()
-    assert error_message and "WARNING" in error_message
-
-
 def test_good_config(monkeypatch, tmp_path):
     set_mock_home(monkeypatch, tmp_path)
-    monkeypatch.setattr(config, "application_exists", mock_application_exists)
     shared_directories = tmp_path / "Dropbox"
     Path.mkdir(shared_directories)
     pickle_file = get_mock_pickle_file()
