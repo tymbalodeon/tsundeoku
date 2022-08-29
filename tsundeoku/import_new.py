@@ -266,13 +266,15 @@ def check_artist(
         if skip:
             raise Exception
         artist_with_instrument = artist_with_instrument or ""
-        artist_with_instrument = stylize(artist_with_instrument, ["bold", "yellow"])
+        stylized_artist_with_instrument = stylize(
+            artist_with_instrument, ["bold", "yellow"]
+        )
         if (
             not ask_before_artist_update
             or prompt
             and Prompt.ask(
                 "Remove bracketed solo instrument indication"
-                f" {artist_with_instrument} from the"
+                f" {stylized_artist_with_instrument} from the"
                 " artist field and add to comments?"
             )
         ):
