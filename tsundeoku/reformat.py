@@ -72,7 +72,7 @@ def list_items(
     return [album_or_item.get(query_tag) for album_or_item in albums_or_items]
 
 
-def update_metadata(action: Action):
+def reformat(action: Action):
     if action.message:
         print(action.message)
     items = list_items(action.tag, action.find, action.operate_on_albums)
@@ -88,7 +88,7 @@ def update_metadata(action: Action):
         modify_tracks(query, action.operate_on_albums, False)
 
 
-def update_metadata_main(solo_instruments=False):
+def reformat_main(solo_instruments=False):
     actions = ACTIONS if solo_instruments else ACTIONS[:-1]
     for action in actions:
-        update_metadata(action)
+        reformat(action)

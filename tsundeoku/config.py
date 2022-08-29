@@ -1,29 +1,27 @@
-from configparser import ConfigParser
-from json import loads
+from collections.abc import Callable
+from enum import Enum
 from os import environ
 from pathlib import Path
 from subprocess import call, run
-from typing import Callable
 
+from pydantic import BaseModel
 from rich import print
+from rich.console import Console
 from rich.markup import escape
+from rich.prompt import Confirm
+from rich.style import Style
+from rich.syntax import Syntax
+from rich.theme import Theme
+from tomli import loads
+from tomli_w import dumps
 from typer import Argument, Context, Option, Typer, launch
 
-from .style import get_theme_config, print_with_color, stylize
+from .style import stylize
 
-ConfigOption = str
-ConfigValue = str
-ErrorMessage = str
-ConfigOptionAndValue = tuple[ConfigOption, ConfigValue | None]
-ConfigOptions = list[ConfigOptionAndValue]
-Validator = Callable[[], list[ErrorMessage] | ErrorMessage | None]
+APP_NAME = "tsundeoku"
+THEME_NAME = "theme"
+CONFIG_PATH = f".config/{APP_NAME}"
 
-CONFIG_PATH = ".config/tsundeoku"
-CONFIG_SECTION_NAME = "tsundeoku"
-SHARED_DIRECTORY_OPTION_NAME = "shared_directory"
-PICKLE_FILE_OPTION_NAME = "pickle_file"
-IGNORED_DIRECTORIES_OPTION_NAME = "ignored_directories"
-MUSIC_PLAYER_OPTION_NAME = "music_player"
 
 config_app = Typer(
     help=(
@@ -32,31 +30,29 @@ config_app = Typer(
     ),
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="rich",
-    add_completion=False,
 )
 
 
-@config_app.callback(invoke_without_command=True)
-def config(
-    context: Context,
-    path: bool = Option(False, "--path", "-p", help="Show config file path."),
-    file: bool = Option(
-        False, "--file", "-f", help="Open config file in file browser."
-    ),
-    edit: bool = Option(False, "--edit", "-e", help="Edit config file with $EDITOR."),
-):
-    if context.invoked_subcommand:
-        return
-    config_path = get_config_path()
-    if path:
-        print(config_path)
-    elif file:
-        launch(str(config_path), locate=True)
-    elif edit:
-        editor = environ.get("EDITOR", "vim")
-        call([editor, config_path])
-    else:
-        print_config_values()
+def get_default_shared_directories() -> list[str]:
+    default_shared_directory = str(Path.home() / "Dropbox")
+    return [default_shared_directory]
+
+
+def get_default_pickle_file() -> str:
+    return str(Path.home() / ".config/beets/state.pickle")
+
+
+class Config(BaseModel):
+    shared_directories = get_default_shared_directories()
+    pickle_file = get_default_pickle_file()
+    ignored_directories: list[str] = []
+    music_player = "Swinsian"
+
+
+class ThemeConfig(BaseModel):
+    info = "dim cyan"
+    warning = "yellow"
+    error = "bold red"
 
 
 def get_config_directory() -> Path:
@@ -66,142 +62,136 @@ def get_config_directory() -> Path:
     return config_directory
 
 
-def get_default_shared_directory() -> str:
-    default_shared_directory = Path.home() / "Dropbox"
-    return f'["{default_shared_directory}"]'
-
-
-def get_default_pickle_file() -> str:
-    return str(Path.home() / ".config/beets/state.pickle")
-
-
 def get_config_path() -> Path:
     config_directory = get_config_directory()
-    return config_directory / "tsundeoku.ini"
+    return config_directory / f"{APP_NAME}.toml"
 
 
-def get_config_defaults() -> str:
-    default_shared_directory = get_default_shared_directory()
-    default_pickle_file = get_default_pickle_file()
-    default_ignored_directories: list[str] = []
-    default_music_player = "Swinsian"
-    return (
-        f"{SHARED_DIRECTORY_OPTION_NAME} = {default_shared_directory}\n"
-        f"{PICKLE_FILE_OPTION_NAME} = {default_pickle_file}\n"
-        f"{IGNORED_DIRECTORIES_OPTION_NAME} = {default_ignored_directories}\n"
-        f"{MUSIC_PLAYER_OPTION_NAME} = {default_music_player}\n"
-    )
+def write_config(**config_and_theme: Config | ThemeConfig):
+    if "config" not in config_and_theme:
+        config = dict(Config())
+    else:
+        config = config_and_theme["config"]
+    if "theme" not in config_and_theme:
+        theme = dict(ThemeConfig())
+    else:
+        theme = config_and_theme["theme"]
+    config = {APP_NAME: config, THEME_NAME: theme}
+    config_file = get_config_path()
+    config_file.write_text(dumps(config))
 
 
 def get_config_file() -> Path:
     config_file = get_config_path()
     if not config_file.is_file():
-        section = f"[{CONFIG_SECTION_NAME}]"
-        config_defaults = get_config_defaults()
-        config_base = f"{section}\n{config_defaults}"
-        config_file.write_text(config_base)
+        write_config()
     return config_file
 
 
-def get_config() -> ConfigParser:
-    config = ConfigParser()
+def get_config_text() -> str:
     config_file = get_config_file()
-    config.read(config_file)
-    return config
+    return config_file.read_text()
 
 
-def get_config_value(
-    option: ConfigOption,
-    config: ConfigParser | None = None,
-) -> ConfigValue | None:
-    if not config:
-        config = get_config()
-    return config.get(CONFIG_SECTION_NAME, option)
+def read_config_values() -> dict[str, list[Path] | Path | str]:
+    config_text = get_config_text()
+    return loads(config_text)[APP_NAME]
 
 
-def get_option_and_value(
-    option: ConfigOption,
-    config: ConfigParser | None = None,
-) -> ConfigOptionAndValue:
-    value = get_config_value(option, config)
-    return (option, value)
+def read_theme_config_values() -> dict[str, str]:
+    config_text = get_config_text()
+    return loads(config_text)[THEME_NAME]
 
 
-def get_config_options() -> ConfigOptions:
-    config = get_config()
-    options = config.options(CONFIG_SECTION_NAME)
-    return [get_option_and_value(option, config) for option in options]
+def get_config() -> Config:
+    config_values = read_config_values()
+    return Config(**config_values)
 
 
-def print_values(config_path):
-    config = config_path.read_text().splitlines()[1:]
-    for option in config:
-        print(option)
+def get_theme_config() -> ThemeConfig:
+    theme_config_values = read_theme_config_values()
+    return ThemeConfig(**theme_config_values)
+
+
+def get_theme() -> Theme:
+    theme_config_values = read_theme_config_values()
+    return Theme(theme_config_values)
+
+
+class StyleLevel(Enum):
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+
+
+def get_style(level: StyleLevel) -> Style:
+    theme = get_theme()
+    return theme.styles[level.value]
+
+
+def print_with_theme(text: Syntax | str, level: StyleLevel | None = None):
+    theme = get_theme()
+    console = Console(theme=theme)
+    if level:
+        style = get_style(level)
+        console.print(text, style=style)
+    else:
+        console.print(text)
 
 
 def print_config_values():
-    config_path = get_config_file()
-    print_values(config_path)
+    config_file = str(get_config_file())
+    syntax = Syntax.from_path(config_file, lexer="toml", theme="ansi_dark")
+    print_with_theme(syntax)
 
 
-def print_theme_config_values():
-    theme_config_path = Path(get_theme_config())
-    print_values(theme_config_path)
+def get_shared_directories() -> list[Path]:
+    config = get_config()
+    return [Path(path) for path in config.shared_directories]
 
 
-def get_shared_directories() -> list[ConfigValue]:
-    shared_directory = get_config_value(SHARED_DIRECTORY_OPTION_NAME)
-    if not shared_directory:
-        return []
-    return loads(shared_directory)
+def get_pickle_file() -> Path:
+    config = get_config()
+    return Path(config.pickle_file)
 
 
-def get_pickle_file() -> ConfigValue | None:
-    return get_config_value(PICKLE_FILE_OPTION_NAME)
+def get_ignored_directories() -> list[Path]:
+    config = get_config()
+    return [Path(path) for path in config.ignored_directories]
 
 
-def get_ignored_directories() -> list[ConfigValue]:
-    ignored_directories = get_config_value(IGNORED_DIRECTORIES_OPTION_NAME)
-    if not ignored_directories:
-        return []
-    return loads(ignored_directories)
+def get_music_player() -> str:
+    config = get_config()
+    return config.music_player
 
 
-def get_music_player() -> ConfigValue | None:
-    return get_config_value(MUSIC_PLAYER_OPTION_NAME)
+def get_directory_display(directory: Path) -> str:
+    return f' "{directory}" '
 
 
-def get_directory_display(directory: str | None) -> str:
-    if directory:
-        return f' "{directory}" '
-    return ""
-
-
-def get_shared_directory_error_message(shared_directory: str | None) -> ErrorMessage:
+def get_shared_directory_error_message(shared_directory: Path) -> str:
     directory_display = get_directory_display(shared_directory)
     return (
         f"WARNING: Shared directory{directory_display}does not exist. Please create the"
-        f" directory or update your config with `{CONFIG_SECTION_NAME} config"
+        f" directory or update your config with `{APP_NAME} config"
         " --update`."
     )
 
 
-def get_ignored_directory_error_message(
-    ignored_directory: str | None,
-) -> ErrorMessage:
+def get_ignored_directory_error_message(ignored_directory: Path) -> str:
     directory_display = get_directory_display(ignored_directory)
     return (
         f"WARNING: Ignored directory{directory_display}does not exist. Please add a"
-        f" valid directory  to your config with `{CONFIG_SECTION_NAME} config"
+        f" valid directory  to your config with `{APP_NAME} config"
         " --update`."
     )
 
 
 def get_validate_directories(
-    get_directories: Callable[[], list[ConfigValue]],
-    get_error_message: Callable[[str | None], ErrorMessage],
-) -> Validator:
-    def validate_directories() -> list[ErrorMessage] | None:
+    get_directories: Callable[[], list[Path]],
+    get_error_message: Callable[[Path], str],
+) -> Callable[[], list[str] | str | None]:
+    def validate_directories() -> list[str] | None:
         directories = get_directories()
         if not directories:
             return None
@@ -215,7 +205,7 @@ def get_validate_directories(
     return validate_directories
 
 
-def validate_pickle_file() -> ErrorMessage | None:
+def validate_pickle_file() -> str | None:
     pickle_file = get_pickle_file()
     beets_documentation_link = stylize(
         "beets documentation", "link=https://beets.readthedocs.io/en/stable/"
@@ -234,11 +224,11 @@ def application_exists(command):
     return run(command, shell=True, capture_output=True).stdout
 
 
-def validate_music_player() -> ErrorMessage | None:
+def validate_music_player() -> str | None:
     music_player = get_music_player()
     error_message = (
         "WARNING: Music player does not exist. Please install it or"
-        f" update your config with `{CONFIG_SECTION_NAME} config --update`."
+        f" update your config with `{APP_NAME} config --update`."
     )
     if not music_player:
         return error_message
@@ -251,14 +241,14 @@ def validate_music_player() -> ErrorMessage | None:
 
 def validate_config() -> bool:
     error_messages = []
-    validate_shared_directory = get_validate_directories(
+    validate_shared_directories = get_validate_directories(
         get_shared_directories, get_shared_directory_error_message
     )
     validate_ignored_directories = get_validate_directories(
         get_ignored_directories, get_ignored_directory_error_message
     )
     validators = [
-        validate_shared_directory,
+        validate_shared_directories,
         validate_pickle_file,
         validate_ignored_directories,
         validate_music_player,
@@ -271,13 +261,44 @@ def validate_config() -> bool:
             else:
                 error_messages.append(error)
     for message in error_messages:
-        print_with_color(message)
+        print_with_theme(message, level=StyleLevel.WARNING)
     return not error_messages
 
 
-@config_app.command(help="Show shared directories value.")
+@config_app.callback(invoke_without_command=True)
+def config(
+    context: Context,
+    path: bool = Option(False, "--path", "-p", help="Show config file path."),
+    file: bool = Option(
+        False, "--file", "-f", help="Open config file in file browser."
+    ),
+    edit: bool = Option(False, "--edit", "-e", help="Edit config file with $EDITOR."),
+    reset: bool = Option(False, "--reset", help="Reset config to defaults."),
+):
+    if context.invoked_subcommand:
+        return
+    config_path = get_config_path()
+    if path:
+        print(config_path)
+    elif file:
+        launch(str(config_path), locate=True)
+    elif edit:
+        editor = environ.get("EDITOR", "vim")
+        call([editor, config_path])
+    elif reset:
+        perform_reset = Confirm.ask(
+            "Are you sure you want to reset your config to the default values?"
+        )
+        if perform_reset:
+            print("Config reset.")
+            write_config()
+    else:
+        print_config_values()
+
+
+@config_app.command()
 def shared_directories(
-    directories: list[str] = Argument(
+    new_directories: list[str] = Argument(
         None, help="New directories to add to or replace the existing value."
     ),
     add: bool = Option(
@@ -288,24 +309,49 @@ def shared_directories(
         hidden=False,
     ),
 ):
-    shared_directoires = get_shared_directories()
-    print(shared_directoires)
+    """Show shared directories value."""
+    if new_directories:
+        config = get_config()
+        if add:
+            shared_directories = set(config.shared_directories)
+            for directory in new_directories:
+                shared_directories.add(directory)
+            config.shared_directories = list(shared_directories)
+        else:
+            replace = Confirm.ask(
+                "Are you sure you want to overwrite the shared directories?"
+            )
+            if replace:
+                config.shared_directories = new_directories
+                print("Shared directories overwritten.")
+        write_config(config=config)
+    else:
+        shared_directoires = get_shared_directories()
+        print(shared_directoires)
 
 
-@config_app.command(help="Show pickle file value.")
+@config_app.command()
 def pickle_file(
-    path: str = Argument(
+    new_pickle_file: str = Argument(
         None, help="New path to beets pickle file to replace the existing value."
     ),
 ):
-    print(path)
-    pickle_file = get_pickle_file()
-    print(pickle_file)
+    """Show pickle file value."""
+    if new_pickle_file:
+        config = get_config()
+        replace = Confirm.ask("Are you sure you want to overwrite the pickle file?")
+        if replace:
+            config.pickle_file = new_pickle_file
+            print("Pickle file overwritten.")
+        write_config(config=config)
+    else:
+        pickle_file = get_pickle_file()
+        print(pickle_file)
 
 
-@config_app.command(help="Show ignored directories value.")
+@config_app.command()
 def ignored_directories(
-    directories: list[str] = Argument(
+    new_directories: list[str] = Argument(
         None, help="New directories to add to or replace the existing value."
     ),
     add: bool = Option(
@@ -316,37 +362,41 @@ def ignored_directories(
         hidden=False,
     ),
 ):
-    ignored_directories = get_ignored_directories()
-    print(ignored_directories)
+    """Show ignored directories value."""
+    if new_directories:
+        config = get_config()
+        if add:
+            new_ignored_directories = set(config.ignored_directories)
+            for directory in new_directories:
+                new_ignored_directories.add(directory)
+            config.ignored_directories = list(new_ignored_directories)
+        else:
+            replace = Confirm.ask(
+                "Are you sure you want to overwrite the ignored directories?"
+            )
+            if replace:
+                config.ignored_directories = new_directories
+                print("Ignored directories overwritten.")
+        write_config(config=config)
+    else:
+        ignored_directories = get_ignored_directories()
+        print(ignored_directories)
 
 
-@config_app.command(help="Show music player value.")
+@config_app.command()
 def music_player(
-    path: str = Argument(
+    new_music_player: str = Argument(
         None, help="New default music player to replace the existing value."
     ),
 ):
-    music_player = get_music_player()
-    print(music_player)
-
-
-@config_app.command(help="Show theme config.")
-def theme(
-    path: bool = Option(False, "--path", "-p", help="Show theme config file path."),
-    file: bool = Option(
-        False, "--file", "-f", help="Open theme config file in file browser."
-    ),
-    edit: bool = Option(
-        False, "--edit", "-e", help="Edit theme config file with $EDITOR."
-    ),
-):
-    theme_config = get_theme_config()
-    if path:
-        print(theme_config)
-    elif file:
-        launch(theme_config, locate=True)
-    elif edit:
-        editor = environ.get("EDITOR", "vim")
-        call([editor, theme_config])
+    """Show music player value."""
+    if new_music_player:
+        config = get_config()
+        replace = Confirm.ask("Are you sure you want to overwrite the music player?")
+        if replace:
+            config.music_player = new_music_player
+            print("Muisc player overwritten.")
+        write_config(config=config)
     else:
-        print_theme_config_values()
+        music_player = get_music_player()
+        print(music_player)

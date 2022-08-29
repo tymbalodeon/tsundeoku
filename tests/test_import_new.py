@@ -1,32 +1,9 @@
-from pathlib import Path
-
 from typer.testing import CliRunner
 
-from tsundeoku import config, main
-from tsundeoku.config import get_shared_directories
-from tsundeoku.import_new import get_albums
+from tsundeoku import main
 from tsundeoku.main import app
 
 from .mocks import set_mock_home
-
-
-def test_get_albums(monkeypatch, tmp_path):
-    def mock_get_config_value(_):
-        pass
-
-    set_mock_home(monkeypatch, tmp_path)
-    albums = get_albums()
-    assert albums == []
-    shared_directory = get_shared_directories()[0]
-    mock_album = Path(shared_directory) / "Album"
-    Path.mkdir(mock_album, parents=True)
-    mock_track = mock_album / "Track"
-    mock_track.touch()
-    albums = get_albums()
-    assert len(albums)
-    monkeypatch.setattr(config, "get_config_value", mock_get_config_value)
-    albums = get_albums()
-    assert albums == []
 
 
 def test_import_new_help(monkeypatch, tmp_path):

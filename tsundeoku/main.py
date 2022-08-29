@@ -1,5 +1,4 @@
 from sys import argv
-from typing import Union
 
 from rich import print
 from rich.markup import escape
@@ -7,18 +6,17 @@ from rich.prompt import Confirm
 from typer import Argument, Context, Exit, Option, Typer
 
 from tsundeoku import __version__
-from tsundeoku.style import PrintLevel, print_with_color, stylize
 
-from .config import config_app, validate_config
+from .config import StyleLevel, config_app, print_with_theme, validate_config
 from .import_new import get_albums, import_albums
-from .update_metadata import update_metadata_main
+from .reformat import reformat_main
+from .style import stylize
 
 beets_link = stylize('"beets"', ["blue", "link=https://beets.io/"])
 app = Typer(
     help=f"CLI for managing imports from a shared folder to a {beets_link} library",
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="rich",
-    add_completion=False,
 )
 app.add_typer(config_app, name="config")
 
@@ -33,8 +31,16 @@ def get_argv() -> list[str]:
     return argv
 
 
-def skip_validation(context) -> bool:
-    info_options = context.help_option_names + ["--path", "-p", "--edit", "-e"]
+def skip_validation(context: Context) -> bool:
+    info_options = context.help_option_names + [
+        "--path",
+        "-p",
+        "--file",
+        "-f",
+        "--edit",
+        "-e",
+        "--reset",
+    ]
     for option in info_options:
         if option in get_argv():
             return True
@@ -63,11 +69,11 @@ def callback(
                 ask_before_disc_update=False,
                 ask_before_artist_update=False,
                 prompt=True,
-                albums=None,
+                albums=[],
             )
         return
     if not subcommand or subcommand in {"import", "update-metadata"}:
-        print_with_color("ERROR: invalid config", PrintLevel.ERROR)
+        print_with_theme("ERROR: invalid config", level=StyleLevel.ERROR)
         raise Exit(1)
 
 
@@ -103,7 +109,7 @@ def import_new(
         " /--disallow-prompt",
         help="Allow prompts for user confirmation to update metadata.",
     ),
-    albums: Union[list[str], None] = Argument(None, hidden=True),
+    albums: list[str] = Argument(None, hidden=True),
 ):
     print("Importing newly added albums...")
     first_time = False
@@ -119,7 +125,7 @@ def import_new(
         prompt=prompt,
     )
     if imports and not as_is:
-        update_metadata_main()
+        reformat_main()
     if (
         first_time
         and errors
@@ -136,7 +142,7 @@ def import_new(
 
 
 @app.command()
-def update_metadata(
+def reformat(
     solo_instruments: bool = Option(
         False,
         "--remove-instruments/ ",
@@ -144,7 +150,7 @@ def update_metadata(
     )
 ):
     """
-    Update metadata according to the following rules:
+    Reformat metadata according to the following rules:
 
     * Remove bracketed years (e.g., "[2022]") from album fields. If the year
       field is blank, it will be updated with the year in brackets. If the year
@@ -158,4 +164,4 @@ def update_metadata(
     * [Optional] Remove bracketed solo instrument indications (e.g., "[solo
       piano]") from artist fields.
     """
-    update_metadata_main(solo_instruments)
+    reformat_main(solo_instruments)
