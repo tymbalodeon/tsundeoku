@@ -86,13 +86,22 @@ def get_loaded_config() -> Config:
     return cast(Config, STATE["config"])
 
 
-def as_toml(config: dict) -> dict:
-    for key, value in config.items():
+def rename_import_config(config: dict) -> dict:
+    return {
+        "import" if key == "import_new" else key: value for key, value in config.items()
+    }
+
+
+def as_toml(config: Config) -> dict:
+    config_toml: dict = config.dict()
+    file_system = config_toml["file_system"]
+    for key, value in file_system.items():
         if isinstance(value, set):
-            config[key] = [path.as_posix() for path in value]
+            file_system[key] = [path.as_posix() for path in value]
         elif isinstance(value, Path):
-            config[key] = value.as_posix()
-    return config
+            file_system[key] = value.as_posix()
+    config_toml = rename_import_config(config_toml)
+    return config_toml
 
 
 def write_config_values(**config_values: Config):
@@ -100,8 +109,7 @@ def write_config_values(**config_values: Config):
         config = get_loaded_config()
     else:
         config = config_values["config"]
-    config_toml: dict = config.dict()
-    config_toml["file_system"] = as_toml(config_toml["file_system"])
+    config_toml = as_toml(config)
     config_file = get_config_path()
     config_file.write_text(dumps(config_toml))
 
