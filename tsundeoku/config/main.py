@@ -10,10 +10,8 @@ from typer import Argument, Context, Option, Typer, launch
 from .config import (
     get_config_path,
     get_loaded_config,
-    get_loaded_theme,
     print_config_values,
     validate_config,
-    validate_theme_config,
     write_config_values,
 )
 
@@ -191,37 +189,3 @@ def music_player(
         return
     write_config_values(config=validated_config)
     print("Muisc player updated.")
-
-
-@config_command.command(
-    help=(
-        f"Show config {escape('[default]')}, show config path, edit config file"
-        " in $EDITOR"
-    )
-)
-def theme(
-    info: str = Option(
-        None, "--info", "-i", help='Update the style for "INFO"-level messages'
-    ),
-    warning: str = Option(
-        None, "--warning", "-w", help='Update the style for "WARNING"-level messages'
-    ),
-    error: str = Option(
-        None, "--error", "-e", help='Update the style for "ERROR"-level messages'
-    ),
-):
-    theme_config = get_loaded_theme()
-    if not any([info, warning, error]):
-        print(theme_config)
-        return
-    if info:
-        theme_config.info = info
-    if warning:
-        theme_config.warning = warning
-    if error:
-        theme_config.error = error
-    validated_theme_config = validate_theme_config(theme_config.dict())
-    if not validated_theme_config:
-        return
-    write_config_values(theme=validated_theme_config)
-    print("Theme updated.")
