@@ -2,7 +2,7 @@ from typer.testing import CliRunner
 
 from tests.mocks import set_mock_home
 from tsundeoku import main
-from tsundeoku.main import app
+from tsundeoku.main import tsundeoku
 
 
 def test_reformat_help(monkeypatch, tmp_path):
@@ -23,7 +23,7 @@ def test_reformat_help(monkeypatch, tmp_path):
     remove_bracket_solo_help_text = (
         "[Optional] Remove bracketed solo instrument indications"
     )
-    result = CliRunner().invoke(app, reformat_help_args)
+    result = CliRunner().invoke(tsundeoku, reformat_help_args)
     output = result.output
     for help_text in [
         reformat_help_text,

@@ -15,7 +15,7 @@ are rules to alter common metadata formats that may not be to every user's
 liking--to strip bracketed years (in the format: "[YYYY]") from album fields, to
 expand abbreviations (such as "Rec.s" to "Recordings"), and to strip bracketed
 instrument indications (in the format: "[solo \<instrument\>]") from artist
-fields. Run `tsundeoku update-metadata --help` to see all update rules.
+fields. Run `tsundeoku reformat --help` to see all reformat rules.
 
 # Installation
 
@@ -31,6 +31,6 @@ in order to get started and generate the pickle file.
 
 - To import new audio files from your shared folder to your music library:
   `tsundeoku` (or `tsundeoku import --as-is` to leave the metadata untouched)
-- To update metadata for all previously imported tracks: `tsundeoku update-metadata`
+- To reformat metadata for all previously imported tracks: `tsundeoku reformat`
 - Tsundeoku uses a config file that can be viewed and edited with: `tsundeoku config` and `tsundeoku config --edit`
 - For more information: `tsundeoku --help` or `tsundeoku <command> --help`
