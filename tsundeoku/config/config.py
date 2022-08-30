@@ -3,7 +3,14 @@ from pathlib import Path
 from subprocess import run
 from typing import cast
 
-from pydantic import BaseModel, DirectoryPath, Field, FilePath, validator
+from pydantic import (
+    BaseModel,
+    DirectoryPath,
+    Field,
+    FilePath,
+    ValidationError,
+    validator,
+)
 from rich.console import Console
 from rich.syntax import Syntax
 from rich.theme import Theme
@@ -159,3 +166,27 @@ def print_config_values():
     config_file = str(get_config_file())
     syntax = Syntax.from_path(config_file, lexer="toml", theme="ansi_dark")
     print_with_theme(syntax)
+
+
+def validate_config(config: Config) -> Config | None:
+    try:
+        config = Config(**config.dict())
+        return config
+    except ValidationError as error:
+        errors = error.errors()
+        for error in errors:
+            message = f"ERROR: {error['msg']}"
+            print_with_theme(message, level=StyleLevel.ERROR)
+        return None
+
+
+def validate_theme_config(theme_config: ThemeConfig) -> ThemeConfig | None:
+    try:
+        theme_config = ThemeConfig(**theme_config.dict())
+        return theme_config
+    except ValidationError as error:
+        errors = error.errors()
+        for error in errors:
+            message = f"ERROR: {error['msg']}"
+            print_with_theme(message, level=StyleLevel.ERROR)
+        return None

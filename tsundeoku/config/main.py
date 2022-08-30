@@ -2,20 +2,18 @@ from os import environ
 from pathlib import Path
 from subprocess import call
 
-from pydantic import ValidationError
 from rich import print
 from rich.markup import escape
 from rich.prompt import Confirm
 from typer import Argument, Context, Option, Typer, launch
 
 from .config import (
-    Config,
-    StyleLevel,
-    get_config,
     get_config_path,
     get_loaded_config,
+    get_loaded_theme,
     print_config_values,
-    print_with_theme,
+    validate_config,
+    validate_theme_config,
     write_config_values,
 )
 
@@ -85,18 +83,6 @@ def print_directories(directories: set[Path]):
     print(display)
 
 
-def validate_config(config: Config) -> Config | None:
-    try:
-        config = Config(**config.dict())
-        return config
-    except ValidationError as error:
-        errors = error.errors()
-        for error in errors:
-            message = f"ERROR: {error['msg']}"
-            print_with_theme(message, level=StyleLevel.ERROR)
-        return None
-
-
 @config_command.command()
 def shared_directories(
     new_directories: list[str] = Argument(
@@ -116,7 +102,7 @@ def shared_directories(
         shared_directories = config.shared_directories
         print_directories(shared_directories)
         return
-    config = get_config()
+    config = get_loaded_config()
     if add:
         new_shared_directories = append_new_directories(
             config.shared_directories, new_directories
@@ -148,7 +134,7 @@ def pickle_file(
         pickle_file = config.pickle_file
         print(pickle_file)
         return
-    config = get_config()
+    config = get_loaded_config()
     replace = Confirm.ask("Are you sure you want to overwrite the pickle file?")
     if not replace:
         return
@@ -179,7 +165,7 @@ def ignored_directories(
         ignored_directories = config.ignored_directories
         print_directories(ignored_directories)
         return
-    config = get_config()
+    config = get_loaded_config()
     if add:
         new_ignored_directories = append_new_directories(
             config.ignored_directories, new_directories
@@ -211,7 +197,7 @@ def music_player(
         music_player = config.music_player
         print(music_player)
         return
-    config = get_config()
+    config = get_loaded_config()
     replace = Confirm.ask("Are you sure you want to overwrite the music player?")
     if not replace:
         return
@@ -221,3 +207,37 @@ def music_player(
         return
     write_config_values(config=validated_config)
     print("Muisc player updated.")
+
+
+@config_command.command(
+    help=(
+        f"Show config {escape('[default]')}, show config path, edit config file"
+        " in $EDITOR"
+    )
+)
+def theme(
+    info: str = Option(
+        None, "--info", "-i", help='Update the style for "INFO"-level messages'
+    ),
+    warning: str = Option(
+        None, "--warning", "-w", help='Update the style for "WARNING"-level messages'
+    ),
+    error: str = Option(
+        None, "--error", "-e", help='Update the style for "ERROR"-level messages'
+    ),
+):
+    theme_config = get_loaded_theme()
+    if not any([info, warning, error]):
+        print(theme_config)
+        return
+    if info:
+        theme_config.info = info
+    if warning:
+        theme_config.warning = warning
+    if error:
+        theme_config.error = error
+    validated_theme_config = validate_theme_config(theme_config)
+    if not validated_theme_config:
+        return
+    write_config_values(theme=validated_theme_config)
+    print("Theme updated.")
