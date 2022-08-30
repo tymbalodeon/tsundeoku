@@ -180,9 +180,9 @@ def validate_config(config_values: dict) -> Config | None:
         return None
 
 
-def validate_theme_config(theme_config: ThemeConfig) -> ThemeConfig | None:
+def validate_theme_config(theme_config_values: dict) -> ThemeConfig | None:
     try:
-        theme_config = ThemeConfig(**theme_config.dict())
+        theme_config = ThemeConfig(**theme_config_values)
         return theme_config
     except ValidationError as error:
         errors = error.errors()

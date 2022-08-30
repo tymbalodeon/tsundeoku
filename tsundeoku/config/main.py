@@ -220,7 +220,7 @@ def theme(
         theme_config.warning = warning
     if error:
         theme_config.error = error
-    validated_theme_config = validate_theme_config(theme_config)
+    validated_theme_config = validate_theme_config(theme_config.dict())
     if not validated_theme_config:
         return
     write_config_values(theme=validated_theme_config)
