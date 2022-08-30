@@ -6,7 +6,7 @@ authors = ["Ben Rosen <benjamin.j.rosen@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.scripts]
-tsundeoku = "tsundeoku.main:app"
+tsundeoku = "tsundeoku.main:tsundeoku"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.11"

@@ -9,18 +9,18 @@ from typer import Argument, Context, Exit, Option, Typer
 from tsundeoku import __version__
 
 from .config.config import StyleLevel, get_config, print_with_theme
-from .config.main import config_app
+from .config.main import STATE, config_command
 from .import_new import get_albums, import_albums
 from .reformat import reformat_main
 from .style import stylize
 
 beets_link = stylize('"beets"', ["blue", "link=https://beets.io/"])
-app = Typer(
+tsundeoku = Typer(
     help=f"CLI for managing imports from a shared folder to a {beets_link} library",
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="rich",
 )
-app.add_typer(config_app, name="config")
+tsundeoku.add_typer(config_command, name="config")
 
 
 def display_version(version: bool):
@@ -49,7 +49,7 @@ def skip_validation(context: Context) -> bool:
     return False
 
 
-@app.callback(invoke_without_command=True)
+@tsundeoku.callback(invoke_without_command=True)
 def callback(
     context: Context,
     _: bool = Option(
@@ -64,7 +64,8 @@ def callback(
         return
     is_valid = True
     try:
-        get_config()
+        config = get_config()
+        STATE["config"] = config
     except ValidationError as error:
         is_valid = False
         errors = error.errors()
@@ -91,11 +92,12 @@ def callback(
 solo_instrument = escape("[solo <instrument>]")
 
 
-@app.command(
+@tsundeoku.command(
     name="import",
     help=f"Copy new adds from your shared folder to your {beets_link} library",
 )
 def import_new(
+    albums: list[str] = Argument(None, hidden=True),
     as_is: bool = Option(
         False, "--as-is", help="Import new albums without altering metadata."
     ),
@@ -120,7 +122,6 @@ def import_new(
         " /--disallow-prompt",
         help="Allow prompts for user confirmation to update metadata.",
     ),
-    albums: list[str] = Argument(None, hidden=True),
 ):
     print("Importing newly added albums...")
     first_time = False
@@ -144,15 +145,15 @@ def import_new(
         and Confirm.ask("Would you like to import all albums anyway?")
     ):
         import_new(
+            albums=importable_error_albums,
             as_is=as_is,
             ask_before_disc_update=ask_before_disc_update,
             ask_before_artist_update=ask_before_artist_update,
-            albums=importable_error_albums,
             prompt=prompt,
         )
 
 
-@app.command()
+@tsundeoku.command()
 def reformat(
     solo_instruments: bool = Option(
         False,

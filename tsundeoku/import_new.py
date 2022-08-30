@@ -8,14 +8,9 @@ from beets.importer import history_add
 from rich.markup import escape as rich_escape
 from rich.prompt import Prompt
 
-from .config.config import (
-    StyleLevel,
-    get_ignored_directories,
-    get_music_player,
-    get_pickle_file,
-    get_shared_directories,
-    print_with_theme,
-)
+from tsundeoku.config.main import get_loaded_config
+
+from .config.config import StyleLevel, print_with_theme
 from .library import get_comments, modify_tracks
 from .regex import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, SOLO_INSTRUMENT_REGEX
 from .style import stylize
@@ -55,7 +50,8 @@ AUDIO_FILE_TYPES = ("*.mp3", "*.Mp3", "*.m4a", "*.flac", "*.aif*")
 
 
 def get_imported_albums() -> set[str]:
-    pickle_file = get_pickle_file()
+    config = get_loaded_config()
+    pickle_file = config.pickle_file
     if not pickle_file:
         return set()
     with open(pickle_file, "rb") as pickle_contents:
@@ -64,7 +60,8 @@ def get_imported_albums() -> set[str]:
 
 
 def get_albums() -> list[str]:
-    shared_directories = get_shared_directories()
+    config = get_loaded_config()
+    shared_directories = config.shared_directories
     albums: list[str] = []
     if not shared_directories:
         return albums
@@ -99,7 +96,8 @@ def get_track_total(tracks: Tracks) -> int | ImportError:
 
 
 def is_in_ignored_directory(album: str) -> bool:
-    ignored_directories = get_ignored_directories()
+    config = get_loaded_config()
+    ignored_directories = config.ignored_directories
     matching_directories = (
         directory for directory in ignored_directories if str(directory) in album
     )
@@ -107,6 +105,7 @@ def is_in_ignored_directory(album: str) -> bool:
 
 
 def is_already_imported(album: str) -> bool:
+    get_loaded_config()
     return album in get_imported_albums()
 
 
@@ -135,7 +134,8 @@ def beet_import(album: str) -> ImportError | None:
 
 
 def import_wav_files(album: str):
-    music_player = get_music_player()
+    config = get_loaded_config()
+    music_player = config.music_player
     system(f"open -a '{music_player}' '{album}'")
 
 

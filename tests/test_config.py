@@ -4,7 +4,7 @@ from typer.testing import CliRunner
 
 from tests.mocks import set_mock_home
 from tsundeoku.config.config import get_config_directory
-from tsundeoku.main import app
+from tsundeoku.main import tsundeoku
 
 
 def test_get_config_directory(monkeypatch, tmp_path):
@@ -32,7 +32,7 @@ def test_config_help():
     config_help_text = (
         "Show config [default], show config path, edit config file in $EDITOR"
     )
-    result = CliRunner().invoke(app, ["config", "-h"])
+    result = CliRunner().invoke(tsundeoku, ["config", "-h"])
     assert config_help_text in result.output
     assert result.exit_code == 0
 
@@ -54,7 +54,7 @@ def test_good_config(monkeypatch, tmp_path):
     pickle_file = get_mock_pickle_file()
     Path.mkdir(pickle_file.parent, parents=True)
     pickle_file.touch()
-    result = CliRunner().invoke(app, "config")
+    result = CliRunner().invoke(tsundeoku, "config")
     output = result.output
     assert "WARNING" not in output
     assert result.exit_code == 0

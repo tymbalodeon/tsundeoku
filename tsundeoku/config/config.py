@@ -119,40 +119,15 @@ def get_config() -> Config:
     return Config(**config_values)
 
 
-def get_shared_directories() -> set[Path]:
-    config = get_config()
-    return config.shared_directories
-
-
-def get_pickle_file() -> Path:
-    config = get_config()
-    return config.pickle_file
-
-
-def get_ignored_directories() -> set[Path]:
-    config = get_config()
-    return config.ignored_directories
-
-
-def get_music_player() -> str:
-    config = get_config()
-    return config.music_player
-
-
-def get_theme_config() -> ThemeConfig:
-    theme_config_values = read_theme_config_values()
-    return ThemeConfig(**theme_config_values)
+class StyleLevel(Enum):
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
 
 
 def get_theme() -> Theme:
     theme_config_values = read_theme_config_values()
     return Theme(theme_config_values)
-
-
-class StyleLevel(Enum):
-    INFO = "info"
-    WARNING = "warning"
-    ERROR = "error"
 
 
 def get_style(level: StyleLevel) -> Style:
@@ -168,6 +143,11 @@ def print_with_theme(text: Syntax | str, level: StyleLevel | None = None):
         console.print(text, style=style)
     else:
         console.print(text)
+
+
+def get_theme_config() -> ThemeConfig:
+    theme_config_values = read_theme_config_values()
+    return ThemeConfig(**theme_config_values)
 
 
 def print_config_values():

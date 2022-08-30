@@ -1,8 +1,8 @@
 from os import environ
-from subprocess import call
 from pathlib import Path
-from pydantic import ValidationError
+from subprocess import call
 
+from pydantic import ValidationError
 from rich import print
 from rich.markup import escape
 from rich.prompt import Confirm
@@ -13,16 +13,19 @@ from .config import (
     StyleLevel,
     get_config,
     get_config_path,
-    get_ignored_directories,
-    get_music_player,
-    get_pickle_file,
-    get_shared_directories,
     print_config_values,
     print_with_theme,
     write_config_values,
 )
 
-config_app = Typer(
+STATE = {"config": Config()}
+
+
+def get_loaded_config() -> Config:
+    return STATE["config"]
+
+
+config_command = Typer(
     help=(
         f"Show config {escape('[default]')}, show config path, edit config file"
         " in $EDITOR"
@@ -32,7 +35,7 @@ config_app = Typer(
 )
 
 
-@config_app.callback(invoke_without_command=True)
+@config_command.callback(invoke_without_command=True)
 def config(
     context: Context,
     path: bool = Option(False, "--path", "-p", help="Show config file path."),
@@ -100,7 +103,7 @@ def validate_config(config: Config) -> Config | None:
         return None
 
 
-@config_app.command()
+@config_command.command()
 def shared_directories(
     new_directories: list[str] = Argument(
         None, help="New directories to add to or replace the existing value."
@@ -115,7 +118,8 @@ def shared_directories(
 ):
     """Show shared directories value."""
     if not new_directories:
-        shared_directories = get_shared_directories()
+        config = get_loaded_config()
+        shared_directories = config.shared_directories
         print_directories(shared_directories)
         return
     config = get_config()
@@ -138,7 +142,7 @@ def shared_directories(
     print("Shared directories updated.")
 
 
-@config_app.command()
+@config_command.command()
 def pickle_file(
     new_pickle_file: str = Argument(
         None, help="New path to beets pickle file to replace the existing value."
@@ -146,7 +150,8 @@ def pickle_file(
 ):
     """Show pickle file value."""
     if not new_pickle_file:
-        pickle_file = get_pickle_file()
+        config = get_loaded_config()
+        pickle_file = config.pickle_file
         print(pickle_file)
         return
     config = get_config()
@@ -161,7 +166,7 @@ def pickle_file(
     print("Pickle file updated.")
 
 
-@config_app.command()
+@config_command.command()
 def ignored_directories(
     new_directories: list[str] = Argument(
         None, help="New directories to add to or replace the existing value."
@@ -176,7 +181,8 @@ def ignored_directories(
 ):
     """Show ignored directories value."""
     if not new_directories:
-        ignored_directories = get_ignored_directories()
+        config = get_loaded_config()
+        ignored_directories = config.ignored_directories
         print_directories(ignored_directories)
         return
     config = get_config()
@@ -199,7 +205,7 @@ def ignored_directories(
     print("Ignored directories updated.")
 
 
-@config_app.command()
+@config_command.command()
 def music_player(
     new_music_player: str = Argument(
         None, help="New default music player to replace the existing value."
@@ -207,7 +213,8 @@ def music_player(
 ):
     """Show music player value."""
     if not new_music_player:
-        music_player = get_music_player()
+        config = get_loaded_config()
+        music_player = config.music_player
         print(music_player)
         return
     config = get_config()

@@ -1,7 +1,7 @@
 from typer.testing import CliRunner
 
 from tsundeoku import main
-from tsundeoku.main import app
+from tsundeoku.main import tsundeoku
 
 from .mocks import set_mock_home
 
@@ -15,6 +15,6 @@ def test_import_new_help(monkeypatch, tmp_path):
     import_new_help_text = (
         'Copy new adds from your shared folder to your "beets" library'
     )
-    result = CliRunner().invoke(app, ["import", "-h"])
+    result = CliRunner().invoke(tsundeoku, ["import", "-h"])
     assert import_new_help_text in result.output
     assert result.exit_code == 0
