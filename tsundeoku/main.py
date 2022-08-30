@@ -72,7 +72,6 @@ def callback(
         for error in errors:
             message = f"WARNING: {error['msg']}"
             print_with_theme(message, level=StyleLevel.WARNING)
-        print()
     subcommand = context.invoked_subcommand
     if is_valid:
         if not subcommand:
