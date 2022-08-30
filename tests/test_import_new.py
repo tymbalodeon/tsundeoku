@@ -12,9 +12,7 @@ def test_import_new_help(monkeypatch, tmp_path):
 
     monkeypatch.setattr(main, "get_argv", mock_get_argv)
     set_mock_home(monkeypatch, tmp_path)
-    import_new_help_text = (
-        'Copy new adds from your shared folder to your "beets" library'
-    )
+    import_new_help_text = "Copy new adds from your shared folder to your local library"
     result = CliRunner().invoke(tsundeoku, ["import", "-h"])
     assert import_new_help_text in result.output
     assert result.exit_code == 0
