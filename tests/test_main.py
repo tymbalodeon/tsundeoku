@@ -16,7 +16,7 @@ def test_version():
 
 def test_help():
     app_description = (
-        'CLI for managing imports from a shared folder to a "beets" library'
+        "CLI for importing audio files from a shared folder to a local library"
     )
     for option in ["--help", "-h"]:
         result = CliRunner().invoke(tsundeoku, option)

@@ -8,16 +8,21 @@ from typer import Argument, Context, Exit, Option, Typer
 
 from tsundeoku import __version__
 
-from .config.config import StyleLevel, get_config, print_with_theme
-from .config.main import STATE, config_command
+from .config.config import (
+    STATE,
+    StyleLevel,
+    get_config,
+    get_theme_config,
+    print_with_theme,
+)
+from .config.main import config_command
 from .import_new import get_albums, import_albums
 from .reformat import reformat_main
-from .style import stylize
 
-beets_link = stylize('"beets"', ["blue", "link=https://beets.io/"])
 tsundeoku = Typer(
-    help=f"CLI for managing imports from a shared folder to a {beets_link} library",
+    help="CLI for importing audio files from a shared folder to a local library",
     context_settings={"help_option_names": ["-h", "--help"]},
+    no_args_is_help=True,
     rich_markup_mode="rich",
 )
 tsundeoku.add_typer(config_command, name="config")
@@ -49,7 +54,13 @@ def skip_validation(context: Context) -> bool:
     return False
 
 
-@tsundeoku.callback(invoke_without_command=True)
+def print_errors(validation_error: ValidationError):
+    for error in validation_error.errors():
+        message = f"WARNING: {error['msg']}"
+        print_with_theme(message, level=StyleLevel.WARNING)
+
+
+@tsundeoku.callback()
 def callback(
     context: Context,
     _: bool = Option(
@@ -64,14 +75,14 @@ def callback(
         return
     is_valid = True
     try:
-        config = get_config()
-        STATE["config"] = config
+        STATE["config"] = get_config()
     except ValidationError as error:
         is_valid = False
-        errors = error.errors()
-        for error in errors:
-            message = f"WARNING: {error['msg']}"
-            print_with_theme(message, level=StyleLevel.WARNING)
+        print_errors(error)
+    try:
+        STATE["theme"] = get_theme_config()
+    except ValidationError as error:
+        print_errors(error)
     subcommand = context.invoked_subcommand
     if is_valid:
         if not subcommand:
@@ -91,10 +102,7 @@ def callback(
 solo_instrument = escape("[solo <instrument>]")
 
 
-@tsundeoku.command(
-    name="import",
-    help=f"Copy new adds from your shared folder to your {beets_link} library",
-)
+@tsundeoku.command(name="import")
 def import_new(
     albums: list[str] = Argument(None, hidden=True),
     as_is: bool = Option(
@@ -122,6 +130,7 @@ def import_new(
         help="Allow prompts for user confirmation to update metadata.",
     ),
 ):
+    """Copy new adds from your shared folder to your local library"""
     print("Importing newly added albums...")
     first_time = False
     if not albums:
