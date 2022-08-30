@@ -62,20 +62,10 @@ def as_posix(directories: set[Path]) -> set[str]:
     return {path.as_posix() for path in directories}
 
 
-def as_path(directories: set[str]) -> set[Path]:
-    return {Path(path) for path in directories}
-
-
-def append_new_directories(
-    existing_values: set[Path], new_values: list[str]
-) -> set[Path]:
+def append_directories(existing_values: set[Path], new_values: list[str]) -> list[str]:
     existing_directories = as_posix(existing_values)
     new_directories = existing_directories | set(new_values)
-    return as_path(new_directories)
-
-
-def replace_directories(new_values: list[str]) -> set[Path]:
-    return as_path(set(new_values))
+    return list(new_directories)
 
 
 def print_directories(directories: set[Path]):
@@ -85,7 +75,7 @@ def print_directories(directories: set[Path]):
 
 @config_command.command()
 def shared_directories(
-    new_directories: list[str] = Argument(
+    directories: list[str] = Argument(
         None, help="New directories to add to or replace the existing value."
     ),
     add: bool = Option(
@@ -93,28 +83,26 @@ def shared_directories(
         "--add",
         "-a",
         help="Add to existing values rather than replace all values.",
-        hidden=False,
     ),
 ):
     """Show shared directories value."""
-    if not new_directories:
-        config = get_loaded_config()
+    config = get_loaded_config()
+    if not directories:
         shared_directories = config.shared_directories
         print_directories(shared_directories)
         return
-    config = get_loaded_config()
+    config = config.dict()
+    shared_directories = config["shared_directories"]
     if add:
-        new_shared_directories = append_new_directories(
-            config.shared_directories, new_directories
-        )
+        new_shared_directories = append_directories(shared_directories, directories)
     else:
         replace = Confirm.ask(
             "Are you sure you want to overwrite the shared directories?"
         )
         if not replace:
             return
-        new_shared_directories = replace_directories(new_directories)
-    config.shared_directories = new_shared_directories
+        new_shared_directories = directories
+    config["shared_directories"] = new_shared_directories
     validated_config = validate_config(config)
     if not validated_config:
         return
@@ -124,22 +112,21 @@ def shared_directories(
 
 @config_command.command()
 def pickle_file(
-    new_pickle_file: str = Argument(
+    pickle_file_path: str = Argument(
         None, help="New path to beets pickle file to replace the existing value."
     ),
 ):
     """Show pickle file value."""
-    if not new_pickle_file:
-        config = get_loaded_config()
+    config = get_loaded_config()
+    if not pickle_file_path:
         pickle_file = config.pickle_file
         print(pickle_file)
         return
-    config = get_loaded_config()
     replace = Confirm.ask("Are you sure you want to overwrite the pickle file?")
     if not replace:
         return
-    config.pickle_file = Path(new_pickle_file)
-    validated_config = validate_config(config)
+    config.pickle_file = Path(pickle_file_path)
+    validated_config = validate_config(config.dict())
     if not validated_config:
         return
     write_config_values(config=validated_config)
@@ -148,7 +135,7 @@ def pickle_file(
 
 @config_command.command()
 def ignored_directories(
-    new_directories: list[str] = Argument(
+    directories: list[str] = Argument(
         None, help="New directories to add to or replace the existing value."
     ),
     add: bool = Option(
@@ -156,28 +143,26 @@ def ignored_directories(
         "--add",
         "-a",
         help="Add to existing values rather than replace all values.",
-        hidden=False,
     ),
 ):
     """Show ignored directories value."""
-    if not new_directories:
+    if not directories:
         config = get_loaded_config()
         ignored_directories = config.ignored_directories
         print_directories(ignored_directories)
         return
-    config = get_loaded_config()
+    config = get_loaded_config().dict()
+    ignored_directories = config["ignored_directories"]
     if add:
-        new_ignored_directories = append_new_directories(
-            config.ignored_directories, new_directories
-        )
+        new_ignored_directories = append_directories(ignored_directories, directories)
     else:
         replace = Confirm.ask(
             "Are you sure you want to overwrite the ignored directories?"
         )
         if not replace:
             return
-        new_ignored_directories = replace_directories(new_directories)
-    config.ignored_directories = new_ignored_directories
+        new_ignored_directories = directories
+    config["ignored_directories"] = new_ignored_directories
     validated_config = validate_config(config)
     if not validated_config:
         return
@@ -192,17 +177,16 @@ def music_player(
     ),
 ):
     """Show music player value."""
+    config = get_loaded_config()
     if not new_music_player:
-        config = get_loaded_config()
         music_player = config.music_player
         print(music_player)
         return
-    config = get_loaded_config()
     replace = Confirm.ask("Are you sure you want to overwrite the music player?")
     if not replace:
         return
     config.music_player = new_music_player
-    validated_config = validate_config(config)
+    validated_config = validate_config(config.dict())
     if not validated_config:
         return
     write_config_values(config=validated_config)

@@ -37,7 +37,7 @@ class Config(BaseModel):
 
     @validator("shared_directories", "ignored_directories")
     def validate_directory_paths(cls, paths: list[str]) -> set[Path]:
-        return {Path(path) for path in paths}
+        return {Path(path).expanduser() for path in paths}
 
     @validator("pickle_file")
     def validate_file_path(cls, path: str) -> Path:
@@ -87,11 +87,11 @@ def as_toml(config: dict) -> dict:
 
 def write_config_values(**config_and_theme: Config | ThemeConfig):
     if "config" not in config_and_theme:
-        config = Config()
+        config = get_loaded_config()
     else:
         config = config_and_theme["config"]
     if "theme" not in config_and_theme:
-        theme = ThemeConfig()
+        theme = get_loaded_theme()
     else:
         theme = config_and_theme["theme"]
     config_values = as_toml(config.dict())
@@ -168,9 +168,9 @@ def print_config_values():
     print_with_theme(syntax)
 
 
-def validate_config(config: Config) -> Config | None:
+def validate_config(config_values: dict) -> Config | None:
     try:
-        config = Config(**config.dict())
+        config = Config(**config_values)
         return config
     except ValidationError as error:
         errors = error.errors()
