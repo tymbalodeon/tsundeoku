@@ -13,17 +13,11 @@ from .config import (
     StyleLevel,
     get_config,
     get_config_path,
+    get_loaded_config,
     print_config_values,
     print_with_theme,
     write_config_values,
 )
-
-STATE = {"config": Config()}
-
-
-def get_loaded_config() -> Config:
-    return STATE["config"]
-
 
 config_command = Typer(
     help=(

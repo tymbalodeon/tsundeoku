@@ -1,18 +1,14 @@
 from enum import Enum
 from pathlib import Path
 from subprocess import run
+from typing import cast
 
 from pydantic import BaseModel, DirectoryPath, Field, FilePath, validator
 from rich.console import Console
-from rich.style import Style
 from rich.syntax import Syntax
 from rich.theme import Theme
 from tomli import loads
 from tomli_w import dumps
-
-APP_NAME = "tsundeoku"
-THEME_NAME = "theme"
-CONFIG_PATH = f".config/{APP_NAME}"
 
 
 def get_default_shared_directories() -> set[Path]:
@@ -53,6 +49,12 @@ class ThemeConfig(BaseModel):
     info = "dim cyan"
     warning = "yellow"
     error = "bold red"
+
+
+STATE = {"config": Config(), "theme": ThemeConfig()}
+APP_NAME = "tsundeoku"
+THEME_NAME = "theme"
+CONFIG_PATH = f".config/{APP_NAME}"
 
 
 def get_config_directory() -> Path:
@@ -119,35 +121,38 @@ def get_config() -> Config:
     return Config(**config_values)
 
 
+def get_loaded_config() -> Config:
+    return cast(Config, STATE["config"])
+
+
+def get_theme_config() -> ThemeConfig:
+    theme_config_values = read_theme_config_values()
+    return ThemeConfig(**theme_config_values)
+
+
+def get_loaded_theme() -> ThemeConfig:
+    return cast(ThemeConfig, STATE["theme"])
+
+
+def get_theme() -> Theme:
+    theme_config = get_loaded_theme()
+    return Theme(theme_config.dict())
+
+
 class StyleLevel(Enum):
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
 
 
-def get_theme() -> Theme:
-    theme_config_values = read_theme_config_values()
-    return Theme(theme_config_values)
-
-
-def get_style(level: StyleLevel) -> Style:
-    theme = get_theme()
-    return theme.styles[level.value]
-
-
 def print_with_theme(text: Syntax | str, level: StyleLevel | None = None):
     theme = get_theme()
     console = Console(theme=theme)
     if level:
-        style = get_style(level)
+        style = theme.styles[level.value]
         console.print(text, style=style)
     else:
         console.print(text)
-
-
-def get_theme_config() -> ThemeConfig:
-    theme_config_values = read_theme_config_values()
-    return ThemeConfig(**theme_config_values)
 
 
 def print_config_values():
