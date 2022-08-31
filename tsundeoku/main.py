@@ -139,7 +139,6 @@ def import_new(
         ask_before_artist_update = import_settings.ask_before_artist_update
     if allow_prompt is None:
         allow_prompt = import_settings.allow_prompt
-    print(reformat, ask_before_disc_update, ask_before_artist_update, allow_prompt)
     first_time = False
     if not albums:
         first_time = True
