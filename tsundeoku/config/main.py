@@ -83,16 +83,24 @@ def no_updates_provided(options: dict) -> bool:
 def file_system(
     context: Context,
     shared_directories: list[str] = Option(
-        None, help="New shared directories to add to or replace the existing value."
+        None,
+        help="New shared directories to add to or replace the existing value.",
+        show_default=False,
     ),
     pickle_file: str = Option(
-        None, help="New path to beets pickle file to replace the existing value."
+        None,
+        help="New path to beets pickle file to replace the existing value.",
+        show_default=False,
     ),
     ignored_directories: list[str] = Option(
-        None, help="New ignored directories to add to or replace the existing value."
+        None,
+        help="New ignored directories to add to or replace the existing value.",
+        show_default=False,
     ),
     music_player: str = Option(
-        None, help="New default music player to replace the existing value."
+        None,
+        help="New default music player to replace the existing value.",
+        show_default=False,
     ),
     add: bool = Option(
         None,
@@ -133,21 +141,25 @@ def import_new(
         None,
         "--reformat/--as-is",
         help='Set the default value for automatically calling "reformat" after import',
+        show_default=False,
     ),
     ask_before_disc_update: bool = Option(
         None,
         "--ask-before-disc-update/--auto-update-disc",
         help="Set the default value for asking before adding default disc values",
+        show_default=False,
     ),
     ask_before_artist_update: bool = Option(
         None,
         "--ask-before-artist-update/--auto-update-artist",
         help="Set the default value for asking before removing bracket instruments.",
+        show_default=False,
     ),
     allow_prompt: bool = Option(
         None,
         "--allow-prompt/--disallow-prompt",
         help="Set the default for including imports requiring prompt for user input.",
+        show_default=False,
     ),
 ):
     """Show and set default values for "import" command."""
@@ -178,16 +190,19 @@ def reformat(
         None,
         "--remove-bracket-years/--years-as-is",
         help="Set default value for removing bracket years.",
+        show_default=False,
     ),
     remove_bracket_instruments: bool = Option(
         None,
         "--remove-bracket-instruments/--instruments-as-is",
         help="Set default value for removing bracket instruments.",
+        show_default=False,
     ),
     expand_abbreviations: bool = Option(
         None,
         "--expand-abbreviations/--abbreviations-as-is",
         help="Set default value for expanding abbreviations.",
+        show_default=False,
     ),
 ):
     """Show and set default values for "reformat" command."""
