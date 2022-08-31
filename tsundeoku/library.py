@@ -12,7 +12,7 @@ def get_library() -> Library:
     return _open_library(_configure(library_config))
 
 
-def get_comments(artist: str, album: str, library: Library | None = None) -> list:
+def get_library_tracks(artist: str, album: str, library: Library | None = None) -> list:
     if not library:
         library = get_library()
     artist = escape(artist)
