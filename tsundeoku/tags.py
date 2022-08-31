@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import cast
 
 from tinytag import TinyTag
 
@@ -16,7 +17,7 @@ def get_album_wide_tag(tags: Tags) -> Tag:
 
 def get_albumartist(tracks: Tracks) -> Tag:
     albumartists = {TinyTag.get(track).albumartist for track in tracks}
-    return get_album_wide_tag(albumartists)
+    return get_album_wide_tag(cast(Tags, albumartists))
 
 
 def get_artists(tracks: Tracks) -> Tags:
@@ -25,7 +26,7 @@ def get_artists(tracks: Tracks) -> Tags:
 
 def get_album_title(tracks: Tracks) -> Tag:
     album_titles = {TinyTag.get(track).album for track in tracks}
-    return get_album_wide_tag(album_titles)
+    return get_album_wide_tag(cast(Tags, album_titles))
 
 
 def get_years(tracks: Tracks) -> Tags:
@@ -38,9 +39,9 @@ def get_track_totals(tracks: Tracks) -> Tags:
 
 def get_disc_number(tracks: Tracks) -> Tag:
     disc_numbers = {TinyTag.get(track).disc for track in tracks}
-    return get_album_wide_tag(disc_numbers)
+    return get_album_wide_tag(cast(Tags, disc_numbers))
 
 
 def get_disc_total(tracks: Tracks) -> Tag:
     disc_totals = {TinyTag.get(track).disc_total for track in tracks}
-    return get_album_wide_tag(disc_totals)
+    return get_album_wide_tag(cast(Tags, disc_totals))

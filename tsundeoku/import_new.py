@@ -17,7 +17,7 @@ from .config.config import (
     get_shared_directories,
     print_with_theme,
 )
-from .library import get_comments, modify_tracks
+from .library import get_library_tracks, modify_tracks
 from .regex import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, SOLO_INSTRUMENT_REGEX
 from .style import stylize
 from .tags import (
@@ -33,6 +33,7 @@ from .tags import (
 )
 
 BeetsQuery = list[str]
+YEAR_RANGE_SEPARATORS = {"-", "/"}
 
 
 class ImportError(Enum):
@@ -172,21 +173,31 @@ def should_update(
     )
 
 
-def get_bracket_number(regex: str, album_title: str) -> str | None:
+def is_bracket_number(character: str, year_format=False) -> bool:
+    if character.isnumeric() or year_format and character in YEAR_RANGE_SEPARATORS:
+        return True
+    return False
+
+
+def get_bracket_numbers(regex: str, album_title: str, year_format=False) -> str | None:
     match = search(regex, album_title)
     if not match:
         return None
     group = match.group()
-    numeric_characters = [character for character in group if character.isnumeric()]
+    numeric_characters = [
+        character
+        for character in group
+        if is_bracket_number(character, year_format=year_format)
+    ]
     return "".join(numeric_characters)
 
 
-def check_year(tracks: Tracks, album_title: str, allow_prompt: bool) -> str | None:
+def get_new_year(tracks: Tracks, album_title: str, allow_prompt: bool) -> str | None:
     years = get_years(tracks)
     single_year = len(years) == 1
     if not single_year:
         return None
-    bracket_year = get_bracket_number(BRACKET_YEAR_REGEX, album_title)
+    bracket_year = get_bracket_numbers(BRACKET_YEAR_REGEX, album_title)
     year = get_album_wide_tag(years)
     if not bracket_year or bracket_year == year:
         return None
@@ -198,14 +209,34 @@ def check_year(tracks: Tracks, album_title: str, allow_prompt: bool) -> str | No
     return bracket_year
 
 
-def check_disc(
+def get_year_range_comment(tracks: Tracks, album_title: str) -> str | None:
+    years = get_years(tracks)
+    bracket_year = get_bracket_numbers(
+        BRACKET_YEAR_REGEX, album_title, year_format=True
+    )
+    if not bracket_year:
+        return None
+    year_range = False
+    for character in YEAR_RANGE_SEPARATORS:
+        if character in bracket_year:
+            year_range = True
+            break
+    if not year_range:
+        return None
+    start_year = bracket_year[:4]
+    if start_year in years or all(bool(year) for year in years):
+        return None
+    return bracket_year
+
+
+def get_new_disc_numbers(
     tracks: Tracks, album_title: str, ask_before_disc_update: bool, allow_prompt: bool
 ) -> tuple[str | None, str | None, bool]:
     new_disc_number = None
     new_disc_total = None
     remove_bracket_disc = False
     disc_number: str | None = get_disc_number(tracks)
-    bracket_disc = get_bracket_number(BRACKET_DISC_REGEX, album_title)
+    bracket_disc = get_bracket_numbers(BRACKET_DISC_REGEX, album_title)
     if not bracket_disc:
         if disc_number:
             new_disc_number = None
@@ -253,7 +284,7 @@ def has_solo_instrument(artist: str | None) -> bool:
     return bool(match.group())
 
 
-def check_artist(
+def get_artists_to_update(
     tracks: Tracks, ask_before_artist_update: bool, allow_prompt: bool
 ) -> list[str | None]:
     artists = get_artists(tracks)
@@ -294,35 +325,50 @@ def get_modify_tracks_query(
     return query
 
 
-def get_modify_tracks_modification(field: str, new_value: str) -> BeetsQuery:
+def get_modification(field: str, new_value: str) -> BeetsQuery:
     return [f"{field}={new_value}"]
 
 
-def get_bracket_solo_instrument(artist_with_instrument: str) -> str:
-    match = search(SOLO_INSTRUMENT_REGEX, artist_with_instrument)
+def get_bracket_year_range(album_title: str) -> str:
+    match = search(SOLO_INSTRUMENT_REGEX, album_title)
     if not match:
         return ""
     return match.group()
 
 
-def add_solo_instrument_to_comments(artist_with_instrument, album_title):
-    tracks = get_comments(artist_with_instrument, album_title)
-    solo_instrument = get_bracket_solo_instrument(artist_with_instrument).strip()
+def get_bracket_solo_instrument(artist: str) -> str:
+    match = search(SOLO_INSTRUMENT_REGEX, artist)
+    if not match:
+        return ""
+    return match.group()
+
+
+def add_to_comments(artist: str, album_title: str, value: str):
+    tracks = get_library_tracks(artist, album_title)
     for track in tracks:
         comments = track.comments
         if comments:
-            comments = f"{comments}; {solo_instrument}"
+            comments = f"{comments}; {value}"
         else:
-            comments = solo_instrument
-        artist_with_instrument = escape(artist_with_instrument)
+            comments = value
+        artist = escape(artist)
         album_title = escape(album_title)
         title = escape(track.title)
-        artist_query = f"artist::^{artist_with_instrument}$"
+        artist_query = f"artist::^{artist}$"
         album_query = f"album::^{album_title}$"
         title_query = f"title::^{title}$"
         query = [artist_query, album_query, title_query]
-        modification = get_modify_tracks_modification("comments", comments)
+        modification = get_modification("comments", comments)
         modify_tracks(query + modification, album=False)
+
+
+def add_year_range_to_comments(artist: str, album_title: str, value: str):
+    add_to_comments(artist, album_title, value)
+
+
+def add_solo_instrument_to_comments(artist: str, album_title: str):
+    solo_instrument = get_bracket_solo_instrument(artist).strip()
+    add_to_comments(artist, album_title, solo_instrument)
 
 
 def import_album(
@@ -349,11 +395,14 @@ def import_album(
     if not reformat:
         return beet_import(album)
     try:
-        year = check_year(tracks, album_title, allow_prompt=allow_prompt)
-        disc_number, disc_total, remove_bracket_disc = check_disc(
+        new_year = get_new_year(tracks, album_title, allow_prompt=allow_prompt)
+        year_range_comment = None
+        if not new_year:
+            year_range_comment = get_year_range_comment(tracks, album_title)
+        new_disc_number, new_disc_total, remove_bracket_disc = get_new_disc_numbers(
             tracks, album_title, ask_before_disc_update, allow_prompt
         )
-        artists_with_instruments = check_artist(
+        artists_to_update = get_artists_to_update(
             tracks, ask_before_artist_update, allow_prompt
         )
     except Exception:
@@ -363,28 +412,28 @@ def import_album(
         return error
     artist, artist_field_type = get_artist_and_artist_field_name(tracks)
     query = get_modify_tracks_query(album_title, artist_field_type, artist)
-    if year:
-        modification = get_modify_tracks_modification("year", year)
+    if new_year:
+        modification = get_modification("year", new_year)
         modify_tracks(query + modification)
-    if disc_number:
-        modification = get_modify_tracks_modification("disc", disc_number)
+    if year_range_comment:
+        add_year_range_to_comments(artist, album_title, year_range_comment)
+    if new_disc_number:
+        modification = get_modification("disc", new_disc_number)
         modify_tracks(query + modification, album=False)
-    if disc_total:
-        modification = get_modify_tracks_modification("disctotal", disc_total)
+    if new_disc_total:
+        modification = get_modification("disctotal", new_disc_total)
         modify_tracks(query + modification)
     if remove_bracket_disc:
         discless_album_title = sub(BRACKET_DISC_REGEX, "", album_title)
-        modification = get_modify_tracks_modification("album", discless_album_title)
+        modification = get_modification("album", discless_album_title)
         modify_tracks(query + modification)
-    for artist_with_instrument in artists_with_instruments:
+    for artist_with_instrument in artists_to_update:
         artist_with_instrument = artist_with_instrument or ""
         add_solo_instrument_to_comments(artist_with_instrument, album_title)
         artist_without_instrument = sub(
             SOLO_INSTRUMENT_REGEX, "", artist_with_instrument
         )
-        modification = get_modify_tracks_modification(
-            "artist", artist_without_instrument
-        )
+        modification = get_modification("artist", artist_without_instrument)
         modify_tracks(query + modification, album=False)
     return error
 
