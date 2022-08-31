@@ -2,7 +2,6 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from tests.mocks import set_mock_home
 from tsundeoku.main import tsundeoku
 
 
@@ -34,16 +33,3 @@ def mock_application_exists(command: str) -> bool:
 
 def mock_get_music_player():
     return None
-
-
-def test_good_config(monkeypatch, tmp_path):
-    set_mock_home(monkeypatch, tmp_path)
-    shared_directories = tmp_path / "Dropbox"
-    Path.mkdir(shared_directories)
-    pickle_file = get_mock_pickle_file()
-    Path.mkdir(pickle_file.parent, parents=True)
-    pickle_file.touch()
-    result = CliRunner().invoke(tsundeoku, "config")
-    output = result.output
-    assert "WARNING" not in output
-    assert result.exit_code == 0
