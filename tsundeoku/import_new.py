@@ -18,7 +18,12 @@ from .config.config import (
     print_with_theme,
 )
 from .library import get_library_tracks, modify_tracks
-from .regex import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, SOLO_INSTRUMENT_REGEX
+from .regex import (
+    BRACKET_DISC_REGEX,
+    BRACKET_YEAR_REGEX,
+    SOLO_INSTRUMENT_REGEX,
+    YEAR_RANGE_REGEX,
+)
 from .style import stylize
 from .tags import (
     Tracks,
@@ -179,7 +184,7 @@ def is_bracket_number(character: str, year_format=False) -> bool:
     return False
 
 
-def get_bracket_numbers(regex: str, album_title: str, year_format=False) -> str | None:
+def get_bracket_numbers(regex: str, album_title: str, year_range=False) -> str | None:
     match = search(regex, album_title)
     if not match:
         return None
@@ -187,7 +192,7 @@ def get_bracket_numbers(regex: str, album_title: str, year_format=False) -> str 
     numeric_characters = [
         character
         for character in group
-        if is_bracket_number(character, year_format=year_format)
+        if is_bracket_number(character, year_format=year_range)
     ]
     return "".join(numeric_characters)
 
@@ -211,9 +216,7 @@ def get_new_year(tracks: Tracks, album_title: str, allow_prompt: bool) -> str | 
 
 def get_year_range_comment(tracks: Tracks, album_title: str) -> str | None:
     years = get_years(tracks)
-    bracket_year = get_bracket_numbers(
-        BRACKET_YEAR_REGEX, album_title, year_format=True
-    )
+    bracket_year = get_bracket_numbers(YEAR_RANGE_REGEX, album_title, year_range=True)
     if not bracket_year:
         return None
     year_range = False
