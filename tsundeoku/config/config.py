@@ -1,4 +1,3 @@
-from enum import Enum
 from pathlib import Path
 from subprocess import run
 from typing import cast
@@ -11,11 +10,11 @@ from pydantic import (
     ValidationError,
     validator,
 )
-from rich.console import Console
-from rich.syntax import Syntax
-from rich.theme import Theme
+from rich import print
 from tomli import loads
 from tomli_w import dumps
+
+from tsundeoku.style import StyleLevel, print_with_theme
 
 
 def get_default_shared_directories() -> set[Path]:
@@ -27,7 +26,7 @@ def get_default_pickle_file() -> Path:
     return Path.home() / ".config/beets/state.pickle"
 
 
-class Config(BaseModel):
+class FileSystemConfig(BaseModel):
     shared_directories: set[DirectoryPath] = Field(
         default_factory=get_default_shared_directories
     )
@@ -52,53 +51,119 @@ class Config(BaseModel):
         return application_name
 
 
-class ThemeConfig(BaseModel):
-    info = "dim cyan"
-    warning = "yellow"
-    error = "bold red"
+class ImportConfig(BaseModel):
+    reformat = True
+    ask_before_disc_update = False
+    ask_before_artist_update = False
+    allow_prompt = True
 
 
-STATE = {"config": Config(), "theme": ThemeConfig()}
+class ReformatConfig(BaseModel):
+    remove_bracket_years = True
+    remove_bracket_instruments = True
+    expand_abbreviations = True
+
+
+class Config(BaseModel):
+    file_system = FileSystemConfig()
+    import_new = ImportConfig()
+    reformat = ReformatConfig()
+
+
+STATE = {"config": Config()}
 APP_NAME = "tsundeoku"
-THEME_NAME = "theme"
 CONFIG_PATH = f".config/{APP_NAME}"
 
 
-def get_config_directory() -> Path:
+def get_config_path() -> Path:
     config_directory = Path.home() / CONFIG_PATH
     if not config_directory.exists():
         Path.mkdir(config_directory, parents=True)
-    return config_directory
-
-
-def get_config_path() -> Path:
-    config_directory = get_config_directory()
     return config_directory / f"{APP_NAME}.toml"
 
 
-def as_toml(config: dict) -> dict:
-    for key, value in config.items():
+def get_loaded_config() -> Config:
+    return cast(Config, STATE["config"])
+
+
+def get_file_system_config() -> FileSystemConfig:
+    config = get_loaded_config()
+    return config.file_system
+
+
+def get_shared_directories() -> set[Path]:
+    file_system = get_file_system_config()
+    return file_system.shared_directories
+
+
+def get_pickle_file() -> Path:
+    file_system = get_file_system_config()
+    return file_system.pickle_file
+
+
+def get_ignored_directories() -> set[Path]:
+    file_system = get_file_system_config()
+    return file_system.ignored_directories
+
+
+def get_music_player() -> str:
+    file_system = get_file_system_config()
+    return file_system.music_player
+
+
+def update_config_key(config: dict, old_value: str, new_value: str) -> dict:
+    return {
+        new_value if key == old_value else key: value for key, value in config.items()
+    }
+
+
+def convert_import_new_to_import(config: dict) -> dict:
+    return update_config_key(config, "import_new", "import")
+
+
+def convert_import_to_import_new(config: dict) -> dict:
+    return update_config_key(config, "import", "import_new")
+
+
+def as_toml(config: Config) -> dict:
+    config_toml: dict = config.dict()
+    file_system = config_toml["file_system"]
+    for key, value in file_system.items():
         if isinstance(value, set):
-            config[key] = [path.as_posix() for path in value]
+            file_system[key] = [path.as_posix() for path in value]
         elif isinstance(value, Path):
-            config[key] = value.as_posix()
-    return config
+            file_system[key] = value.as_posix()
+    config_toml = convert_import_new_to_import(config_toml)
+    return config_toml
 
 
-def write_config_values(**config_and_theme: Config | ThemeConfig):
-    if "config" not in config_and_theme:
-        config = get_loaded_config()
-    else:
-        config = config_and_theme["config"]
-    if "theme" not in config_and_theme:
-        theme = get_loaded_theme()
-    else:
-        theme = config_and_theme["theme"]
-    config_values = as_toml(config.dict())
-    theme_values = as_toml(theme.dict())
-    complete_config = {APP_NAME: config_values, THEME_NAME: theme_values}
+def print_errors(validation_error: ValidationError, level: StyleLevel):
+    for error in validation_error.errors():
+        message = f"{level.name}: {error['msg']}"
+        print_with_theme(message, level=level)
+
+
+def is_valid_config(config_values: Config) -> bool:
+    try:
+        Config(**config_values.dict())
+        return True
+    except ValidationError as error:
+        print_errors(error, level=StyleLevel.ERROR)
+        return False
+
+
+class InvalidConfig(Exception):
+    pass
+
+
+def write_config_values(config: Config | None = None):
+    if not config:
+        config = Config()
+    if not is_valid_config(config):
+        raise InvalidConfig()
+    config_toml = as_toml(config)
     config_file = get_config_path()
-    config_file.write_text(dumps(complete_config))
+    config_file.write_text(dumps(config_toml))
 
 
 def get_config_file() -> Path:
@@ -108,85 +173,26 @@ def get_config_file() -> Path:
     return config_file
 
 
-def get_config_text() -> str:
-    config_file = get_config_file()
-    return config_file.read_text()
-
-
-def read_config_values() -> dict[str, list[Path] | Path | str]:
-    config_text = get_config_text()
-    return loads(config_text)[APP_NAME]
-
-
-def read_theme_config_values() -> dict[str, str]:
-    config_text = get_config_text()
-    return loads(config_text)[THEME_NAME]
-
-
 def get_config() -> Config:
-    config_values = read_config_values()
+    config_file = get_config_file()
+    config_text = config_file.read_text()
+    config_values = loads(config_text)
+    config_values = convert_import_new_to_import(config_values)
     return Config(**config_values)
 
 
-def get_loaded_config() -> Config:
-    return cast(Config, STATE["config"])
-
-
-def get_theme_config() -> ThemeConfig:
-    theme_config_values = read_theme_config_values()
-    return ThemeConfig(**theme_config_values)
-
-
-def get_loaded_theme() -> ThemeConfig:
-    return cast(ThemeConfig, STATE["theme"])
-
-
-def get_theme() -> Theme:
-    theme_config = get_loaded_theme()
-    return Theme(theme_config.dict())
-
-
-class StyleLevel(Enum):
-    INFO = "info"
-    WARNING = "warning"
-    ERROR = "error"
-
-
-def print_with_theme(text: Syntax | str, level: StyleLevel | None = None):
-    theme = get_theme()
-    console = Console(theme=theme)
-    if level:
-        style = theme.styles[level.value]
-        console.print(text, style=style)
+def print_config_section(config: BaseModel | dict):
+    if isinstance(config, BaseModel):
+        section = config.dict()
     else:
-        console.print(text)
+        section = config
+    for key, value in section.items():
+        if isinstance(value, set):
+            value = {path.as_posix() for path in value} or None
+        print(f"{key}={value}")
 
 
 def print_config_values():
-    config_file = str(get_config_file())
-    syntax = Syntax.from_path(config_file, lexer="toml", theme="ansi_dark")
-    print_with_theme(syntax)
-
-
-def validate_config(config_values: dict) -> Config | None:
-    try:
-        config = Config(**config_values)
-        return config
-    except ValidationError as error:
-        errors = error.errors()
-        for error in errors:
-            message = f"ERROR: {error['msg']}"
-            print_with_theme(message, level=StyleLevel.ERROR)
-        return None
-
-
-def validate_theme_config(theme_config_values: dict) -> ThemeConfig | None:
-    try:
-        theme_config = ThemeConfig(**theme_config_values)
-        return theme_config
-    except ValidationError as error:
-        errors = error.errors()
-        for error in errors:
-            message = f"ERROR: {error['msg']}"
-            print_with_theme(message, level=StyleLevel.ERROR)
-        return None
+    config = get_loaded_config()
+    for section in config.dict().values():
+        print_config_section(section)

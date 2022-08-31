@@ -5,23 +5,21 @@ from subprocess import call
 from rich import print
 from rich.markup import escape
 from rich.prompt import Confirm
-from typer import Argument, Context, Option, Typer, launch
+from typer import Context, Option, Typer, launch
 
 from .config import (
+    ImportConfig,
+    InvalidConfig,
+    ReformatConfig,
     get_config_path,
     get_loaded_config,
-    get_loaded_theme,
+    print_config_section,
     print_config_values,
-    validate_config,
-    validate_theme_config,
     write_config_values,
 )
 
 config_command = Typer(
-    help=(
-        f"Show config {escape('[default]')}, show config path, edit config file"
-        " in $EDITOR"
-    ),
+    help=f"Show {escape('[default]')} and set config values.",
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="rich",
 )
@@ -35,7 +33,12 @@ def config(
         False, "--file", "-f", help="Open config file in file browser."
     ),
     edit: bool = Option(False, "--edit", "-e", help="Edit config file with $EDITOR."),
-    reset: bool = Option(False, "--reset", help="Reset config to defaults."),
+    reset: bool = Option(False, "--reset", help="Reset all config values to defaults."),
+    reset_commands: bool = Option(
+        False,
+        "--reset-commands",
+        help='Reset settings for "import" and "reformat" commands to defaults.',
+    ),
 ):
     if context.invoked_subcommand:
         return
@@ -52,176 +55,184 @@ def config(
             "Are you sure you want to reset your config to the default values?"
         )
         if perform_reset:
-            print("Config reset.")
             write_config_values()
+            print_config_values()
+    elif reset_commands:
+        perform_reset = Confirm.ask(
+            "Are you sure you want to reset the command settings to the default values?"
+        )
+        if perform_reset:
+            config = get_loaded_config()
+            config.reformat = ReformatConfig()
+            config.import_new = ImportConfig()
+            write_config_values(config)
+            print_config_values()
     else:
         print_config_values()
 
 
-def as_posix(directories: set[Path]) -> set[str]:
-    return {path.as_posix() for path in directories}
+def as_paths(paths: list[str]) -> set[Path]:
+    return {Path(path).expanduser() for path in paths if path}
 
 
-def append_directories(existing_values: set[Path], new_values: list[str]) -> list[str]:
-    existing_directories = as_posix(existing_values)
-    new_directories = existing_directories | set(new_values)
-    return list(new_directories)
+def append_directories(existing_values: set[Path], new_values: set[Path]) -> set[Path]:
+    return existing_values | new_values
 
 
-def print_directories(directories: set[Path]):
-    display = as_posix(directories) or None
-    print(display)
+def get_new_directory_values(
+    section: set[Path], values: list[str], add: bool
+) -> set[Path]:
+    new_values = as_paths(values)
+    if add:
+        return append_directories(section, new_values)
+    else:
+        return new_values
+
+
+def no_updates_provided(options: dict) -> bool:
+    return all(option is None or option == () for option in options.values())
 
 
 @config_command.command()
-def shared_directories(
-    directories: list[str] = Argument(
-        None, help="New directories to add to or replace the existing value."
+def file_system(
+    context: Context,
+    shared_directories: list[str] = Option(
+        None,
+        help="New shared directories to add to or replace the existing value.",
+        show_default=False,
+    ),
+    pickle_file: str = Option(
+        None,
+        help="New path to beets pickle file to replace the existing value.",
+        show_default=False,
+    ),
+    ignored_directories: list[str] = Option(
+        None,
+        help="New ignored directories to add to or replace the existing value.",
+        show_default=False,
+    ),
+    music_player: str = Option(
+        None,
+        help="New default music player to replace the existing value.",
+        show_default=False,
     ),
     add: bool = Option(
-        False,
+        None,
         "--add",
         "-a",
         help="Add to existing values rather than replace all values.",
     ),
 ):
-    """Show shared directories value."""
+    """Show and set values for the file-system."""
     config = get_loaded_config()
-    if not directories:
-        shared_directories = config.shared_directories
-        print_directories(shared_directories)
+    file_system = config.file_system
+    if no_updates_provided(context.params):
+        print_config_section(file_system)
         return
-    config = config.dict()
-    shared_directories = config["shared_directories"]
-    if add:
-        new_shared_directories = append_directories(shared_directories, directories)
-    else:
-        replace = Confirm.ask(
-            "Are you sure you want to overwrite the shared directories?"
+    if shared_directories:
+        file_system.shared_directories = get_new_directory_values(
+            file_system.shared_directories, shared_directories, add=add
         )
-        if not replace:
-            return
-        new_shared_directories = directories
-    config["shared_directories"] = new_shared_directories
-    validated_config = validate_config(config)
-    if not validated_config:
-        return
-    write_config_values(config=validated_config)
-    print("Shared directories updated.")
-
-
-@config_command.command()
-def pickle_file(
-    pickle_file_path: str = Argument(
-        None, help="New path to beets pickle file to replace the existing value."
-    ),
-):
-    """Show pickle file value."""
-    config = get_loaded_config()
-    if not pickle_file_path:
-        pickle_file = config.pickle_file
-        print(pickle_file)
-        return
-    replace = Confirm.ask("Are you sure you want to overwrite the pickle file?")
-    if not replace:
-        return
-    config.pickle_file = Path(pickle_file_path)
-    validated_config = validate_config(config.dict())
-    if not validated_config:
-        return
-    write_config_values(config=validated_config)
-    print("Pickle file updated.")
-
-
-@config_command.command()
-def ignored_directories(
-    directories: list[str] = Argument(
-        None, help="New directories to add to or replace the existing value."
-    ),
-    add: bool = Option(
-        False,
-        "--add",
-        "-a",
-        help="Add to existing values rather than replace all values.",
-    ),
-):
-    """Show ignored directories value."""
-    if not directories:
-        config = get_loaded_config()
-        ignored_directories = config.ignored_directories
-        print_directories(ignored_directories)
-        return
-    config = get_loaded_config().dict()
-    ignored_directories = config["ignored_directories"]
-    if add:
-        new_ignored_directories = append_directories(ignored_directories, directories)
-    else:
-        replace = Confirm.ask(
-            "Are you sure you want to overwrite the ignored directories?"
+    if pickle_file:
+        file_system.pickle_file = Path(pickle_file)
+    if ignored_directories:
+        file_system.ignored_directories = get_new_directory_values(
+            file_system.ignored_directories, ignored_directories, add=add
         )
-        if not replace:
-            return
-        new_ignored_directories = directories
-    config["ignored_directories"] = new_ignored_directories
-    validated_config = validate_config(config)
-    if not validated_config:
+    if music_player is not None:
+        file_system.music_player = music_player
+    try:
+        write_config_values(config)
+    except InvalidConfig:
         return
-    write_config_values(config=validated_config)
-    print("Ignored directories updated.")
+    print_config_section(file_system)
+
+
+@config_command.command(name="import")
+def import_new(
+    context: Context,
+    reformat: bool = Option(
+        None,
+        "--reformat/--as-is",
+        help='Set the default value for automatically calling "reformat" after import',
+        show_default=False,
+    ),
+    ask_before_disc_update: bool = Option(
+        None,
+        "--ask-before-disc-update/--auto-update-disc",
+        help="Set the default value for asking before adding default disc values",
+        show_default=False,
+    ),
+    ask_before_artist_update: bool = Option(
+        None,
+        "--ask-before-artist-update/--auto-update-artist",
+        help="Set the default value for asking before removing bracket instruments.",
+        show_default=False,
+    ),
+    allow_prompt: bool = Option(
+        None,
+        "--allow-prompt/--disallow-prompt",
+        help="Set the default for including imports requiring prompt for user input.",
+        show_default=False,
+    ),
+):
+    """Show and set default values for "import" command."""
+    config = get_loaded_config()
+    import_new = config.import_new
+    if no_updates_provided(context.params):
+        print_config_section(import_new)
+        return
+    if reformat is not None:
+        import_new.reformat = reformat
+    if ask_before_disc_update is not None:
+        import_new.ask_before_disc_update = ask_before_disc_update
+    if ask_before_artist_update is not None:
+        import_new.ask_before_artist_update = ask_before_artist_update
+    if allow_prompt is not None:
+        import_new.allow_prompt = allow_prompt
+    try:
+        write_config_values(config)
+    except InvalidConfig:
+        return
+    print_config_section(import_new)
 
 
 @config_command.command()
-def music_player(
-    new_music_player: str = Argument(
-        None, help="New default music player to replace the existing value."
+def reformat(
+    context: Context,
+    remove_bracket_years: bool = Option(
+        None,
+        "--remove-bracket-years/--years-as-is",
+        help="Set default value for removing bracket years.",
+        show_default=False,
+    ),
+    remove_bracket_instruments: bool = Option(
+        None,
+        "--remove-bracket-instruments/--instruments-as-is",
+        help="Set default value for removing bracket instruments.",
+        show_default=False,
+    ),
+    expand_abbreviations: bool = Option(
+        None,
+        "--expand-abbreviations/--abbreviations-as-is",
+        help="Set default value for expanding abbreviations.",
+        show_default=False,
     ),
 ):
-    """Show music player value."""
+    """Show and set default values for "reformat" command."""
     config = get_loaded_config()
-    if not new_music_player:
-        music_player = config.music_player
-        print(music_player)
+    reformat = config.reformat
+    if no_updates_provided(context.params):
+        print_config_section(reformat)
         return
-    replace = Confirm.ask("Are you sure you want to overwrite the music player?")
-    if not replace:
+    if remove_bracket_years is not None:
+        reformat.remove_bracket_years = remove_bracket_years
+    if remove_bracket_instruments is not None:
+        reformat.remove_bracket_instruments = remove_bracket_instruments
+    if expand_abbreviations is not None:
+        reformat.expand_abbreviations = expand_abbreviations
+    try:
+        write_config_values(config)
+    except InvalidConfig:
         return
-    config.music_player = new_music_player
-    validated_config = validate_config(config.dict())
-    if not validated_config:
-        return
-    write_config_values(config=validated_config)
-    print("Muisc player updated.")
-
-
-@config_command.command(
-    help=(
-        f"Show config {escape('[default]')}, show config path, edit config file"
-        " in $EDITOR"
-    )
-)
-def theme(
-    info: str = Option(
-        None, "--info", "-i", help='Update the style for "INFO"-level messages'
-    ),
-    warning: str = Option(
-        None, "--warning", "-w", help='Update the style for "WARNING"-level messages'
-    ),
-    error: str = Option(
-        None, "--error", "-e", help='Update the style for "ERROR"-level messages'
-    ),
-):
-    theme_config = get_loaded_theme()
-    if not any([info, warning, error]):
-        print(theme_config)
-        return
-    if info:
-        theme_config.info = info
-    if warning:
-        theme_config.warning = warning
-    if error:
-        theme_config.error = error
-    validated_theme_config = validate_theme_config(theme_config.dict())
-    if not validated_theme_config:
-        return
-    write_config_values(theme=validated_theme_config)
-    print("Theme updated.")
+    print_config_section(reformat)

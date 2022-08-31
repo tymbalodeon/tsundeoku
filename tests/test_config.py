@@ -3,16 +3,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from tests.mocks import set_mock_home
-from tsundeoku.config.config import get_config_directory
 from tsundeoku.main import tsundeoku
-
-
-def test_get_config_directory(monkeypatch, tmp_path):
-    set_mock_home(monkeypatch, tmp_path)
-    config_directory = Path.home() / ".config/tsundeoku"
-    assert not config_directory.exists()
-    config_directory = get_config_directory()
-    assert config_directory.exists()
 
 
 def get_mock_shared_directories() -> str:
@@ -29,9 +20,7 @@ def mock_get_config_value(_):
 
 
 def test_config_help():
-    config_help_text = (
-        "Show config [default], show config path, edit config file in $EDITOR"
-    )
+    config_help_text = "Show [default] and set config values."
     result = CliRunner().invoke(tsundeoku, ["config", "-h"])
     assert config_help_text in result.output
     assert result.exit_code == 0

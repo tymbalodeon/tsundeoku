@@ -8,13 +8,7 @@ from typer import Argument, Context, Exit, Option, Typer
 
 from tsundeoku import __version__
 
-from .config.config import (
-    STATE,
-    StyleLevel,
-    get_config,
-    get_theme_config,
-    print_with_theme,
-)
+from .config.config import STATE, StyleLevel, get_config, print_errors, print_with_theme
 from .config.main import config_command
 from .import_new import get_albums, import_albums
 from .reformat import reformat_main
@@ -54,12 +48,6 @@ def skip_validation(context: Context) -> bool:
     return False
 
 
-def print_errors(validation_error: ValidationError):
-    for error in validation_error.errors():
-        message = f"WARNING: {error['msg']}"
-        print_with_theme(message, level=StyleLevel.WARNING)
-
-
 @tsundeoku.callback()
 def callback(
     context: Context,
@@ -78,11 +66,7 @@ def callback(
         STATE["config"] = get_config()
     except ValidationError as error:
         is_valid = False
-        print_errors(error)
-    try:
-        STATE["theme"] = get_theme_config()
-    except ValidationError as error:
-        print_errors(error)
+        print_errors(error, level=StyleLevel.WARNING)
     subcommand = context.invoked_subcommand
     if is_valid:
         if not subcommand:
