@@ -8,7 +8,9 @@ from rich.prompt import Confirm
 from typer import Context, Option, Typer, launch
 
 from .config import (
+    ImportConfig,
     InvalidConfig,
+    ReformatConfig,
     get_config_path,
     get_loaded_config,
     print_config_section,
@@ -17,10 +19,7 @@ from .config import (
 )
 
 config_command = Typer(
-    help=(
-        f"Show config {escape('[default]')}, show config path, edit config file"
-        " in $EDITOR"
-    ),
+    help=f"Show {escape('[default]')} and set config values.",
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="rich",
 )
@@ -34,7 +33,12 @@ def config(
         False, "--file", "-f", help="Open config file in file browser."
     ),
     edit: bool = Option(False, "--edit", "-e", help="Edit config file with $EDITOR."),
-    reset: bool = Option(False, "--reset", help="Reset config to defaults."),
+    reset: bool = Option(False, "--reset", help="Reset all config values to defaults."),
+    reset_commands: bool = Option(
+        False,
+        "--reset-commands",
+        help='Reset settings for "import" and "reformat" commands to defaults.',
+    ),
 ):
     if context.invoked_subcommand:
         return
@@ -51,8 +55,18 @@ def config(
             "Are you sure you want to reset your config to the default values?"
         )
         if perform_reset:
-            print("Config reset.")
             write_config_values()
+            print_config_values()
+    elif reset_commands:
+        perform_reset = Confirm.ask(
+            "Are you sure you want to reset the command settings to the default values?"
+        )
+        if perform_reset:
+            config = get_loaded_config()
+            config.reformat = ReformatConfig()
+            config.import_new = ImportConfig()
+            write_config_values(config)
+            print_config_values()
     else:
         print_config_values()
 

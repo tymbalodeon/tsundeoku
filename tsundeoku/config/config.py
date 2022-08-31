@@ -86,10 +86,18 @@ def get_loaded_config() -> Config:
     return cast(Config, STATE["config"])
 
 
-def rename_import_config(config: dict) -> dict:
+def update_config_key(config: dict, old_value: str, new_value: str) -> dict:
     return {
-        "import" if key == "import_new" else key: value for key, value in config.items()
+        new_value if key == old_value else key: value for key, value in config.items()
     }
+
+
+def convert_import_new_to_import(config: dict) -> dict:
+    return update_config_key(config, "import_new", "import")
+
+
+def convert_import_to_import_new(config: dict) -> dict:
+    return update_config_key(config, "import", "import_new")
 
 
 def as_toml(config: Config) -> dict:
@@ -100,7 +108,7 @@ def as_toml(config: Config) -> dict:
             file_system[key] = [path.as_posix() for path in value]
         elif isinstance(value, Path):
             file_system[key] = value.as_posix()
-    config_toml = rename_import_config(config_toml)
+    config_toml = convert_import_new_to_import(config_toml)
     return config_toml
 
 
@@ -144,6 +152,7 @@ def get_config() -> Config:
     config_file = get_config_file()
     config_text = config_file.read_text()
     config_values = loads(config_text)
+    config_values = convert_import_new_to_import(config_values)
     return Config(**config_values)
 
 
@@ -159,6 +168,6 @@ def print_config_section(config: BaseModel | dict):
 
 
 def print_config_values():
-    config = get_config()
+    config = get_loaded_config()
     for section in config.dict().values():
         print_config_section(section)

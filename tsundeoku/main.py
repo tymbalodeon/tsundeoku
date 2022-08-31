@@ -66,8 +66,7 @@ def callback(
         STATE["config"] = get_config()
     except ValidationError as error:
         is_valid = False
-        if context.invoked_subcommand != "config":
-            print_errors(error, level=StyleLevel.WARNING)
+        print_errors(error, level=StyleLevel.WARNING)
     subcommand = context.invoked_subcommand
     if is_valid:
         if not subcommand:

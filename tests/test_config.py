@@ -20,9 +20,7 @@ def mock_get_config_value(_):
 
 
 def test_config_help():
-    config_help_text = (
-        "Show config [default], show config path, edit config file in $EDITOR"
-    )
+    config_help_text = "Show [default] and set config values."
     result = CliRunner().invoke(tsundeoku, ["config", "-h"])
     assert config_help_text in result.output
     assert result.exit_code == 0
