@@ -7,6 +7,8 @@ from rich.markup import escape
 from rich.prompt import Confirm
 from typer import Context, Option, Typer, launch
 
+from tsundeoku.style import stylize
+
 from .config import (
     ImportConfig,
     InvalidConfig,
@@ -33,7 +35,9 @@ def config(
         False, "--file", "-f", help="Open config file in file browser."
     ),
     edit: bool = Option(False, "--edit", "-e", help="Edit config file with $EDITOR."),
-    reset: bool = Option(False, "--reset", help="Reset all config values to defaults."),
+    reset_all: bool = Option(
+        False, "--reset-all", help="Reset all config values to defaults."
+    ),
     reset_commands: bool = Option(
         False,
         "--reset-commands",
@@ -50,43 +54,62 @@ def config(
     elif edit:
         editor = environ.get("EDITOR", "vim")
         call([editor, config_path])
-    elif reset:
+    elif reset_all:
         perform_reset = Confirm.ask(
             "Are you sure you want to reset your config to the default values?"
         )
         if perform_reset:
-            write_config_values()
+            try:
+                write_config_values()
+            except InvalidConfig:
+                return
             print_config_values()
     elif reset_commands:
-        perform_reset = Confirm.ask(
-            "Are you sure you want to reset the command settings to the default values?"
-        )
-        if perform_reset:
-            config = get_loaded_config()
-            config.reformat = ReformatConfig()
-            config.import_new = ImportConfig()
+        config = get_loaded_config()
+        config.reformat = ReformatConfig()
+        config.import_new = ImportConfig()
+        try:
             write_config_values(config)
-            print_config_values()
+        except InvalidConfig:
+            return
+        print_config_values()
     else:
         print_config_values()
+
+
+def stylize_path(path: str) -> str:
+    path = f'"{path}"'
+    return stylize(path, "green")
+
+
+def confirm_update(value: list[str] | str, add: bool, remove: bool) -> bool:
+    if isinstance(value, list):
+        value = [stylize_path(path) for path in value]
+        value = ", ".join(value)
+    if add:
+        return Confirm.ask(f"Are you sure you want to add {value}?")
+    elif remove:
+        return Confirm.ask(f"Are you sure you want to remove {value}?")
+    return Confirm.ask(f"Are you sure you want to update with {value}?")
 
 
 def as_paths(paths: list[str]) -> set[Path]:
     return {Path(path).expanduser() for path in paths if path}
 
 
-def append_directories(existing_values: set[Path], new_values: set[Path]) -> set[Path]:
-    return existing_values | new_values
-
-
 def get_new_directory_values(
-    section: set[Path], values: list[str], add: bool
+    section: set[Path], values: list[str], add: bool, remove: bool
 ) -> set[Path]:
     new_values = as_paths(values)
     if add:
-        return append_directories(section, new_values)
-    else:
-        return new_values
+        return section | new_values
+    elif remove:
+        new_values = section ^ new_values
+        if len(new_values) > len(section):
+            return section
+        else:
+            return new_values
+    return new_values
 
 
 def no_updates_provided(options: dict) -> bool:
@@ -122,6 +145,12 @@ def file_system(
         "-a",
         help="Add to existing values rather than replace all values.",
     ),
+    remove: bool = Option(
+        None,
+        "--remove",
+        "-r",
+        help="Remove from existing values rather than replace all values.",
+    ),
 ):
     """Show and set values for the file-system."""
     config = get_loaded_config()
@@ -130,15 +159,23 @@ def file_system(
         print_config_section(file_system)
         return
     if shared_directories:
-        file_system.shared_directories = get_new_directory_values(
-            file_system.shared_directories, shared_directories, add=add
-        )
+        if confirm_update(shared_directories, add=add, remove=remove):
+            file_system.shared_directories = get_new_directory_values(
+                section=file_system.shared_directories,
+                values=shared_directories,
+                add=add,
+                remove=remove,
+            )
     if pickle_file:
         file_system.pickle_file = Path(pickle_file)
     if ignored_directories:
-        file_system.ignored_directories = get_new_directory_values(
-            file_system.ignored_directories, ignored_directories, add=add
-        )
+        if confirm_update(ignored_directories, add=add, remove=remove):
+            file_system.ignored_directories = get_new_directory_values(
+                section=file_system.ignored_directories,
+                values=ignored_directories,
+                add=add,
+                remove=remove,
+            )
     if music_player is not None:
         file_system.music_player = music_player
     try:

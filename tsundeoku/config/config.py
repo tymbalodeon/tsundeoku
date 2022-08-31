@@ -141,6 +141,7 @@ def print_errors(validation_error: ValidationError, level: StyleLevel):
     for error in validation_error.errors():
         message = f"{level.name}: {error['msg']}"
         print_with_theme(message, level=level)
+    print()
 
 
 def is_valid_config(config_values: Config) -> bool:
@@ -159,7 +160,7 @@ class InvalidConfig(Exception):
 def write_config_values(config: Config | None = None):
     if not config:
         config = Config()
-    if not is_valid_config(config):
+    elif not is_valid_config(config):
         raise InvalidConfig()
     config_toml = as_toml(config)
     config_file = get_config_path()
@@ -177,7 +178,7 @@ def get_config() -> Config:
     config_file = get_config_file()
     config_text = config_file.read_text()
     config_values = loads(config_text)
-    config_values = convert_import_new_to_import(config_values)
+    config_values = convert_import_to_import_new(config_values)
     return Config(**config_values)
 
 

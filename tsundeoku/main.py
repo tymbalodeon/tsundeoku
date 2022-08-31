@@ -8,10 +8,17 @@ from typer import Argument, Context, Exit, Option, Typer
 
 from tsundeoku import __version__
 
-from .config.config import STATE, StyleLevel, get_config, print_errors, print_with_theme
+from .config.config import (
+    STATE,
+    StyleLevel,
+    get_config,
+    get_loaded_config,
+    print_errors,
+    print_with_theme,
+)
 from .config.main import config_command
 from .import_new import get_albums, import_albums
-from .reformat import reformat_main
+from .reformat import reformat_albums
 
 tsundeoku = Typer(
     help="CLI for importing audio files from a shared folder to a local library",
@@ -71,10 +78,10 @@ def callback(
     if is_valid:
         if not subcommand:
             import_new(
-                as_is=False,
+                reformat=False,
                 ask_before_disc_update=False,
                 ask_before_artist_update=False,
-                prompt=True,
+                allow_prompt=True,
                 albums=[],
             )
         return
@@ -89,47 +96,70 @@ solo_instrument = escape("[solo <instrument>]")
 @tsundeoku.command(name="import")
 def import_new(
     albums: list[str] = Argument(None, hidden=True),
-    as_is: bool = Option(
-        False, "--as-is", help="Import new albums without altering metadata."
+    reformat: bool = Option(
+        None,
+        "--reformat/--as-is",
+        help="Import new albums without altering metadata.",
+        show_default=False,
     ),
     ask_before_disc_update: bool = Option(
-        False,
-        "--ask-before-disc-update",
+        None,
+        "--ask-before-disc-update/--auto-update-disc",
         help=(
             'Prompt for confirmation to apply default disc and disc total values of "1'
             ' out of 1".'
         ),
+        show_default=False,
     ),
     ask_before_artist_update: bool = Option(
-        False,
-        "--ask-before-artist-update",
+        None,
+        "--ask-before-artist-update/--auto-update-artist",
         help=(
             f'Prompt for confirmation to remove bracketed "{solo_instrument}"'
             " indications."
         ),
+        show_default=False,
     ),
-    prompt: bool = Option(
-        True,
-        " /--disallow-prompt",
+    allow_prompt: bool = Option(
+        None,
+        "--allow-prompt/--disallow-prompt",
         help="Allow prompts for user confirmation to update metadata.",
+        show_default=False,
     ),
 ):
     """Copy new adds from your shared folder to your local library"""
     print("Importing newly added albums...")
+    config = get_loaded_config()
+    import_settings = config.import_new
+    if reformat is None:
+        reformat = import_settings.reformat
+    if ask_before_disc_update is None:
+        ask_before_disc_update = import_settings.ask_before_disc_update
+    if ask_before_artist_update is None:
+        ask_before_artist_update = import_settings.ask_before_artist_update
+    if allow_prompt is None:
+        allow_prompt = import_settings.allow_prompt
+    print(reformat, ask_before_disc_update, ask_before_artist_update, allow_prompt)
     first_time = False
     if not albums:
         first_time = True
         albums = get_albums()
     imports, errors, importable_error_albums = import_albums(
         albums,
-        as_is,
+        reformat,
         ask_before_disc_update,
         ask_before_artist_update,
         import_all=not first_time,
-        prompt=prompt,
+        prompt=allow_prompt,
     )
-    if imports and not as_is:
-        reformat_main()
+    if imports and reformat:
+        reformat_settings = config.reformat
+        remove_bracket_years = reformat_settings.remove_bracket_years
+        remove_bracket_instruments = reformat_settings.remove_bracket_instruments
+        expand_abbreviations = reformat_settings.expand_abbreviations
+        reformat_albums(
+            remove_bracket_years, remove_bracket_instruments, expand_abbreviations
+        )
     if (
         first_time
         and errors
@@ -138,20 +168,33 @@ def import_new(
     ):
         import_new(
             albums=importable_error_albums,
-            as_is=as_is,
+            reformat=reformat,
             ask_before_disc_update=ask_before_disc_update,
             ask_before_artist_update=ask_before_artist_update,
-            prompt=prompt,
+            allow_prompt=allow_prompt,
         )
 
 
 @tsundeoku.command()
 def reformat(
-    solo_instruments: bool = Option(
-        False,
-        "--remove-instruments/ ",
-        help=f'Remove bracketed "{solo_instrument}" indications (time consuming).',
-    )
+    remove_bracket_years: bool = Option(
+        None,
+        "--remove-bracket-years/--years-as-is",
+        help="Remove bracket years from album field.",
+        show_default=False,
+    ),
+    remove_bracket_instruments: bool = Option(
+        None,
+        "--remove-bracket-instruments/--instruments-as-is",
+        help="Remove bracket instrument indications from artist field.",
+        show_default=False,
+    ),
+    expand_abbreviations: bool = Option(
+        None,
+        "--expand-abbreviations/--abbreviations-as-is",
+        help="Expand abbreviations.",
+        show_default=False,
+    ),
 ):
     """
     Reformat metadata according to the following rules:
@@ -168,4 +211,13 @@ def reformat(
     * [Optional] Remove bracketed solo instrument indications (e.g., "[solo
       piano]") from artist fields.
     """
-    reformat_main(solo_instruments)
+    reformat_settings = get_loaded_config().reformat
+    if remove_bracket_years is None:
+        remove_bracket_years = reformat_settings.remove_bracket_years
+    if remove_bracket_instruments is None:
+        remove_bracket_instruments = reformat_settings.remove_bracket_instruments
+    if expand_abbreviations is None:
+        expand_abbreviations = reformat_settings.expand_abbreviations
+    reformat_albums(
+        remove_bracket_years, remove_bracket_instruments, expand_abbreviations
+    )
