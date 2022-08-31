@@ -8,9 +8,7 @@ from beets.importer import history_add
 from rich.markup import escape as rich_escape
 from rich.prompt import Prompt
 
-from tsundeoku.config.main import get_loaded_config
-
-from .config.config import StyleLevel, print_with_theme
+from .config.config import StyleLevel, get_loaded_config, print_with_theme
 from .library import get_comments, modify_tracks
 from .regex import BRACKET_DISC_REGEX, BRACKET_YEAR_REGEX, SOLO_INSTRUMENT_REGEX
 from .style import stylize

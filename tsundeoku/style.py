@@ -13,9 +13,9 @@ class StyleLevel(Enum):
 
 THEME = Theme(
     {
-        StyleLevel.INFO: "dim cyan",
-        StyleLevel.WARNING: "yellow",
-        StyleLevel.ERROR: "bold red",
+        StyleLevel.INFO.value: "dim cyan",
+        StyleLevel.WARNING.value: "yellow",
+        StyleLevel.ERROR.value: "bold red",
     }
 )
 

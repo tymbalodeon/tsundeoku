@@ -2,16 +2,17 @@ from os import environ
 from pathlib import Path
 from subprocess import call
 
+from pydantic import BaseModel
 from rich import print
 from rich.markup import escape
 from rich.prompt import Confirm
-from typer import Argument, Context, Option, Typer, launch
+from typer import Context, Option, Typer, launch
 
 from .config import (
+    InvalidConfig,
     get_config_path,
     get_loaded_config,
     print_config_values,
-    validate_config,
     write_config_values,
 )
 
@@ -56,136 +57,160 @@ def config(
         print_config_values()
 
 
-def as_posix(directories: set[Path]) -> set[str]:
-    return {path.as_posix() for path in directories}
+def as_paths(paths: list[str]) -> set[Path]:
+    return {Path(path).expanduser() for path in paths if path}
 
 
-def append_directories(existing_values: set[Path], new_values: list[str]) -> list[str]:
-    existing_directories = as_posix(existing_values)
-    new_directories = existing_directories | set(new_values)
-    return list(new_directories)
+def append_directories(existing_values: set[Path], new_values: set[Path]) -> set[Path]:
+    return existing_values | new_values
 
 
-def print_directories(directories: set[Path]):
-    display = as_posix(directories) or None
-    print(display)
-
-
-@config_command.command()
-def shared_directories(
-    directories: list[str] = Argument(
-        None, help="New directories to add to or replace the existing value."
-    ),
-    add: bool = Option(
-        False,
-        "--add",
-        "-a",
-        help="Add to existing values rather than replace all values.",
-    ),
-):
-    """Show shared directories value."""
-    config = get_loaded_config()
-    if not directories:
-        shared_directories = config.shared_directories
-        print_directories(shared_directories)
-        return
-    config = config.dict()
-    shared_directories = config["shared_directories"]
+def get_new_directory_values(
+    section: set[Path], values: list[str], add: bool
+) -> set[Path]:
+    new_values = as_paths(values)
     if add:
-        new_shared_directories = append_directories(shared_directories, directories)
+        return append_directories(section, new_values)
     else:
-        replace = Confirm.ask(
-            "Are you sure you want to overwrite the shared directories?"
-        )
-        if not replace:
-            return
-        new_shared_directories = directories
-    config["shared_directories"] = new_shared_directories
-    validated_config = validate_config(config)
-    if not validated_config:
-        return
-    write_config_values(config=validated_config)
-    print("Shared directories updated.")
+        return new_values
+
+
+def no_updates_provided(options: dict) -> bool:
+    return all(option is None or option == () for option in options.values())
+
+
+def print_config_section(section: BaseModel):
+    for key, value in section.dict().items():
+        if isinstance(value, set):
+            value = {path.as_posix() for path in value}
+        print(f"{key}={value}")
 
 
 @config_command.command()
-def pickle_file(
-    pickle_file_path: str = Argument(
+def file_system(
+    context: Context,
+    shared_directories: list[str] = Option(
+        None, help="New shared directories to add to or replace the existing value."
+    ),
+    pickle_file: str = Option(
         None, help="New path to beets pickle file to replace the existing value."
     ),
-):
-    """Show pickle file value."""
-    config = get_loaded_config()
-    if not pickle_file_path:
-        pickle_file = config.pickle_file
-        print(pickle_file)
-        return
-    replace = Confirm.ask("Are you sure you want to overwrite the pickle file?")
-    if not replace:
-        return
-    config.pickle_file = Path(pickle_file_path)
-    validated_config = validate_config(config.dict())
-    if not validated_config:
-        return
-    write_config_values(config=validated_config)
-    print("Pickle file updated.")
-
-
-@config_command.command()
-def ignored_directories(
-    directories: list[str] = Argument(
-        None, help="New directories to add to or replace the existing value."
+    ignored_directories: list[str] = Option(
+        None, help="New ignored directories to add to or replace the existing value."
+    ),
+    music_player: str = Option(
+        None, help="New default music player to replace the existing value."
     ),
     add: bool = Option(
-        False,
+        None,
         "--add",
         "-a",
         help="Add to existing values rather than replace all values.",
     ),
 ):
-    """Show ignored directories value."""
-    if not directories:
-        config = get_loaded_config()
-        ignored_directories = config.ignored_directories
-        print_directories(ignored_directories)
+    """Show and set values for the file-system."""
+    config = get_loaded_config()
+    file_system = config.file_system
+    if no_updates_provided(context.params):
+        print_config_section(file_system)
         return
-    config = get_loaded_config().dict()
-    ignored_directories = config["ignored_directories"]
-    if add:
-        new_ignored_directories = append_directories(ignored_directories, directories)
-    else:
-        replace = Confirm.ask(
-            "Are you sure you want to overwrite the ignored directories?"
+    if shared_directories:
+        file_system.shared_directories = get_new_directory_values(
+            file_system.shared_directories, shared_directories, add=add
         )
-        if not replace:
-            return
-        new_ignored_directories = directories
-    config["ignored_directories"] = new_ignored_directories
-    validated_config = validate_config(config)
-    if not validated_config:
+    if pickle_file:
+        file_system.pickle_file = Path(pickle_file)
+    if ignored_directories:
+        file_system.ignored_directories = get_new_directory_values(
+            file_system.ignored_directories, ignored_directories, add=add
+        )
+    if music_player is not None:
+        file_system.music_player = music_player
+    try:
+        write_config_values(config)
+    except InvalidConfig:
         return
-    write_config_values(config=validated_config)
-    print("Ignored directories updated.")
+    print_config_section(file_system)
+
+
+@config_command.command(name="import")
+def import_new(
+    context: Context,
+    reformat: bool = Option(
+        None,
+        "--reformat/--as-is",
+        help='Set the default value for automatically calling "reformat" after import',
+    ),
+    ask_before_disc_update: bool = Option(
+        None,
+        "--ask-before-disc-update/--auto-update-disc",
+        help="Set the default value for asking before adding default disc values",
+    ),
+    ask_before_artist_update: bool = Option(
+        None,
+        "--ask-before-artist-update/--auto-update-artist",
+        help="Set the default value for asking before removing bracket instruments.",
+    ),
+    allow_prompt: bool = Option(
+        None,
+        "--allow-prompt/--disallow-prompt",
+        help="Set the default for including imports requiring prompt for user input.",
+    ),
+):
+    """Show and set default values for "import" command."""
+    config = get_loaded_config()
+    import_new = config.import_new
+    if no_updates_provided(context.params):
+        print_config_section(import_new)
+        return
+    if reformat is not None:
+        import_new.reformat = reformat
+    if ask_before_disc_update is not None:
+        import_new.ask_before_disc_update = ask_before_disc_update
+    if ask_before_artist_update is not None:
+        import_new.ask_before_artist_update = ask_before_artist_update
+    if allow_prompt is not None:
+        import_new.allow_prompt = allow_prompt
+    try:
+        write_config_values(config)
+    except InvalidConfig:
+        return
+    print_config_section(import_new)
 
 
 @config_command.command()
-def music_player(
-    new_music_player: str = Argument(
-        None, help="New default music player to replace the existing value."
+def reformat(
+    context: Context,
+    remove_bracket_years: bool = Option(
+        None,
+        "--remove-bracket-years/--years-as-is",
+        help="Set default value for removing bracket years.",
+    ),
+    remove_bracket_instruments: bool = Option(
+        None,
+        "--remove-bracket-instruments/--instruments-as-is",
+        help="Set default value for removing bracket instruments.",
+    ),
+    expand_abbreviations: bool = Option(
+        None,
+        "--expand-abbreviations/--abbreviations-as-is",
+        help="Set default value for expanding abbreviations.",
     ),
 ):
-    """Show music player value."""
+    """Show and set default values for "reformat" command."""
     config = get_loaded_config()
-    if not new_music_player:
-        music_player = config.music_player
-        print(music_player)
+    reformat = config.reformat
+    if no_updates_provided(context.params):
+        print_config_section(reformat)
         return
-    replace = Confirm.ask("Are you sure you want to overwrite the music player?")
-    if not replace:
+    if remove_bracket_years is not None:
+        reformat.remove_bracket_years = remove_bracket_years
+    if remove_bracket_instruments is not None:
+        reformat.remove_bracket_instruments = remove_bracket_instruments
+    if expand_abbreviations is not None:
+        reformat.expand_abbreviations = expand_abbreviations
+    try:
+        write_config_values(config)
+    except InvalidConfig:
         return
-    config.music_player = new_music_player
-    validated_config = validate_config(config.dict())
-    if not validated_config:
-        return
-    write_config_values(config=validated_config)
-    print("Muisc player updated.")
+    print_config_section(reformat)

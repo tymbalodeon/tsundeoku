@@ -104,11 +104,30 @@ def as_toml(config: Config) -> dict:
     return config_toml
 
 
-def write_config_values(**config_values: Config):
-    if "config" not in config_values:
-        config = get_loaded_config()
-    else:
-        config = config_values["config"]
+def print_errors(validation_error: ValidationError, level: StyleLevel):
+    for error in validation_error.errors():
+        message = f"{level.name}: {error['msg']}"
+        print_with_theme(message, level=level)
+
+
+def is_valid_config(config_values: Config) -> bool:
+    try:
+        Config(**config_values.dict())
+        return True
+    except ValidationError as error:
+        print_errors(error, level=StyleLevel.ERROR)
+        return False
+
+
+class InvalidConfig(Exception):
+    pass
+
+
+def write_config_values(config: Config | None = None):
+    if not config:
+        config = Config()
+    if not is_valid_config(config):
+        raise InvalidConfig()
     config_toml = as_toml(config)
     config_file = get_config_path()
     config_file.write_text(dumps(config_toml))
@@ -132,18 +151,3 @@ def print_config_values():
     config_file = str(get_config_file())
     syntax = Syntax.from_path(config_file, lexer="toml", theme="ansi_dark")
     print_with_theme(syntax)
-
-
-def print_errors(validation_error: ValidationError, level: StyleLevel):
-    for error in validation_error.errors():
-        message = f"{level.name}: {error['msg']}"
-        print_with_theme(message, level=level)
-
-
-def validate_config(config_values: dict) -> Config | None:
-    try:
-        config = Config(**config_values)
-        return config
-    except ValidationError as error:
-        print_errors(error, level=StyleLevel.ERROR)
-    return None
