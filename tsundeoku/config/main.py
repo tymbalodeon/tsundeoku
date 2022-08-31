@@ -2,7 +2,6 @@ from os import environ
 from pathlib import Path
 from subprocess import call
 
-from pydantic import BaseModel
 from rich import print
 from rich.markup import escape
 from rich.prompt import Confirm
@@ -12,6 +11,7 @@ from .config import (
     InvalidConfig,
     get_config_path,
     get_loaded_config,
+    print_config_section,
     print_config_values,
     write_config_values,
 )
@@ -77,13 +77,6 @@ def get_new_directory_values(
 
 def no_updates_provided(options: dict) -> bool:
     return all(option is None or option == () for option in options.values())
-
-
-def print_config_section(section: BaseModel):
-    for key, value in section.dict().items():
-        if isinstance(value, set):
-            value = {path.as_posix() for path in value}
-        print(f"{key}={value}")
 
 
 @config_command.command()

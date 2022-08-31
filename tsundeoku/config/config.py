@@ -10,7 +10,7 @@ from pydantic import (
     ValidationError,
     validator,
 )
-from rich.syntax import Syntax
+from rich import print
 from tomli import loads
 from tomli_w import dumps
 
@@ -147,7 +147,18 @@ def get_config() -> Config:
     return Config(**config_values)
 
 
+def print_config_section(config: BaseModel | dict):
+    if isinstance(config, BaseModel):
+        section = config.dict()
+    else:
+        section = config
+    for key, value in section.items():
+        if isinstance(value, set):
+            value = {path.as_posix() for path in value} or None
+        print(f"{key}={value}")
+
+
 def print_config_values():
-    config_file = str(get_config_file())
-    syntax = Syntax.from_path(config_file, lexer="toml", theme="ansi_dark")
-    print_with_theme(syntax)
+    config = get_config()
+    for section in config.dict().values():
+        print_config_section(section)
