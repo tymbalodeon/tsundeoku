@@ -7,6 +7,8 @@ from rich.markup import escape
 from rich.prompt import Confirm
 from typer import Context, Option, Typer, launch
 
+from tsundeoku.style import stylize
+
 from .config import (
     ImportConfig,
     InvalidConfig,
@@ -33,7 +35,9 @@ def config(
         False, "--file", "-f", help="Open config file in file browser."
     ),
     edit: bool = Option(False, "--edit", "-e", help="Edit config file with $EDITOR."),
-    reset: bool = Option(False, "--reset", help="Reset all config values to defaults."),
+    reset_all: bool = Option(
+        False, "--reset-all", help="Reset all config values to defaults."
+    ),
     reset_commands: bool = Option(
         False,
         "--reset-commands",
@@ -50,7 +54,7 @@ def config(
     elif edit:
         editor = environ.get("EDITOR", "vim")
         call([editor, config_path])
-    elif reset:
+    elif reset_all:
         perform_reset = Confirm.ask(
             "Are you sure you want to reset your config to the default values?"
         )
@@ -58,17 +62,27 @@ def config(
             write_config_values()
             print_config_values()
     elif reset_commands:
-        perform_reset = Confirm.ask(
-            "Are you sure you want to reset the command settings to the default values?"
-        )
-        if perform_reset:
-            config = get_loaded_config()
-            config.reformat = ReformatConfig()
-            config.import_new = ImportConfig()
-            write_config_values(config)
-            print_config_values()
+        config = get_loaded_config()
+        config.reformat = ReformatConfig()
+        config.import_new = ImportConfig()
+        write_config_values(config)
+        print_config_values()
     else:
         print_config_values()
+
+
+def stylize_path(path: str) -> str:
+    path = f'"{path}"'
+    return stylize(path, "green")
+
+
+def confirm_update(value: list[str] | str, add: bool) -> bool:
+    if isinstance(value, list):
+        value = [stylize_path(path) for path in value]
+        value = ", ".join(value)
+    if add:
+        return Confirm.ask(f"Are you sure you want to add {value}?")
+    return Confirm.ask(f"Are you sure you want to update with {value}?")
 
 
 def as_paths(paths: list[str]) -> set[Path]:
@@ -130,15 +144,17 @@ def file_system(
         print_config_section(file_system)
         return
     if shared_directories:
-        file_system.shared_directories = get_new_directory_values(
-            file_system.shared_directories, shared_directories, add=add
-        )
+        if confirm_update(shared_directories, add=add):
+            file_system.shared_directories = get_new_directory_values(
+                file_system.shared_directories, shared_directories, add=add
+            )
     if pickle_file:
         file_system.pickle_file = Path(pickle_file)
     if ignored_directories:
-        file_system.ignored_directories = get_new_directory_values(
-            file_system.ignored_directories, ignored_directories, add=add
-        )
+        if confirm_update(ignored_directories, add=add):
+            file_system.ignored_directories = get_new_directory_values(
+                file_system.ignored_directories, ignored_directories, add=add
+            )
     if music_player is not None:
         file_system.music_player = music_player
     try:
