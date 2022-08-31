@@ -178,7 +178,7 @@ def get_config() -> Config:
     config_file = get_config_file()
     config_text = config_file.read_text()
     config_values = loads(config_text)
-    config_values = convert_import_new_to_import(config_values)
+    config_values = convert_import_to_import_new(config_values)
     return Config(**config_values)
 
 

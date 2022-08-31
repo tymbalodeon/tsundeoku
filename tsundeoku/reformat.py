@@ -23,37 +23,59 @@ class Action:
     operate_on_albums: bool = True
 
 
-ACTIONS = [
-    Action(
-        message='Removing bracketed years from all "album" tags...',
-        find=BRACKET_YEAR_REGEX,
-        replace="",
-    ),
-    Action(
-        message='Replacing "Rec." with "Recording" in all "album" tags...',
-        find=RECORDING_REGEX,
-        replace="Recording",
-    ),
-    Action(
-        message='Replacing "Recs" with "Recordings" in all "album" tags...',
-        find=RECORDINGS_REGEX,
-        replace="Recordings",
-    ),
-    Action(
-        message='Replacing "Orig." with "Original" in all "album" tags...',
-        find=ORIGINAL_REGEX,
-        replace="Original",
-    ),
-    Action(
-        message=(
-            'Removing bracketed solo instrument indications from all "artist" tags...'
+ACTIONS = {
+    "remove_bracket_years": [
+        Action(
+            message='Removing bracketed years from all "album" tags...',
+            find=BRACKET_YEAR_REGEX,
+            replace="",
+        )
+    ],
+    "remove_bracket_instruments": [
+        Action(
+            message=(
+                'Removing bracketed solo instrument indications from all "artist"'
+                " tags..."
+            ),
+            find=SOLO_INSTRUMENT_REGEX,
+            replace="",
+            tag="artist",
+            operate_on_albums=False,
+        )
+    ],
+    "expand_abbreviations": [
+        Action(
+            message='Replacing "Rec." with "Recording" in all "album" tags...',
+            find=RECORDING_REGEX,
+            replace="Recording",
         ),
-        find=SOLO_INSTRUMENT_REGEX,
-        replace="",
-        tag="artist",
-        operate_on_albums=False,
-    ),
-]
+        Action(
+            message='Replacing "Recs" with "Recordings" in all "album" tags...',
+            find=RECORDINGS_REGEX,
+            replace="Recordings",
+        ),
+        Action(
+            message='Replacing "Orig." with "Original" in all "album" tags...',
+            find=ORIGINAL_REGEX,
+            replace="Original",
+        ),
+    ],
+}
+
+
+def get_actions(
+    remove_bracket_years: bool,
+    remove_bracket_instruments: bool,
+    expand_abbreviations: bool,
+):
+    actions = []
+    if remove_bracket_years:
+        actions.extend(ACTIONS["remove_bracket_years"])
+    if remove_bracket_instruments:
+        actions.extend(ACTIONS["remove_bracket_instruments"])
+    if expand_abbreviations:
+        actions.extend(ACTIONS["expand_abbreviations"])
+    return actions
 
 
 def list_items(
@@ -72,23 +94,25 @@ def list_items(
     return [album_or_item.get(query_tag) for album_or_item in albums_or_items]
 
 
-def reformat(action: Action):
-    if action.message:
-        print(action.message)
-    items = list_items(action.tag, action.find, action.operate_on_albums)
-    tags = [(escape(tag), sub(action.find, action.replace, tag)) for tag in items]
-    if not tags:
-        print("No albums to update.")
-        return
-    for found_value, replacement_value in tags:
-        query = [
-            f"{action.tag}::^{found_value}$",
-            f"{action.tag}={replacement_value}",
-        ]
-        modify_tracks(query, action.operate_on_albums, False)
-
-
-def reformat_main(solo_instruments=False):
-    actions = ACTIONS if solo_instruments else ACTIONS[:-1]
+def reformat_albums(
+    remove_bracket_years: bool,
+    remove_bracket_instruments: bool,
+    expand_abbreviations: bool,
+):
+    actions = get_actions(
+        remove_bracket_years, remove_bracket_instruments, expand_abbreviations
+    )
     for action in actions:
-        reformat(action)
+        if action.message:
+            print(action.message)
+        items = list_items(action.tag, action.find, action.operate_on_albums)
+        tags = [(escape(tag), sub(action.find, action.replace, tag)) for tag in items]
+        if not tags:
+            print("No albums to update.")
+            continue
+        for found_value, replacement_value in tags:
+            query = [
+                f"{action.tag}::^{found_value}$",
+                f"{action.tag}={replacement_value}",
+            ]
+            modify_tracks(query, action.operate_on_albums, False)

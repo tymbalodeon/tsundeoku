@@ -181,7 +181,7 @@ def get_bracket_number(regex: str, album_title: str) -> str | None:
     return "".join(numeric_characters)
 
 
-def check_year(tracks: Tracks, album_title: str, prompt: bool) -> str | None:
+def check_year(tracks: Tracks, album_title: str, allow_prompt: bool) -> str | None:
     years = get_years(tracks)
     single_year = len(years) == 1
     if not single_year:
@@ -190,7 +190,7 @@ def check_year(tracks: Tracks, album_title: str, prompt: bool) -> str | None:
     year = get_album_wide_tag(years)
     if not bracket_year or bracket_year == year:
         return None
-    if not prompt:
+    if not allow_prompt:
         raise Exception
     update_year = should_update("year", bracket_year, year, album_title)
     if not update_year:
@@ -199,7 +199,7 @@ def check_year(tracks: Tracks, album_title: str, prompt: bool) -> str | None:
 
 
 def check_disc(
-    tracks: Tracks, album_title: str, ask_before_disc_update: bool, prompt: bool
+    tracks: Tracks, album_title: str, ask_before_disc_update: bool, allow_prompt: bool
 ) -> tuple[str | None, str | None, bool]:
     new_disc_number = None
     new_disc_total = None
@@ -211,13 +211,13 @@ def check_disc(
             new_disc_number = None
         else:
             disc_total = get_disc_total(tracks)
-            skip = ask_before_disc_update and not prompt
+            skip = ask_before_disc_update and not allow_prompt
             if not disc_total:
                 if skip:
                     raise Exception
                 if (
                     not ask_before_disc_update
-                    or prompt
+                    or allow_prompt
                     and Prompt.ask(
                         "Apply default disc and disc total value of"
                         f' {stylize("1", ["bold", "yellow"])} to album with'
@@ -234,7 +234,7 @@ def check_disc(
     if bracket_disc == disc_number:
         new_disc_number = None
     else:
-        if not prompt:
+        if not allow_prompt:
             raise Exception
         if should_update("disc", bracket_disc, disc_number, album_title):
             new_disc_number = bracket_disc
@@ -254,7 +254,7 @@ def has_solo_instrument(artist: str | None) -> bool:
 
 
 def check_artist(
-    tracks: Tracks, ask_before_artist_update: bool, prompt: bool
+    tracks: Tracks, ask_before_artist_update: bool, allow_prompt: bool
 ) -> list[str | None]:
     artists = get_artists(tracks)
     artists_with_instruments = [
@@ -264,7 +264,7 @@ def check_artist(
     if not artists_with_instruments:
         return artists_to_update
     for artist_with_instrument in artists_with_instruments:
-        skip = ask_before_artist_update and not prompt
+        skip = ask_before_artist_update and not allow_prompt
         if skip:
             raise Exception
         artist_with_instrument = artist_with_instrument or ""
@@ -273,7 +273,7 @@ def check_artist(
         )
         if (
             not ask_before_artist_update
-            or prompt
+            or allow_prompt
             and Prompt.ask(
                 "Remove bracketed solo instrument indication"
                 f" {stylized_artist_with_instrument} from the"
@@ -329,10 +329,10 @@ def import_album(
     album: str,
     tracks: Tracks,
     import_all: bool,
-    as_is: bool,
+    reformat: bool,
     ask_before_disc_update: bool,
     ask_before_artist_update: bool,
-    prompt: bool,
+    allow_prompt: bool,
 ) -> ImportError | None:
     track_count = len(tracks)
     track_total = get_track_total(tracks)
@@ -346,15 +346,15 @@ def import_album(
     album_title = get_album_title(tracks)
     if not album_title:
         return ImportError.MISSING_ALBUM_TITLE
-    if as_is:
+    if not reformat:
         return beet_import(album)
     try:
-        year = check_year(tracks, album_title, prompt=prompt)
+        year = check_year(tracks, album_title, allow_prompt=allow_prompt)
         disc_number, disc_total, remove_bracket_disc = check_disc(
-            tracks, album_title, ask_before_disc_update, prompt
+            tracks, album_title, ask_before_disc_update, allow_prompt
         )
         artists_with_instruments = check_artist(
-            tracks, ask_before_artist_update, prompt
+            tracks, ask_before_artist_update, allow_prompt
         )
     except Exception:
         return ImportError.SKIP
@@ -391,7 +391,7 @@ def import_album(
 
 def import_albums(
     albums: list[str],
-    as_is: bool,
+    reformat: bool,
     ask_before_disc_update: bool,
     ask_before_artist_update: bool,
     import_all=False,
@@ -416,10 +416,10 @@ def import_albums(
                 album,
                 tracks,
                 import_all,
-                as_is,
+                reformat,
                 ask_before_disc_update,
                 ask_before_artist_update,
-                prompt=prompt,
+                allow_prompt=prompt,
             )
             if error:
                 if prompt:
