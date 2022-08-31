@@ -86,6 +86,31 @@ def get_loaded_config() -> Config:
     return cast(Config, STATE["config"])
 
 
+def get_file_system_config() -> FileSystemConfig:
+    config = get_loaded_config()
+    return config.file_system
+
+
+def get_shared_directories() -> set[Path]:
+    file_system = get_file_system_config()
+    return file_system.shared_directories
+
+
+def get_pickle_file() -> Path:
+    file_system = get_file_system_config()
+    return file_system.pickle_file
+
+
+def get_ignored_directories() -> set[Path]:
+    file_system = get_file_system_config()
+    return file_system.ignored_directories
+
+
+def get_music_player() -> str:
+    file_system = get_file_system_config()
+    return file_system.music_player
+
+
 def update_config_key(config: dict, old_value: str, new_value: str) -> dict:
     return {
         new_value if key == old_value else key: value for key, value in config.items()
