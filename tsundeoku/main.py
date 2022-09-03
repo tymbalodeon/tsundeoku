@@ -1,10 +1,7 @@
-from datetime import datetime
-from pathlib import Path
 from sys import argv
 
 from pydantic import ValidationError
 from rich import print
-from rich.console import Console
 from rich.markup import escape
 from rich.prompt import Confirm
 from typer import Argument, Context, Exit, Option, Typer
@@ -12,7 +9,6 @@ from typer import Argument, Context, Exit, Option, Typer
 from tsundeoku import __version__
 
 from .config.config import (
-    APP_NAME,
     STATE,
     StyleLevel,
     get_config,
@@ -23,7 +19,12 @@ from .config.config import (
 from .config.main import config_command
 from .import_new import get_albums, import_albums
 from .reformat import reformat_albums
-from .schedule import load_plist, unload_plist
+from .schedule import (
+    print_schedule_logs,
+    remove_schedule,
+    schedule_import,
+    show_currently_scheduled,
+)
 
 tsundeoku = Typer(
     help="CLI for importing audio files from a shared folder to a local library",
@@ -230,40 +231,24 @@ def reformat(
 @tsundeoku.command()
 def schedule(
     off: bool = Option(False, "--off", help="Turn off scheduling of import command."),
-    daily: datetime = Option(
+    on: str = Option(
         None,
-        "--daily",
-        help="Schedule import to run once daily at specified time",
-        formats=["%I:%M%p"],
+        "--on",
+        help="Schedule import to run at specified time.",
+        show_default=False,
     ),
-    hourly: datetime = Option(
-        None,
-        "--hourly",
-        help="Schedule import to run once hourly at specified minute",
-        formats=["%M"],
-    ),
-    logs: bool = Option(False, "--logs", help="Show scheduled import logs."),
+    logs: bool = Option(False, "--logs", "-l", help="Show scheduled import logs."),
 ):
     if logs:
-        stdout = Path(f"/tmp/{APP_NAME}.stdout")
-        stderr = Path(f"/tmp/{APP_NAME}.stderr")
-        console = Console()
-        console.rule("STDOUT")
-        print(stdout.read_text())
-        console.rule("STDERR")
-        print(stderr.read_text())
+        print_schedule_logs()
     elif off:
-        unload_plist()
-        print("Turned off scheduled import.")
-        return
-    elif daily:
-        hour = daily.hour
-        minute = daily.minute
-        load_plist(hour=hour, minute=minute)
-        time = daily.time().strftime("%I:%M%p")
-        print(f"Scheduled daily import for {time}.")
-    elif hourly:
-        minute = hourly.minute
-        load_plist(minute=minute)
-        time = f"**:{minute}"
-        print(f"Scheduled hourly import for {time}.")
+        remove_schedule()
+    elif on:
+        try:
+            message = schedule_import(on)
+        except ValueError:
+            print("ERROR")
+            return
+        print(message)
+    else:
+        show_currently_scheduled()

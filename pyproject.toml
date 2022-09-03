@@ -18,6 +18,7 @@ pydantic = "^1.10.1"
 rtoml = "^0.8.0"
 tomli = "^2.0.1"
 tomli-w = "^1.0.0"
+xmltodict = "^0.13.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.2"
