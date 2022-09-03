@@ -1,49 +1,63 @@
 from pathlib import Path
 from shutil import which
+from subprocess import run
+from typing import Literal
 
-from tsundeoku.config.config import APP_NAME
+from .config.config import APP_NAME
 
-HOME = Path.home()
-LOCAL_BIN = HOME / ".local/bin"
-LAUNCH_AGENTS = HOME / "Library/LaunchAgents"
-TSUNDEOKU_APP = which(APP_NAME, path=LOCAL_BIN)
-TSUNDEOKU_COMMAND = "import"
-TSUNDEOKU_OPTION = "--disallow-prompt"
-HOUR = 17
 LABEL = f"com.{APP_NAME}.import.plist"
-PLIST = (
-    '<?xml version="1.0" encoding="UTF-8"?>\n'
-    '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
-    '<plist version="1.0">\n'
-    "\t<dict>\n"
-    "\t\t<key>Label</key>\n"
-    f"\t\t<string>{LABEL}</string>\n"
-    "\t\t<key>StartCalendarInterval</key>\n"
-    "\t\t<dict>\n"
-    "\t\t\t<key>Hour</key>\n"
-    f"\t\t\t<integer>{HOUR}</integer>\n"
-    "\t\t\t<key>Minute</key>\n"
-    f"\t\t\t<integer>13</integer>\n"
-    "\t\t</dict>\n"
-    "\t\t<key>StandardErrorPath</key>\n"
-    f"\t\t<string>/tmp/{APP_NAME}.stderr</string>\n"
-    "\t\t<key>StandardOutPath</key>\n"
-    f"\t\t<string>/tmp/{APP_NAME}.stdout</string>\n"
-    # "\t\t<key>EnvironmentVariables</key>\n"
-    # "\t\t<dict>\n"
-    # "\t\t\t<key>PATH</key>\n"
-    # "\t\t\t<string>/.local/bin</string>\n"
-    # "\t\t</dict>\n"
-    "\t\t<key>ProgramArguments</key>\n"
-    "\t\t<array>\n"
-    f"\t\t\t<string>{TSUNDEOKU_APP}</string>\n"
-    f"\t\t\t<string>{TSUNDEOKU_COMMAND}</string>\n"
-    f"\t\t\t<string>{TSUNDEOKU_OPTION}</string>\n"
-    "\t\t</array>\n"
-    "\t\t</dict>\n"
-    "</plist>\n"
-)
+LAUNCHCTL = "launchctl"
 
-PLIST_FILE = LAUNCH_AGENTS / LABEL
-PLIST_FILE.touch()
-PLIST_FILE.write_text(PLIST)
+
+def get_plist_path() -> Path:
+    launch_agents = Path.home() / "library/launchagents"
+    return launch_agents / LABEL
+
+
+def get_calendar_interval(hour: str, minute: str) -> str:
+    hour_key = ""
+    minute_key = ""
+    if hour.isnumeric():
+        hour_key = f"\t\t\t<key>Hour</key>\n\t\t\t<integer>{hour}</integer>\n"
+    if minute.isnumeric():
+        minute_key = f"\t\t\t<key>Minute</key>\n\t\t\t<integer>{minute}</integer>\n"
+    return f"\t\t<key>StartCalendarInterval</key>\n\t\t<dict>\n{hour_key}{minute_key}\t\t</dict>\n"
+
+
+def load_plist(hour: str, minute: str):
+    local_bin = Path.home() / ".local/bin"
+    tsundeoku_app = which(APP_NAME, path=local_bin)
+    tsundeoku_command = "import"
+    tsundeoku_option = "--disallow-prompt"
+    calendar_interval = get_calendar_interval(hour, minute)
+    plist = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"'
+        ' "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
+        '<plist version="1.0">\n'
+        "\t<dict>\n"
+        "\t\t<key>Label</key>\n"
+        f"\t\t<string>{LABEL}</string>\n"
+        f"{calendar_interval}"
+        "\t\t<key>StandardErrorPath</key>\n"
+        f"\t\t<string>/tmp/{APP_NAME}.stderr</string>\n"
+        "\t\t<key>StandardOutPath</key>\n"
+        f"\t\t<string>/tmp/{APP_NAME}.stdout</string>\n"
+        "\t\t<key>ProgramArguments</key>\n"
+        "\t\t<array>\n"
+        f"\t\t\t<string>{tsundeoku_app}</string>\n"
+        f"\t\t\t<string>{tsundeoku_command}</string>\n"
+        f"\t\t\t<string>{tsundeoku_option}</string>\n"
+        "\t\t</array>\n"
+        "\t\t</dict>\n"
+        "</plist>\n"
+    )
+    plist_path = get_plist_path()
+    plist_path.write_text(plist)
+    run([LAUNCHCTL, "load", plist_path])
+
+
+def unload_plist():
+    plist_path = get_plist_path()
+    run([LAUNCHCTL, "unload", plist_path])
+    plist_path.unlink()

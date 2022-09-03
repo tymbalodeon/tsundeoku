@@ -1,9 +1,11 @@
 from sys import argv
+from typing import Literal
 
 from pydantic import ValidationError
 from rich import print
 from rich.markup import escape
 from rich.prompt import Confirm
+from tsundeoku.schedule import load_plist
 from typer import Argument, Context, Exit, Option, Typer
 
 from tsundeoku import __version__
@@ -126,8 +128,24 @@ def import_new(
         help="Allow prompts for user confirmation to update metadata.",
         show_default=False,
     ),
+    schedule: tuple[str, str] = Option(
+        None, "--schedule", help="Schedule the import command.", show_default=False
+    ),
+    remove_schedule: bool = Option(
+        None,
+        "--remove-schedule",
+        help="Remove scheduling of import command.",
+        show_default=False,
+    ),
 ):
     """Copy new adds from your shared folder to your local library"""
+    if remove_schedule:
+        print(remove_schedule)
+        return
+    elif schedule:
+        hour, minute = schedule
+        load_plist(hour, minute)
+        return
     print("Importing newly added albums...")
     config = get_loaded_config()
     import_settings = config.import_new

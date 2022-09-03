@@ -1,6 +1,6 @@
 from os import environ
 from pathlib import Path
-from subprocess import call
+from subprocess import run
 
 from rich import print
 from rich.markup import escape
@@ -53,7 +53,7 @@ def config(
         launch(str(config_path), locate=True)
     elif edit:
         editor = environ.get("EDITOR", "vim")
-        call([editor, config_path])
+        run([editor, config_path])
     elif reset_all:
         perform_reset = Confirm.ask(
             "Are you sure you want to reset your config to the default values?"
