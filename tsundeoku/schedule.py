@@ -1,7 +1,6 @@
 from pathlib import Path
 from shutil import which
 from subprocess import run
-from typing import Literal
 
 from .config.config import APP_NAME
 
@@ -14,22 +13,34 @@ def get_plist_path() -> Path:
     return launch_agents / LABEL
 
 
-def get_calendar_interval(hour: str, minute: str) -> str:
-    hour_key = ""
-    minute_key = ""
-    if hour.isnumeric():
+def unload_plist():
+    plist_path = get_plist_path()
+    run([LAUNCHCTL, "unload", plist_path], capture_output=True)
+    if plist_path.is_file():
+        plist_path.unlink()
+
+
+def get_calendar_interval(**kwargs: int) -> str:
+    hour_key = minute_key = ""
+    if "hour" in kwargs:
+        hour = kwargs["hour"]
         hour_key = f"\t\t\t<key>Hour</key>\n\t\t\t<integer>{hour}</integer>\n"
-    if minute.isnumeric():
+    if "minute" in kwargs:
+        minute = kwargs["minute"]
         minute_key = f"\t\t\t<key>Minute</key>\n\t\t\t<integer>{minute}</integer>\n"
-    return f"\t\t<key>StartCalendarInterval</key>\n\t\t<dict>\n{hour_key}{minute_key}\t\t</dict>\n"
+    return (
+        "\t\t<key>StartCalendarInterval</key>\n"
+        f"\t\t<dict>\n{hour_key}{minute_key}\t\t</dict>\n"
+    )
 
 
-def load_plist(hour: str, minute: str):
+def load_plist(**kwargs: int):
+    unload_plist()
     local_bin = Path.home() / ".local/bin"
     tsundeoku_app = which(APP_NAME, path=local_bin)
     tsundeoku_command = "import"
     tsundeoku_option = "--disallow-prompt"
-    calendar_interval = get_calendar_interval(hour, minute)
+    calendar_interval = get_calendar_interval(**kwargs)
     plist = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"'
@@ -55,9 +66,3 @@ def load_plist(hour: str, minute: str):
     plist_path = get_plist_path()
     plist_path.write_text(plist)
     run([LAUNCHCTL, "load", plist_path])
-
-
-def unload_plist():
-    plist_path = get_plist_path()
-    run([LAUNCHCTL, "unload", plist_path])
-    plist_path.unlink()

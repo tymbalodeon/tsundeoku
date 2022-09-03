@@ -1,16 +1,18 @@
+from datetime import datetime
+from pathlib import Path
 from sys import argv
-from typing import Literal
 
 from pydantic import ValidationError
 from rich import print
+from rich.console import Console
 from rich.markup import escape
 from rich.prompt import Confirm
-from tsundeoku.schedule import load_plist
 from typer import Argument, Context, Exit, Option, Typer
 
 from tsundeoku import __version__
 
 from .config.config import (
+    APP_NAME,
     STATE,
     StyleLevel,
     get_config,
@@ -21,6 +23,7 @@ from .config.config import (
 from .config.main import config_command
 from .import_new import get_albums, import_albums
 from .reformat import reformat_albums
+from .schedule import load_plist, unload_plist
 
 tsundeoku = Typer(
     help="CLI for importing audio files from a shared folder to a local library",
@@ -128,24 +131,8 @@ def import_new(
         help="Allow prompts for user confirmation to update metadata.",
         show_default=False,
     ),
-    schedule: tuple[str, str] = Option(
-        None, "--schedule", help="Schedule the import command.", show_default=False
-    ),
-    remove_schedule: bool = Option(
-        None,
-        "--remove-schedule",
-        help="Remove scheduling of import command.",
-        show_default=False,
-    ),
 ):
     """Copy new adds from your shared folder to your local library"""
-    if remove_schedule:
-        print(remove_schedule)
-        return
-    elif schedule:
-        hour, minute = schedule
-        load_plist(hour, minute)
-        return
     print("Importing newly added albums...")
     config = get_loaded_config()
     import_settings = config.import_new
@@ -238,3 +225,45 @@ def reformat(
     reformat_albums(
         remove_bracket_years, remove_bracket_instruments, expand_abbreviations
     )
+
+
+@tsundeoku.command()
+def schedule(
+    off: bool = Option(False, "--off", help="Turn off scheduling of import command."),
+    daily: datetime = Option(
+        None,
+        "--daily",
+        help="Schedule import to run once daily at specified time",
+        formats=["%I:%M%p"],
+    ),
+    hourly: datetime = Option(
+        None,
+        "--hourly",
+        help="Schedule import to run once hourly at specified minute",
+        formats=["%M"],
+    ),
+    logs: bool = Option(False, "--logs", help="Show scheduled import logs."),
+):
+    if logs:
+        stdout = Path(f"/tmp/{APP_NAME}.stdout")
+        stderr = Path(f"/tmp/{APP_NAME}.stderr")
+        console = Console()
+        console.rule("STDOUT")
+        print(stdout.read_text())
+        console.rule("STDERR")
+        print(stderr.read_text())
+    elif off:
+        unload_plist()
+        print("Turned off scheduled import.")
+        return
+    elif daily:
+        hour = daily.hour
+        minute = daily.minute
+        load_plist(hour=hour, minute=minute)
+        time = daily.time().strftime("%I:%M%p")
+        print(f"Scheduled daily import for {time}.")
+    elif hourly:
+        minute = hourly.minute
+        load_plist(minute=minute)
+        time = f"**:{minute}"
+        print(f"Scheduled hourly import for {time}.")
