@@ -6,10 +6,31 @@ from subprocess import run
 from rich.console import Console
 from xmltodict import parse
 
+from tsundeoku.style import stylize
+
 from .config.config import APP_NAME
 
 PLIST_LABEL = f"com.{APP_NAME}.import.plist"
 LAUNCHCTL = "launchctl"
+LOG_DIRECTORY = "/tmp/"
+
+
+def get_format_reference_link() -> str:
+    time_format_refence = (
+        "https://docs.python.org/3/library/"
+        "datetime.html#strftime-and-strptime-format-codes"
+    )
+    return f"link={time_format_refence}"
+
+
+def get_schedule_help_message():
+    format_reference_link = get_format_reference_link()
+    return (
+        "Schedule import to run at specified time, using the format %I:%M%p for daily,"
+        " **:%M"
+        " for hourly. See"
+        f" {stylize('here', [format_reference_link, 'underline'])} for more info."
+    )
 
 
 def get_plist_path() -> Path:
@@ -55,9 +76,9 @@ def get_plist_text(**hour_and_minute: int) -> str:
         f"\t\t<string>{PLIST_LABEL}</string>\n"
         f"{calendar_interval}"
         "\t\t<key>StandardErrorPath</key>\n"
-        f"\t\t<string>/tmp/{APP_NAME}.stderr</string>\n"
+        f"\t\t<string>{LOG_DIRECTORY}{APP_NAME}.stderr</string>\n"
         "\t\t<key>StandardOutPath</key>\n"
-        f"\t\t<string>/tmp/{APP_NAME}.stdout</string>\n"
+        f"\t\t<string>{LOG_DIRECTORY}{APP_NAME}.stdout</string>\n"
         "\t\t<key>ProgramArguments</key>\n"
         "\t\t<array>\n"
         f"\t\t\t<string>{tsundeoku_app}</string>\n"
@@ -95,7 +116,7 @@ def schedule_import(schedule_time: str) -> str:
 
 
 def print_schedule_logs():
-    log_path = Path("/tmp/")
+    log_path = Path(LOG_DIRECTORY)
     stdout = log_path / f"{APP_NAME}.stdout"
     stderr = log_path / f"{APP_NAME}.stderr"
     for log_file in [stdout, stderr]:

@@ -20,6 +20,7 @@ from .config.main import config_command
 from .import_new import get_albums, import_albums
 from .reformat import reformat_albums
 from .schedule import (
+    get_schedule_help_message,
     print_schedule_logs,
     remove_schedule,
     schedule_import,
@@ -234,7 +235,7 @@ def schedule(
     on: str = Option(
         None,
         "--on",
-        help="Schedule import to run at specified time.",
+        help=get_schedule_help_message(),
         show_default=False,
     ),
     logs: bool = Option(False, "--logs", "-l", help="Show scheduled import logs."),
