@@ -133,6 +133,14 @@ def rotate_logs():
             path.write_text("")
 
 
+def stamp_logs():
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_paths = get_log_paths()
+    for path in log_paths:
+        with path.open("a") as log:
+            log.write(f"---- {current_time} ----")
+
+
 def show_logs():
     stdout, stderr = get_log_paths()
     console = Console()

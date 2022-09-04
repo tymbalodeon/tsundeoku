@@ -26,6 +26,7 @@ from .schedule import (
     schedule_import,
     show_currently_scheduled,
     show_logs,
+    stamp_logs,
 )
 
 tsundeoku = Typer(
@@ -139,6 +140,7 @@ def import_new(
     """Copy new adds from your shared folder to your local library."""
     if is_scheduled_run:
         rotate_logs()
+        stamp_logs()
     print("Importing newly added albums...")
     config = get_loaded_config()
     import_settings = config.import_new
