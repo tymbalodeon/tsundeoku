@@ -6,14 +6,11 @@ from subprocess import run
 from rich.console import Console
 from xmltodict import parse
 
-from .style import stylize
-
-
 from .config.config import APP_NAME
+from .style import stylize
 
 PLIST_LABEL = f"com.{APP_NAME}.import.plist"
 LAUNCHCTL = "launchctl"
-LOG_DIRECTORY = "/tmp/"
 
 
 def get_format_reference_link() -> str:
@@ -68,7 +65,35 @@ def get_command_args():
     return strings
 
 
+def get_log_paths() -> tuple[Path, Path]:
+    log_path = Path("/tmp/")
+    stdout = log_path / f"{APP_NAME}.stdout"
+    stderr = log_path / f"{APP_NAME}.stderr"
+    for log_file in [stdout, stderr]:
+        if not log_file.exists():
+            log_file.touch()
+    return stdout, stderr
+
+
+def rotate_logs():
+    current_day_of_week = datetime.today().weekday()
+    print(current_day_of_week)
+    if current_day_of_week == 0:
+        log_paths = get_log_paths()
+        for path in log_paths:
+            path.write_text("")
+
+
+def stamp_logs():
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_paths = get_log_paths()
+    for path in log_paths:
+        with path.open("a") as log:
+            log.write(f"---- {current_time} ----")
+
+
 def get_plist_text(hour: int | None, minute: int | None) -> str:
+    stdout, stderr = get_log_paths()
     calendar_interval = get_calendar_interval(hour, minute)
     command_args = get_command_args()
     return (
@@ -80,9 +105,9 @@ def get_plist_text(hour: int | None, minute: int | None) -> str:
         "\t\t<key>Label</key>\n"
         f"\t\t<string>{PLIST_LABEL}</string>\n"
         "\t\t<key>StandardErrorPath</key>\n"
-        f"\t\t<string>{LOG_DIRECTORY}{APP_NAME}.stderr</string>\n"
+        f"\t\t<string>{stdout}</string>\n"
         "\t\t<key>StandardOutPath</key>\n"
-        f"\t\t<string>{LOG_DIRECTORY}{APP_NAME}.stdout</string>\n"
+        f"\t\t<string>{stderr}</string>\n"
         f"{calendar_interval}"
         "\t\t<key>ProgramArguments</key>\n"
         "\t\t<array>\n"
@@ -119,33 +144,6 @@ def schedule_import(schedule_time: str) -> str:
     minute = scheduled_time.minute
     load_plist(hour=hour, minute=minute)
     return f"{message} {schedule_type} at {display_time}."
-
-
-def get_log_paths() -> tuple[Path, Path]:
-    log_path = Path(LOG_DIRECTORY)
-    stdout = log_path / f"{APP_NAME}.stdout"
-    stderr = log_path / f"{APP_NAME}.stderr"
-    for log_file in [stdout, stderr]:
-        if not log_file.exists():
-            log_file.touch()
-    return stdout, stderr
-
-
-def rotate_logs():
-    current_day_of_week = datetime.today().weekday()
-    print(current_day_of_week)
-    if current_day_of_week == 0:
-        log_paths = get_log_paths()
-        for path in log_paths:
-            path.write_text("")
-
-
-def stamp_logs():
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    log_paths = get_log_paths()
-    for path in log_paths:
-        with path.open("a") as log:
-            log.write(f"---- {current_time} ----")
 
 
 def show_logs():
