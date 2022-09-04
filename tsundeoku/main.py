@@ -133,7 +133,7 @@ def import_new(
         show_default=False,
     ),
 ):
-    """Copy new adds from your shared folder to your local library"""
+    """Copy new adds from your shared folder to your local library."""
     print("Importing newly added albums...")
     config = get_loaded_config()
     import_settings = config.import_new
@@ -239,6 +239,7 @@ def schedule(
     ),
     logs: bool = Option(False, "--logs", "-l", help="Show scheduled import logs."),
 ):
+    """Schedule import command to run automatically."""
     if logs:
         print_schedule_logs()
     elif off:
@@ -246,9 +247,8 @@ def schedule(
     elif on:
         try:
             message = schedule_import(on)
+            print(message)
         except ValueError:
             print("ERROR")
-            return
-        print(message)
     else:
         show_currently_scheduled()
