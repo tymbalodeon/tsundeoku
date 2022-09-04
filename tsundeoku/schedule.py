@@ -146,13 +146,19 @@ def schedule_import(schedule_time: str) -> str:
     return f"{message} {schedule_type} at {display_time}."
 
 
+def tail(text: str, number_of_lines=10):
+    lines = text.splitlines()
+    for line in lines[-number_of_lines:]:
+        print(line)
+
+
 def show_logs():
     stdout, stderr = get_log_paths()
     console = Console()
     console.rule("STDOUT")
-    print(stdout.read_text())
+    tail(stdout.read_text())
     console.rule("STDERR")
-    print(stderr.read_text())
+    tail(stderr.read_text())
 
 
 def show_currently_scheduled():
