@@ -95,8 +95,12 @@ def schedule_import(schedule_time: str) -> str:
 
 
 def print_schedule_logs():
-    stdout = Path(f"/tmp/{APP_NAME}.stdout")
-    stderr = Path(f"/tmp/{APP_NAME}.stderr")
+    log_path = Path("/tmp/")
+    stdout = log_path / f"{APP_NAME}.stdout"
+    stderr = log_path / f"{APP_NAME}.stderr"
+    for log_file in [stdout, stderr]:
+        if not log_file.exists():
+            log_file.touch()
     console = Console()
     console.rule("STDOUT")
     print(stdout.read_text())
