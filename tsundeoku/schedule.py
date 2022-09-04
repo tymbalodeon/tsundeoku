@@ -179,8 +179,8 @@ def show_currently_scheduled():
 
 def send_email(contents: str):
     config = get_loaded_config()
-    username = config.email.username
-    password = config.email.password
+    username = config.notifications.username
+    password = config.notifications.password
     email = SMTP(username, password)
     subject = f"{APP_NAME}"
     email.send(subject=subject, contents=contents)
