@@ -6,12 +6,14 @@ from subprocess import run
 from rich.console import Console
 from xmltodict import parse
 
-from tsundeoku.style import stylize
+from .style import stylize
+
 
 from .config.config import APP_NAME
 
 PLIST_LABEL = f"com.{APP_NAME}.import.plist"
 LAUNCHCTL = "launchctl"
+LOG_DIRECTORY = "/tmp/"
 
 
 def get_format_reference_link() -> str:
@@ -77,6 +79,10 @@ def get_plist_text(hour: int | None, minute: int | None) -> str:
         "\t<dict>\n"
         "\t\t<key>Label</key>\n"
         f"\t\t<string>{PLIST_LABEL}</string>\n"
+        "\t\t<key>StandardErrorPath</key>\n"
+        f"\t\t<string>{LOG_DIRECTORY}{APP_NAME}.stderr</string>\n"
+        "\t\t<key>StandardOutPath</key>\n"
+        f"\t\t<string>{LOG_DIRECTORY}{APP_NAME}.stdout</string>\n"
         f"{calendar_interval}"
         "\t\t<key>ProgramArguments</key>\n"
         "\t\t<array>\n"
@@ -116,7 +122,7 @@ def schedule_import(schedule_time: str) -> str:
 
 
 def get_log_paths() -> tuple[Path, Path]:
-    log_path = Path("/tmp/")
+    log_path = Path(LOG_DIRECTORY)
     stdout = log_path / f"{APP_NAME}.stdout"
     stderr = log_path / f"{APP_NAME}.stderr"
     for log_file in [stdout, stderr]:
