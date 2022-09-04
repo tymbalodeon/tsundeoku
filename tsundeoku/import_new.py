@@ -22,6 +22,7 @@ from .regex import (
     SOLO_INSTRUMENT_REGEX,
     YEAR_RANGE_REGEX,
 )
+from .schedule import send_email
 from .style import StyleLevel, print_with_theme, stylize
 from .tags import (
     Tracks,
@@ -446,6 +447,7 @@ def import_albums(
     ask_before_artist_update: bool,
     import_all: bool,
     allow_prompt: bool,
+    is_scheduled_run: bool,
 ):
     errors: dict[ImportError, list] = {import_error: [] for import_error in ImportError}
     imports = False
@@ -509,4 +511,15 @@ def import_albums(
             print_with_theme(error_message, level=StyleLevel.INFO)
             for album in error_albums:
                 print(f"- {album}")
+    if is_scheduled_run:
+        config = get_loaded_config()
+        if config.email.on:
+            error_album_count = (
+                sum(len(value) for value in errors.values()) + prompt_skipped_count
+            )
+            if error_album_count:
+                contents = (
+                    f"{error_album_count} albums cannot be automatically imported."
+                )
+                send_email(contents)
     return imports, errors, importable_error_albums

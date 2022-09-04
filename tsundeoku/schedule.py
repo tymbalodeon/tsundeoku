@@ -5,8 +5,9 @@ from subprocess import run
 
 from rich.console import Console
 from xmltodict import parse
+from yagmail import SMTP
 
-from .config.config import APP_NAME
+from .config.config import APP_NAME, get_loaded_config
 from .style import stylize
 
 PLIST_LABEL = f"com.{APP_NAME}.import.plist"
@@ -174,3 +175,12 @@ def show_currently_scheduled():
         scheduled_time = f"**:{minute}"
         message = f"{message} hour at {scheduled_time} minutes."
     print(message)
+
+
+def send_email(contents: str):
+    config = get_loaded_config()
+    username = config.email.username
+    password = config.email.password
+    email = SMTP(username, password)
+    subject = f"{APP_NAME}"
+    email.send(subject=subject, contents=contents)

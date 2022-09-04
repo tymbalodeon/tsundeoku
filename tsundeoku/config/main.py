@@ -273,3 +273,43 @@ def reformat(
     except InvalidConfig:
         return
     print_config_section(reformat)
+
+
+@config_command.command()
+def email(
+    context: Context,
+    username: str = Option(
+        None,
+        "--username",
+        help="Set email username for sending notifications.",
+        show_default=False,
+    ),
+    password: str = Option(
+        None,
+        "--password",
+        help="Set email password for sending notifications.",
+        show_default=False,
+    ),
+    on: bool = Option(
+        False,
+        "--on/--off",
+        help="Turn email notifications from scheduled imports on or off.",
+    ),
+):
+    """Show and set default values for "reformat" command."""
+    config = get_loaded_config()
+    email = config.email
+    if no_updates_provided(context.params):
+        print_config_section(email)
+        return
+    if username is not None:
+        email.username = username
+    if password is not None:
+        email.password = password
+    if on:
+        email.on = on
+    try:
+        write_config_values(config)
+    except InvalidConfig:
+        return
+    print_config_section(email)

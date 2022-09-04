@@ -164,6 +164,7 @@ def import_new(
         ask_before_artist_update,
         import_all,
         allow_prompt,
+        is_scheduled_run,
     )
     if imports and reformat:
         reformat_settings = config.reformat
