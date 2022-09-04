@@ -66,10 +66,10 @@ class ReformatConfig(BaseModel):
 
 
 class NotificationsConfig(BaseModel):
+    system_on = False
+    email_on = False
     username = ""
     password = ""
-    email_on = False
-    system_on = False
 
 
 class Config(BaseModel):
