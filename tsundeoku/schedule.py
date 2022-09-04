@@ -8,7 +8,7 @@ from xmltodict import parse
 from yagmail import SMTP
 
 from .config.config import APP_NAME, get_loaded_config
-from .style import stylize
+from .style import StyleLevel, print_with_theme, stylize
 
 PLIST_LABEL = f"com.{APP_NAME}.import.plist"
 LAUNCHCTL = "launchctl"
@@ -46,9 +46,9 @@ def remove_schedule():
 
 def get_calendar_interval(hour: int | None, minute: int | None) -> str:
     hour_key = minute_key = ""
-    if hour:
+    if hour is not None:
         hour_key = f"\t\t\t<key>Hour</key>\n\t\t\t<integer>{hour}</integer>\n"
-    if minute:
+    if minute is not None:
         minute_key = f"\t\t\t<key>Minute</key>\n\t\t\t<integer>{minute}</integer>\n"
     return (
         "\t\t<key>StartCalendarInterval</key>\n"
@@ -163,7 +163,11 @@ def show_currently_scheduled():
         return
     plist_path = get_plist_path()
     plist = parse(plist_path.read_bytes())
-    hour_and_minute = plist["plist"]["dict"]["dict"]["integer"]
+    try:
+        hour_and_minute = plist["plist"]["dict"]["dict"]["integer"]
+    except TypeError:
+        print_with_theme("Error retrieving schedule information.", StyleLevel.ERROR)
+        return
     hour = "**"
     message = "Import is currently scheduled for every"
     if isinstance(hour_and_minute, list):
@@ -171,7 +175,7 @@ def show_currently_scheduled():
         scheduled_time = time(hour, minute).strftime("%I:%M%p")
         message = f"{message} day at {scheduled_time}."
     else:
-        minute = hour_and_minute
+        minute = time(int(hour_and_minute)).strftime("%M")
         scheduled_time = f"**:{minute}"
         message = f"{message} hour at {scheduled_time} minutes."
     print(message)
