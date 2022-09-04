@@ -12,7 +12,6 @@ from .config.config import APP_NAME
 
 PLIST_LABEL = f"com.{APP_NAME}.import.plist"
 LAUNCHCTL = "launchctl"
-LOG_DIRECTORY = "/tmp/"
 
 
 def get_format_reference_link() -> str:
@@ -46,13 +45,11 @@ def remove_schedule():
     print("Turned off scheduled import.")
 
 
-def get_calendar_interval(**hour_and_minute: int) -> str:
+def get_calendar_interval(hour: int | None, minute: int | None) -> str:
     hour_key = minute_key = ""
-    if "hour" in hour_and_minute:
-        hour = hour_and_minute["hour"]
+    if hour:
         hour_key = f"\t\t\t<key>Hour</key>\n\t\t\t<integer>{hour}</integer>\n"
-    if "minute" in hour_and_minute:
-        minute = hour_and_minute["minute"]
+    if minute:
         minute_key = f"\t\t\t<key>Minute</key>\n\t\t\t<integer>{minute}</integer>\n"
     return (
         "\t\t<key>StartCalendarInterval</key>\n"
@@ -60,12 +57,18 @@ def get_calendar_interval(**hour_and_minute: int) -> str:
     )
 
 
-def get_plist_text(**hour_and_minute: int) -> str:
+def get_command_args():
     local_bin = Path.home() / ".local/bin"
     tsundeoku_app = which(APP_NAME, path=local_bin)
-    tsundeoku_command = "import"
-    tsundeoku_option = "--disallow-prompt"
-    calendar_interval = get_calendar_interval(**hour_and_minute)
+    command_args = [tsundeoku_app, "import", "--disallow-prompt", "--scheduled-run"]
+    strings = ""
+    for arg in command_args:
+        strings = f"{strings}\t\t\t<string>{arg}</string>\n"
+    return strings
+
+
+def get_plist_text(hour: int | None, minute: int | None) -> str:
+    calendar_interval = get_calendar_interval(hour, minute)
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"'
@@ -75,53 +78,63 @@ def get_plist_text(**hour_and_minute: int) -> str:
         "\t\t<key>Label</key>\n"
         f"\t\t<string>{PLIST_LABEL}</string>\n"
         f"{calendar_interval}"
-        "\t\t<key>StandardErrorPath</key>\n"
-        f"\t\t<string>{LOG_DIRECTORY}{APP_NAME}.stderr</string>\n"
-        "\t\t<key>StandardOutPath</key>\n"
-        f"\t\t<string>{LOG_DIRECTORY}{APP_NAME}.stdout</string>\n"
-        "\t\t<key>ProgramArguments</key>\n"
         "\t\t<array>\n"
-        f"\t\t\t<string>{tsundeoku_app}</string>\n"
-        f"\t\t\t<string>{tsundeoku_command}</string>\n"
-        f"\t\t\t<string>{tsundeoku_option}</string>\n"
+        f"{get_command_args}"
         "\t\t</array>\n"
         "\t\t</dict>\n"
         "</plist>\n"
     )
 
 
-def load_plist(**hour_and_minute: int):
+def load_plist(hour: int | None, minute: int | None):
     remove_schedule()
-    plist = get_plist_text(**hour_and_minute)
+    plist = get_plist_text(hour, minute)
     plist_path = get_plist_path()
     plist_path.write_text(plist)
     run([LAUNCHCTL, "load", plist_path])
 
 
 def schedule_import(schedule_time: str) -> str:
+    message = "Schedule import for every"
+    hour = None
     if "*" in schedule_time:
-        scheduled_time = datetime.strptime(schedule_time, "**:%M")
-        minute = scheduled_time.minute
-        load_plist(minute=minute)
-        padded_minute = scheduled_time.strftime("%M")
-        display_time = f"**:{padded_minute}"
-        return f"Scheduled import for every hour at {display_time} minutes."
+        schedule_type = "hour"
+        time_format = "%M"
+        scheduled_time = datetime.strptime(schedule_time, f"**:{time_format}")
+        padded_minute = scheduled_time.strftime(time_format)
+        display_time = f"**:{padded_minute} minutes"
     else:
-        scheduled_time = datetime.strptime(schedule_time, "%I:%M%p")
+        schedule_type = "day"
+        time_format = "%I:%M%p"
+        scheduled_time = datetime.strptime(schedule_time, time_format)
         hour = scheduled_time.hour
-        minute = scheduled_time.minute
-        load_plist(hour=hour, minute=minute)
-        display_time = scheduled_time.time().strftime("%I:%M%p")
-        return f"Scheduled import for every day at {display_time}."
+        display_time = scheduled_time.strftime(time_format)
+    minute = scheduled_time.minute
+    load_plist(hour=hour, minute=minute)
+    return f"{message} {schedule_type} at {display_time}."
 
 
-def print_schedule_logs():
-    log_path = Path(LOG_DIRECTORY)
+def get_log_paths() -> tuple[Path, Path]:
+    log_path = Path("/tmp/")
     stdout = log_path / f"{APP_NAME}.stdout"
     stderr = log_path / f"{APP_NAME}.stderr"
     for log_file in [stdout, stderr]:
         if not log_file.exists():
             log_file.touch()
+    return stdout, stderr
+
+
+def rotate_logs():
+    current_day_of_week = datetime.today().weekday()
+    print(current_day_of_week)
+    if current_day_of_week == 0:
+        log_paths = get_log_paths()
+        for path in log_paths:
+            path.write_text("")
+
+
+def show_logs():
+    stdout, stderr = get_log_paths()
     console = Console()
     console.rule("STDOUT")
     print(stdout.read_text())

@@ -9,13 +9,11 @@ from rich.markup import escape as rich_escape
 from rich.prompt import Prompt
 
 from .config.config import (
-    StyleLevel,
     get_ignored_directories,
     get_loaded_config,
     get_music_player,
     get_pickle_file,
     get_shared_directories,
-    print_with_theme,
 )
 from .library import get_library_tracks, modify_tracks
 from .regex import (
@@ -24,7 +22,7 @@ from .regex import (
     SOLO_INSTRUMENT_REGEX,
     YEAR_RANGE_REGEX,
 )
-from .style import stylize
+from .style import StyleLevel, print_with_theme, stylize
 from .tags import (
     Tracks,
     get_album_title,
@@ -446,8 +444,8 @@ def import_albums(
     reformat: bool,
     ask_before_disc_update: bool,
     ask_before_artist_update: bool,
-    import_all=False,
-    prompt=True,
+    import_all: bool,
+    allow_prompt: bool,
 ):
     errors: dict[ImportError, list] = {import_error: [] for import_error in ImportError}
     imports = False
@@ -471,10 +469,10 @@ def import_albums(
                 reformat,
                 ask_before_disc_update,
                 ask_before_artist_update,
-                allow_prompt=prompt,
+                allow_prompt=allow_prompt,
             )
             if error:
-                if prompt:
+                if allow_prompt:
                     errors[error].append(album)
                     if error in IMPORTABLE_ERROR_KEYS:
                         importable_error_albums.append(album)
@@ -487,13 +485,13 @@ def import_albums(
                 import_wav_files(album)
                 history_add([album.encode()])
                 wav_imports += 1
-            elif prompt:
+            elif allow_prompt:
                 errors[ImportError.WAV_FILES].append(album)
                 importable_error_albums.append(album)
             else:
                 prompt_skipped_count += 1
         if not tracks and not wav_tracks:
-            if prompt:
+            if allow_prompt:
                 errors[ImportError.NO_TRACKS].append(album)
             else:
                 prompt_skipped_count += 1
@@ -502,7 +500,7 @@ def import_albums(
         print(f"Imported {wav_imports} {album_plural} in WAV format.")
     if not import_all:
         print(f"Skipped {skipped_count} previously imported albums.")
-    if not prompt:
+    if not allow_prompt:
         print(f"Skipped {prompt_skipped_count} albums requiring prompt.")
     for error_name, error_albums in errors.items():
         if error_albums:

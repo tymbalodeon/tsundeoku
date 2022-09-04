@@ -21,10 +21,11 @@ from .import_new import get_albums, import_albums
 from .reformat import reformat_albums
 from .schedule import (
     get_schedule_help_message,
-    print_schedule_logs,
     remove_schedule,
+    rotate_logs,
     schedule_import,
     show_currently_scheduled,
+    show_logs,
 )
 
 tsundeoku = Typer(
@@ -133,8 +134,11 @@ def import_new(
         help="Allow prompts for user confirmation to update metadata.",
         show_default=False,
     ),
+    is_scheduled_run: bool = Option(False, "--scheduled-run", hidden=True),
 ):
     """Copy new adds from your shared folder to your local library."""
+    if is_scheduled_run:
+        rotate_logs()
     print("Importing newly added albums...")
     config = get_loaded_config()
     import_settings = config.import_new
@@ -150,13 +154,14 @@ def import_new(
     if not albums:
         first_time = True
         albums = get_albums()
+    import_all = not first_time
     imports, errors, importable_error_albums = import_albums(
         albums,
         reformat,
         ask_before_disc_update,
         ask_before_artist_update,
-        import_all=not first_time,
-        prompt=allow_prompt,
+        import_all,
+        allow_prompt,
     )
     if imports and reformat:
         reformat_settings = config.reformat
@@ -242,7 +247,7 @@ def schedule(
 ):
     """Schedule import command to run automatically."""
     if logs:
-        print_schedule_logs()
+        show_logs()
     elif off:
         remove_schedule()
     elif on:
