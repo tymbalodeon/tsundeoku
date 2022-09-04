@@ -174,7 +174,8 @@ def import_new(
             remove_bracket_years, remove_bracket_instruments, expand_abbreviations
         )
     if (
-        first_time
+        not is_scheduled_run
+        and first_time
         and errors
         and importable_error_albums
         and Confirm.ask("Would you like to import all albums anyway?")
