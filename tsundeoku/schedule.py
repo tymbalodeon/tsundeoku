@@ -77,7 +77,6 @@ def get_log_paths() -> tuple[Path, Path]:
 
 def rotate_logs():
     current_day_of_week = datetime.today().weekday()
-    print(current_day_of_week)
     if current_day_of_week == 0:
         log_paths = get_log_paths()
         for path in log_paths:
@@ -89,7 +88,7 @@ def stamp_logs():
     log_paths = get_log_paths()
     for path in log_paths:
         with path.open("a") as log:
-            log.write(f"---- {current_time} ----")
+            log.write(f"---- {current_time} ----\n")
 
 
 def get_plist_text(hour: int | None, minute: int | None) -> str:
@@ -104,9 +103,9 @@ def get_plist_text(hour: int | None, minute: int | None) -> str:
         "\t<dict>\n"
         "\t\t<key>Label</key>\n"
         f"\t\t<string>{PLIST_LABEL}</string>\n"
-        "\t\t<key>StandardErrorPath</key>\n"
-        f"\t\t<string>{stdout}</string>\n"
         "\t\t<key>StandardOutPath</key>\n"
+        f"\t\t<string>{stdout}</string>\n"
+        "\t\t<key>StandardErrorPath</key>\n"
         f"\t\t<string>{stderr}</string>\n"
         f"{calendar_interval}"
         "\t\t<key>ProgramArguments</key>\n"
