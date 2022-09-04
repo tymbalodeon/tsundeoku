@@ -42,7 +42,6 @@ def remove_schedule():
     run([LAUNCHCTL, "unload", plist_path], capture_output=True)
     if plist_path.is_file():
         plist_path.unlink()
-    print("Turned off scheduled import.")
 
 
 def get_calendar_interval(hour: int | None, minute: int | None) -> str:
@@ -69,6 +68,7 @@ def get_command_args():
 
 def get_plist_text(hour: int | None, minute: int | None) -> str:
     calendar_interval = get_calendar_interval(hour, minute)
+    command_args = get_command_args()
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"'
@@ -78,10 +78,11 @@ def get_plist_text(hour: int | None, minute: int | None) -> str:
         "\t\t<key>Label</key>\n"
         f"\t\t<string>{PLIST_LABEL}</string>\n"
         f"{calendar_interval}"
+        "\t\t<key>ProgramArguments</key>\n"
         "\t\t<array>\n"
-        f"{get_command_args}"
+        f"{command_args}"
         "\t\t</array>\n"
-        "\t\t</dict>\n"
+        "\t</dict>\n"
         "</plist>\n"
     )
 

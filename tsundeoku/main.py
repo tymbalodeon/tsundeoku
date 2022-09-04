@@ -252,6 +252,7 @@ def schedule(
         show_logs()
     elif off:
         remove_schedule()
+        print("Turned off scheduled import.")
     elif on:
         try:
             message = schedule_import(on)
