@@ -1,6 +1,6 @@
 from os import environ
 from pathlib import Path
-from subprocess import call
+from subprocess import run
 
 from rich import print
 from rich.markup import escape
@@ -53,7 +53,7 @@ def config(
         launch(str(config_path), locate=True)
     elif edit:
         editor = environ.get("EDITOR", "vim")
-        call([editor, config_path])
+        run([editor, config_path])
     elif reset_all:
         perform_reset = Confirm.ask(
             "Are you sure you want to reset your config to the default values?"
@@ -273,3 +273,50 @@ def reformat(
     except InvalidConfig:
         return
     print_config_section(reformat)
+
+
+@config_command.command()
+def notifications(
+    context: Context,
+    username: str = Option(
+        None,
+        "--username",
+        help="Set email username for sending notifications.",
+        show_default=False,
+    ),
+    password: str = Option(
+        None,
+        "--password",
+        help="Set email password for sending notifications.",
+        show_default=False,
+    ),
+    email_on: bool = Option(
+        None,
+        "--email-on/--email-off",
+        help="Turn email notifications from scheduled imports on or off.",
+    ),
+    system_on: bool = Option(
+        None,
+        "--system-on/--system-off",
+        help="Turn system notifications from scheduled imports on or off.",
+    ),
+):
+    """Show and set values for notifications from scheduled import command."""
+    config = get_loaded_config()
+    notifications = config.notifications
+    if no_updates_provided(context.params):
+        print_config_section(notifications)
+        return
+    if username is not None:
+        notifications.username = username
+    if password is not None:
+        notifications.password = password
+    if email_on is not None:
+        notifications.email_on = email_on
+    if system_on is not None:
+        notifications.system_on = system_on
+    try:
+        write_config_values(config)
+    except InvalidConfig:
+        return
+    print_config_section(notifications)

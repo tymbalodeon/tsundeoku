@@ -7,6 +7,7 @@ from rich import print
 from .library import get_library, modify_tracks
 from .regex import (
     BRACKET_YEAR_REGEX,
+    EDITION_REGEX,
     ORIGINAL_REGEX,
     RECORDING_REGEX,
     RECORDINGS_REGEX,
@@ -58,6 +59,11 @@ ACTIONS = {
             message='Replacing "Orig." with "Original" in all "album" tags...',
             find=ORIGINAL_REGEX,
             replace="Original",
+        ),
+        Action(
+            message='Replacing "Ed." with "Edition" in all "album" tags...',
+            find=EDITION_REGEX,
+            replace="Edition",
         ),
     ],
 }

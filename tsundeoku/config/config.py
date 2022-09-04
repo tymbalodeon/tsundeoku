@@ -11,6 +11,7 @@ from pydantic import (
     validator,
 )
 from rich import print
+from rich.markup import escape
 from tomli import loads
 from tomli_w import dumps
 
@@ -64,10 +65,18 @@ class ReformatConfig(BaseModel):
     expand_abbreviations = True
 
 
+class NotificationsConfig(BaseModel):
+    username = ""
+    password = ""
+    email_on = False
+    system_on = False
+
+
 class Config(BaseModel):
     file_system = FileSystemConfig()
     import_new = ImportConfig()
     reformat = ReformatConfig()
+    notifications = NotificationsConfig()
 
 
 STATE = {"config": Config()}
@@ -190,10 +199,18 @@ def print_config_section(config: BaseModel | dict):
     for key, value in section.items():
         if isinstance(value, set):
             value = {path.as_posix() for path in value} or None
+        elif key == "password" and value:
+            value = "********"
         print(f"{key}={value}")
 
 
 def print_config_values():
     config = get_loaded_config()
-    for section in config.dict().values():
-        print_config_section(section)
+    first_item = True
+    for section, values in config.dict().items():
+        if not first_item:
+            print()
+        section = escape(f"[{section}]")
+        print(section)
+        print_config_section(values)
+        first_item = False

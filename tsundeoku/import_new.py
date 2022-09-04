@@ -5,17 +5,17 @@ from pickle import load
 from re import escape, search, sub
 
 from beets.importer import history_add
+from pync import notify
 from rich.markup import escape as rich_escape
 from rich.prompt import Prompt
 
 from .config.config import (
-    StyleLevel,
+    APP_NAME,
     get_ignored_directories,
     get_loaded_config,
     get_music_player,
     get_pickle_file,
     get_shared_directories,
-    print_with_theme,
 )
 from .library import get_library_tracks, modify_tracks
 from .regex import (
@@ -24,7 +24,8 @@ from .regex import (
     SOLO_INSTRUMENT_REGEX,
     YEAR_RANGE_REGEX,
 )
-from .style import stylize
+from .schedule import send_email
+from .style import StyleLevel, print_with_theme, stylize
 from .tags import (
     Tracks,
     get_album_title,
@@ -446,8 +447,9 @@ def import_albums(
     reformat: bool,
     ask_before_disc_update: bool,
     ask_before_artist_update: bool,
-    import_all=False,
-    prompt=True,
+    import_all: bool,
+    allow_prompt: bool,
+    is_scheduled_run: bool,
 ):
     errors: dict[ImportError, list] = {import_error: [] for import_error in ImportError}
     imports = False
@@ -471,10 +473,10 @@ def import_albums(
                 reformat,
                 ask_before_disc_update,
                 ask_before_artist_update,
-                allow_prompt=prompt,
+                allow_prompt=allow_prompt,
             )
             if error:
-                if prompt:
+                if allow_prompt:
                     errors[error].append(album)
                     if error in IMPORTABLE_ERROR_KEYS:
                         importable_error_albums.append(album)
@@ -487,13 +489,13 @@ def import_albums(
                 import_wav_files(album)
                 history_add([album.encode()])
                 wav_imports += 1
-            elif prompt:
+            elif allow_prompt:
                 errors[ImportError.WAV_FILES].append(album)
                 importable_error_albums.append(album)
             else:
                 prompt_skipped_count += 1
         if not tracks and not wav_tracks:
-            if prompt:
+            if allow_prompt:
                 errors[ImportError.NO_TRACKS].append(album)
             else:
                 prompt_skipped_count += 1
@@ -502,7 +504,7 @@ def import_albums(
         print(f"Imported {wav_imports} {album_plural} in WAV format.")
     if not import_all:
         print(f"Skipped {skipped_count} previously imported albums.")
-    if not prompt:
+    if not allow_prompt:
         print(f"Skipped {prompt_skipped_count} albums requiring prompt.")
     for error_name, error_albums in errors.items():
         if error_albums:
@@ -511,4 +513,20 @@ def import_albums(
             print_with_theme(error_message, level=StyleLevel.INFO)
             for album in error_albums:
                 print(f"- {album}")
+    if is_scheduled_run:
+        config = get_loaded_config()
+        email_on = config.notifications.email_on
+        system_on = config.notifications.system_on
+        if email_on or system_on:
+            error_album_count = (
+                sum(len(value) for value in errors.values()) + prompt_skipped_count
+            )
+            if error_album_count:
+                contents = (
+                    f"{error_album_count} albums cannot be automatically imported."
+                )
+                if email_on:
+                    send_email(contents)
+                if system_on:
+                    notify(contents, title=APP_NAME)
     return imports, errors, importable_error_albums

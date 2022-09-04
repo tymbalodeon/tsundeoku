@@ -19,6 +19,15 @@ from .config.config import (
 from .config.main import config_command
 from .import_new import get_albums, import_albums
 from .reformat import reformat_albums
+from .schedule import (
+    get_schedule_help_message,
+    remove_schedule,
+    rotate_logs,
+    schedule_import,
+    show_currently_scheduled,
+    show_logs,
+    stamp_logs,
+)
 
 tsundeoku = Typer(
     help="CLI for importing audio files from a shared folder to a local library",
@@ -126,8 +135,12 @@ def import_new(
         help="Allow prompts for user confirmation to update metadata.",
         show_default=False,
     ),
+    is_scheduled_run: bool = Option(False, "--scheduled-run", hidden=True),
 ):
-    """Copy new adds from your shared folder to your local library"""
+    """Copy new adds from your shared folder to your local library."""
+    if is_scheduled_run:
+        rotate_logs()
+        stamp_logs()
     print("Importing newly added albums...")
     config = get_loaded_config()
     import_settings = config.import_new
@@ -143,13 +156,15 @@ def import_new(
     if not albums:
         first_time = True
         albums = get_albums()
+    import_all = not first_time
     imports, errors, importable_error_albums = import_albums(
         albums,
         reformat,
         ask_before_disc_update,
         ask_before_artist_update,
-        import_all=not first_time,
-        prompt=allow_prompt,
+        import_all,
+        allow_prompt,
+        is_scheduled_run,
     )
     if imports and reformat:
         reformat_settings = config.reformat
@@ -160,7 +175,8 @@ def import_new(
             remove_bracket_years, remove_bracket_instruments, expand_abbreviations
         )
     if (
-        first_time
+        not is_scheduled_run
+        and first_time
         and errors
         and importable_error_albums
         and Confirm.ask("Would you like to import all albums anyway?")
@@ -220,3 +236,30 @@ def reformat(
     reformat_albums(
         remove_bracket_years, remove_bracket_instruments, expand_abbreviations
     )
+
+
+@tsundeoku.command()
+def schedule(
+    off: bool = Option(False, "--off", help="Turn off scheduling of import command."),
+    on: str = Option(
+        None,
+        "--on",
+        help=get_schedule_help_message(),
+        show_default=False,
+    ),
+    logs: bool = Option(False, "--logs", "-l", help="Show scheduled import logs."),
+):
+    """Schedule import command to run automatically."""
+    if logs:
+        show_logs()
+    elif off:
+        remove_schedule()
+        print("Turned off scheduled import.")
+    elif on:
+        try:
+            message = schedule_import(on)
+            print(message)
+        except ValueError:
+            print("ERROR")
+    else:
+        show_currently_scheduled()
