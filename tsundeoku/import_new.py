@@ -5,10 +5,12 @@ from pickle import load
 from re import escape, search, sub
 
 from beets.importer import history_add
+from pync import notify
 from rich.markup import escape as rich_escape
 from rich.prompt import Prompt
 
 from .config.config import (
+    APP_NAME,
     get_ignored_directories,
     get_loaded_config,
     get_music_player,
@@ -513,7 +515,9 @@ def import_albums(
                 print(f"- {album}")
     if is_scheduled_run:
         config = get_loaded_config()
-        if config.email.on:
+        email_on = config.notifications.email_on
+        system_on = config.notifications.system_on
+        if email_on or system_on:
             error_album_count = (
                 sum(len(value) for value in errors.values()) + prompt_skipped_count
             )
@@ -521,5 +525,8 @@ def import_albums(
                 contents = (
                     f"{error_album_count} albums cannot be automatically imported."
                 )
-                send_email(contents)
+                if email_on:
+                    send_email(contents)
+                if system_on:
+                    notify(contents, title=APP_NAME)
     return imports, errors, importable_error_albums

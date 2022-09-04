@@ -65,17 +65,18 @@ class ReformatConfig(BaseModel):
     expand_abbreviations = True
 
 
-class EmailConfig(BaseModel):
+class NotificationsConfig(BaseModel):
     username = ""
     password = ""
-    on = False
+    email_on = False
+    system_on = False
 
 
 class Config(BaseModel):
     file_system = FileSystemConfig()
     import_new = ImportConfig()
     reformat = ReformatConfig()
-    email = EmailConfig()
+    notifications = NotificationsConfig()
 
 
 STATE = {"config": Config()}

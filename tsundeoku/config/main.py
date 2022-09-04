@@ -276,7 +276,7 @@ def reformat(
 
 
 @config_command.command()
-def email(
+def notifications(
     context: Context,
     username: str = Option(
         None,
@@ -290,26 +290,33 @@ def email(
         help="Set email password for sending notifications.",
         show_default=False,
     ),
-    on: bool = Option(
-        False,
-        "--on/--off",
+    email_on: bool = Option(
+        None,
+        "--email-on/--email-off",
         help="Turn email notifications from scheduled imports on or off.",
     ),
+    system_on: bool = Option(
+        None,
+        "--system-on/--system-off",
+        help="Turn system notifications from scheduled imports on or off.",
+    ),
 ):
-    """Show and set default values for "reformat" command."""
+    """Show and set values for notifications from scheduled import command."""
     config = get_loaded_config()
-    email = config.email
+    notifications = config.notifications
     if no_updates_provided(context.params):
-        print_config_section(email)
+        print_config_section(notifications)
         return
     if username is not None:
-        email.username = username
+        notifications.username = username
     if password is not None:
-        email.password = password
-    if on:
-        email.on = on
+        notifications.password = password
+    if email_on is not None:
+        notifications.email_on = email_on
+    if system_on is not None:
+        notifications.system_on = system_on
     try:
         write_config_values(config)
     except InvalidConfig:
         return
-    print_config_section(email)
+    print_config_section(notifications)
