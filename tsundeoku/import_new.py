@@ -7,7 +7,7 @@ from re import escape, search, sub
 from beets.importer import history_add
 from pync import notify
 from rich.markup import escape as rich_escape
-from rich.prompt import Prompt
+from rich.prompt import Confirm
 
 from .config.config import (
     APP_NAME,
@@ -172,7 +172,7 @@ def should_update(
     existing_value = existing_value or ""
     existing_value = stylize(existing_value, ["bold", "yellow"])
     album_title = stylize(rich_escape(album_title), "blue")
-    return Prompt.ask(
+    return Confirm.ask(
         f"Use bracket {field} {bracket_value} instead of"
         f" {field} ({existing_value}) for album:"
         f" {album_title}?"
@@ -253,7 +253,7 @@ def get_new_disc_numbers(
                 if (
                     not ask_before_disc_update
                     or allow_prompt
-                    and Prompt.ask(
+                    and Confirm.ask(
                         "Apply default disc and disc total value of"
                         f' {stylize("1", ["bold", "yellow"])} to album with'
                         " missing disc and disc total:"
@@ -309,7 +309,7 @@ def get_artists_to_update(
         if (
             not ask_before_artist_update
             or allow_prompt
-            and Prompt.ask(
+            and Confirm.ask(
                 "Remove bracketed solo instrument indication"
                 f" {stylized_artist_with_instrument} from the"
                 " artist field and add to comments?"
