@@ -1,6 +1,5 @@
 from datetime import datetime, time
 from pathlib import Path
-from shutil import which
 from subprocess import run
 
 from rich.console import Console
@@ -57,9 +56,11 @@ def get_calendar_interval(hour: int | None, minute: int | None) -> str:
 
 
 def get_command_args():
-    local_bin = Path.home() / ".local/bin"
-    tsundeoku_app = which(APP_NAME, path=local_bin)
-    command_args = [tsundeoku_app, "import", "--disallow-prompt", "--scheduled-run"]
+    command_args = [
+        "zsh",
+        "-lc",
+        f"{APP_NAME} import --disallow-prompt --scheduled-run",
+    ]
     strings = ""
     for arg in command_args:
         strings = f"{strings}\t\t\t<string>{arg}</string>\n"
