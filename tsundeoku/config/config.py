@@ -210,6 +210,7 @@ def print_config_values():
     for section, values in config.dict().items():
         if not first_item:
             print()
+        section = section.replace("_new", "")
         section = escape(f"[{section}]")
         print(section)
         print_config_section(values)
