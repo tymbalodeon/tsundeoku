@@ -5,7 +5,7 @@ from tsundeoku.main import tsundeoku
 
 
 def test_version():
-    expected_version = "0.3.0"
+    expected_version = "0.4.0"
     expected_version_display = f"tsundeoku {expected_version}\n"
     assert __version__ == expected_version
     for option in ["--version", "-v"]:

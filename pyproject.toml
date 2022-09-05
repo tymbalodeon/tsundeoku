@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tsundeoku"
-version = "0.3.0"
+version = "0.4.0"
 description = 'CLI for managing imports from a shared folder to a "beets" library'
 authors = ["Ben Rosen <benjamin.j.rosen@gmail.com>"]
 readme = "README.md"
