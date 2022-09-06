@@ -21,8 +21,7 @@ from .import_new import get_albums, import_albums
 from .reformat import reformat_albums
 from .schedule import (
     get_schedule_help_message,
-    remove_schedule,
-    rotate_logs,
+    remove_plist,
     schedule_import,
     show_currently_scheduled,
     show_logs,
@@ -139,7 +138,6 @@ def import_new(
 ):
     """Copy new adds from your shared folder to your local library."""
     if is_scheduled_run:
-        rotate_logs()
         stamp_logs()
     print("Importing newly added albums...")
     config = get_loaded_config()
@@ -253,7 +251,7 @@ def schedule(
     if logs:
         show_logs()
     elif off:
-        remove_schedule()
+        remove_plist()
         print("Turned off scheduled import.")
     elif on:
         try:

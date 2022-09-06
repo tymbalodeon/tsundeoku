@@ -31,13 +31,13 @@ def get_schedule_help_message():
     )
 
 
-def get_plist_path() -> Path:
-    launch_agents = Path.home() / "library/launchagents"
-    return launch_agents / PLIST_LABEL
+def get_plist_path(label=PLIST_LABEL) -> Path:
+    launch_agents = Path.home() / "library/LaunchAgents"
+    return launch_agents / label
 
 
-def remove_schedule():
-    plist_path = get_plist_path()
+def remove_plist(label=PLIST_LABEL):
+    plist_path = get_plist_path(label)
     run([LAUNCHCTL, "unload", plist_path], capture_output=True)
     if plist_path.is_file():
         plist_path.unlink()
@@ -77,12 +77,35 @@ def get_log_paths() -> tuple[Path, Path]:
     return stdout, stderr
 
 
-def rotate_logs():
-    current_day_of_week = datetime.today().weekday()
-    if current_day_of_week == 0:
-        log_paths = get_log_paths()
-        for path in log_paths:
-            path.write_text("")
+def load_rotate_logs_plist():
+    rotate_logs_plist_label = f"com.{APP_NAME}.rotatelogs.plist"
+    remove_plist(rotate_logs_plist_label)
+    truncate_command = "truncate -s 0"
+    stdout, stderr = get_log_paths()
+    plist = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"'
+        ' "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
+        '<plist version="1.0">\n'
+        "\t<dict>\n"
+        "\t\t<key>Label</key>\n"
+        f"\t\t<string>{rotate_logs_plist_label}</string>\n"
+        "\t\t<key>StartCalendarInterval</key>\n"
+        "\t\t<dict>\n"
+        "\t\t\t<key>Weekday</key>\n"
+        "\t\t\t<integer>0</integer>\n"
+        "\t\t</dict>\n"
+        "\t\t<key>ProgramArguments</key>\n"
+        "\t\t<array>\n"
+        f"\t\t<string>{truncate_command} {stdout}</string>\n"
+        f"\t\t<string>{truncate_command} {stderr}</string>\n"
+        "\t\t</array>\n"
+        "\t</dict>\n"
+        "</plist>\n"
+    )
+    plist_path = get_plist_path(rotate_logs_plist_label)
+    plist_path.write_text(plist)
+    run([LAUNCHCTL, "load", plist_path])
 
 
 def stamp_logs():
@@ -120,11 +143,12 @@ def get_plist_text(hour: int | None, minute: int | None) -> str:
 
 
 def load_plist(hour: int | None, minute: int | None):
-    remove_schedule()
+    remove_plist()
     plist = get_plist_text(hour, minute)
     plist_path = get_plist_path()
     plist_path.write_text(plist)
     run([LAUNCHCTL, "load", plist_path])
+    load_rotate_logs_plist()
 
 
 def schedule_import(schedule_time: str) -> str:
@@ -170,9 +194,9 @@ def show_currently_scheduled():
         return
     plist_path = get_plist_path()
     plist = parse(plist_path.read_bytes())
-    try:
+    if plist:
         hour_and_minute = plist["plist"]["dict"]["dict"]["integer"]
-    except TypeError:
+    else:
         print_with_theme("Error retrieving schedule information.", StyleLevel.ERROR)
         return
     hour = "**"
