@@ -31,42 +31,6 @@ def get_schedule_help_message():
     )
 
 
-def get_plist_path(label=PLIST_LABEL) -> Path:
-    launch_agents = Path.home() / "library/LaunchAgents"
-    return launch_agents / label
-
-
-def remove_plist(label=PLIST_LABEL):
-    plist_path = get_plist_path(label)
-    run([LAUNCHCTL, "unload", plist_path], capture_output=True)
-    if plist_path.is_file():
-        plist_path.unlink()
-
-
-def get_calendar_interval(hour: int | None, minute: int | None) -> str:
-    hour_key = minute_key = ""
-    if hour is not None:
-        hour_key = f"\t\t\t<key>Hour</key>\n\t\t\t<integer>{hour}</integer>\n"
-    if minute is not None:
-        minute_key = f"\t\t\t<key>Minute</key>\n\t\t\t<integer>{minute}</integer>\n"
-    return (
-        "\t\t<key>StartCalendarInterval</key>\n"
-        f"\t\t<dict>\n{hour_key}{minute_key}\t\t</dict>\n"
-    )
-
-
-def get_command_args():
-    command_args = [
-        "zsh",
-        "-lc",
-        f"{APP_NAME} import --disallow-prompt --scheduled-run",
-    ]
-    strings = ""
-    for arg in command_args:
-        strings = f"{strings}\t\t\t<string>{arg}</string>\n"
-    return strings
-
-
 def get_log_paths() -> tuple[Path, Path]:
     log_path = Path("/tmp/")
     stdout = log_path / f"{APP_NAME}.stdout"
@@ -108,12 +72,40 @@ def load_rotate_logs_plist():
     run([LAUNCHCTL, "load", plist_path])
 
 
-def stamp_logs():
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    log_paths = get_log_paths()
-    for path in log_paths:
-        with path.open("a") as log:
-            log.write(f"---- {current_time} ----\n")
+def get_plist_path(label=PLIST_LABEL) -> Path:
+    launch_agents = Path.home() / "library/LaunchAgents"
+    return launch_agents / label
+
+
+def remove_plist(label=PLIST_LABEL):
+    plist_path = get_plist_path(label)
+    run([LAUNCHCTL, "unload", plist_path], capture_output=True)
+    if plist_path.is_file():
+        plist_path.unlink()
+
+
+def get_calendar_interval(hour: int | None, minute: int | None) -> str:
+    hour_key = minute_key = ""
+    if hour is not None:
+        hour_key = f"\t\t\t<key>Hour</key>\n\t\t\t<integer>{hour}</integer>\n"
+    if minute is not None:
+        minute_key = f"\t\t\t<key>Minute</key>\n\t\t\t<integer>{minute}</integer>\n"
+    return (
+        "\t\t<key>StartCalendarInterval</key>\n"
+        f"\t\t<dict>\n{hour_key}{minute_key}\t\t</dict>\n"
+    )
+
+
+def get_command_args():
+    command_args = [
+        "zsh",
+        "-lc",
+        f"{APP_NAME} import --disallow-prompt --scheduled-run",
+    ]
+    strings = ""
+    for arg in command_args:
+        strings = f"{strings}\t\t\t<string>{arg}</string>\n"
+    return strings
 
 
 def get_plist_text(hour: int | None, minute: int | None) -> str:
@@ -143,12 +135,12 @@ def get_plist_text(hour: int | None, minute: int | None) -> str:
 
 
 def load_plist(hour: int | None, minute: int | None):
+    load_rotate_logs_plist()
     remove_plist()
     plist = get_plist_text(hour, minute)
     plist_path = get_plist_path()
     plist_path.write_text(plist)
     run([LAUNCHCTL, "load", plist_path])
-    load_rotate_logs_plist()
 
 
 def schedule_import(schedule_time: str) -> str:
@@ -210,6 +202,14 @@ def show_currently_scheduled():
         scheduled_time = f"**:{minute}"
         message = f"{message} hour at {scheduled_time} minutes."
     print(message)
+
+
+def stamp_logs():
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_paths = get_log_paths()
+    for path in log_paths:
+        with path.open("a") as log:
+            log.write(f"---- {current_time} ----\n")
 
 
 def send_email(contents: str):

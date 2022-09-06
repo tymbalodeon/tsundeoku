@@ -112,7 +112,7 @@ def reformat_albums(
         if action.message:
             print(action.message)
         items = list_items(action.tag, action.find, action.operate_on_albums)
-        tags = [(escape(tag), sub(action.find, action.replace, tag)) for tag in items]
+        tags = {(escape(tag), sub(action.find, action.replace, tag)) for tag in items}
         if not tags:
             print("No albums to update.")
             continue
