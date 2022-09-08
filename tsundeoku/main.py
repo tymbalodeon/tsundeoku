@@ -1,14 +1,15 @@
 from sys import argv
 
 from pydantic import ValidationError
+from pync import notify
 from rich import print
 from rich.markup import escape
-from rich.prompt import Confirm
 from typer import Argument, Context, Exit, Option, Typer
 
 from tsundeoku import __version__
 
 from .config.config import (
+    APP_NAME,
     STATE,
     StyleLevel,
     get_config,
@@ -17,15 +18,15 @@ from .config.config import (
     print_with_theme,
 )
 from .config.main import config_command
-from .import_new import get_albums, import_albums
+from .import_new import import_new_albums
 from .reformat import reformat_albums
 from .schedule import (
     get_schedule_help_message,
     remove_plist,
     schedule_import,
+    send_email,
     show_currently_scheduled,
     show_logs,
-    stamp_logs,
 )
 
 tsundeoku = Typer(
@@ -137,55 +138,25 @@ def import_new(
     is_scheduled_run: bool = Option(False, "--scheduled-run", hidden=True),
 ):
     """Copy new adds from your shared folder to your local library."""
-    if is_scheduled_run:
-        stamp_logs()
-    print("Importing newly added albums...")
-    config = get_loaded_config()
-    import_settings = config.import_new
-    if reformat is None:
-        reformat = import_settings.reformat
-    if ask_before_disc_update is None:
-        ask_before_disc_update = import_settings.ask_before_disc_update
-    if ask_before_artist_update is None:
-        ask_before_artist_update = import_settings.ask_before_artist_update
-    if allow_prompt is None:
-        allow_prompt = import_settings.allow_prompt
-    first_time = False
-    if not albums:
-        first_time = True
-        albums = get_albums()
-    import_all = not first_time
-    imports, errors, importable_error_albums = import_albums(
-        albums,
-        reformat,
-        ask_before_disc_update,
-        ask_before_artist_update,
-        import_all,
-        allow_prompt,
-        is_scheduled_run,
-    )
-    if imports and reformat:
-        reformat_settings = config.reformat
-        remove_bracket_years = reformat_settings.remove_bracket_years
-        remove_bracket_instruments = reformat_settings.remove_bracket_instruments
-        expand_abbreviations = reformat_settings.expand_abbreviations
-        reformat_albums(
-            remove_bracket_years, remove_bracket_instruments, expand_abbreviations
+    try:
+        import_new_albums(
+            albums,
+            reformat,
+            ask_before_disc_update,
+            ask_before_artist_update,
+            allow_prompt,
+            is_scheduled_run,
         )
-    if (
-        not is_scheduled_run
-        and first_time
-        and errors
-        and importable_error_albums
-        and Confirm.ask("Would you like to import all albums anyway?")
-    ):
-        import_new(
-            albums=importable_error_albums,
-            reformat=reformat,
-            ask_before_disc_update=ask_before_disc_update,
-            ask_before_artist_update=ask_before_artist_update,
-            allow_prompt=allow_prompt,
-        )
+    except Exception as error:
+        config = get_loaded_config()
+        email_on = config.notifications.email_on
+        system_on = config.notifications.system_on
+        if email_on or system_on:
+            contents = f"ERROR: {error}"
+            if email_on:
+                send_email(contents)
+            if system_on:
+                notify(contents, title=APP_NAME)
 
 
 @tsundeoku.command()

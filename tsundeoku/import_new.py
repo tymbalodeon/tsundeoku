@@ -9,6 +9,8 @@ from pync import notify
 from rich.markup import escape as rich_escape
 from rich.prompt import Confirm
 
+from tsundeoku.reformat import reformat_albums
+
 from .config.config import (
     APP_NAME,
     get_ignored_directories,
@@ -24,7 +26,7 @@ from .regex import (
     SOLO_INSTRUMENT_REGEX,
     YEAR_RANGE_REGEX,
 )
-from .schedule import send_email
+from .schedule import send_email, stamp_logs
 from .style import StyleLevel, print_with_theme, stylize
 from .tags import (
     Tracks,
@@ -530,3 +532,62 @@ def import_albums(
                 if system_on:
                     notify(contents, title=APP_NAME)
     return imports, errors, importable_error_albums
+
+
+def import_new_albums(
+    albums: list[str] | None,
+    reformat: bool | None,
+    ask_before_disc_update: bool | None,
+    ask_before_artist_update: bool | None,
+    allow_prompt: bool | None,
+    is_scheduled_run=False,
+):
+    if is_scheduled_run:
+        stamp_logs()
+    print("Importing newly added albums...")
+    config = get_loaded_config()
+    import_settings = config.import_new
+    if reformat is None:
+        reformat = import_settings.reformat
+    if ask_before_disc_update is None:
+        ask_before_disc_update = import_settings.ask_before_disc_update
+    if ask_before_artist_update is None:
+        ask_before_artist_update = import_settings.ask_before_artist_update
+    if allow_prompt is None:
+        allow_prompt = import_settings.allow_prompt
+    first_time = False
+    if not albums:
+        first_time = True
+        albums = get_albums()
+    import_all = not first_time
+    imports, errors, importable_error_albums = import_albums(
+        albums,
+        reformat,
+        ask_before_disc_update,
+        ask_before_artist_update,
+        import_all,
+        allow_prompt,
+        is_scheduled_run,
+    )
+    if imports and reformat:
+        reformat_settings = config.reformat
+        remove_bracket_years = reformat_settings.remove_bracket_years
+        remove_bracket_instruments = reformat_settings.remove_bracket_instruments
+        expand_abbreviations = reformat_settings.expand_abbreviations
+        reformat_albums(
+            remove_bracket_years, remove_bracket_instruments, expand_abbreviations
+        )
+    if (
+        not is_scheduled_run
+        and first_time
+        and errors
+        and importable_error_albums
+        and Confirm.ask("Would you like to import all albums anyway?")
+    ):
+        import_new_albums(
+            albums=importable_error_albums,
+            reformat=reformat,
+            ask_before_disc_update=ask_before_disc_update,
+            ask_before_artist_update=ask_before_artist_update,
+            allow_prompt=allow_prompt,
+        )
