@@ -29,6 +29,10 @@ follow the instructions in the beets documentation. You will also need to
 [import your library](https://beets.readthedocs.io/en/stable/guides/main.html#importing-your-library)
 in order to get started and generate the pickle file.
 
+If your local library is on an external drive, you will need to give "Full Disk
+Access" to `/bin/zsh` in System Preferences > Security & Privacy > Privacy >
+Full Disk Access.
+
 # Usage
 
 - To import new audio files from your shared folder to your music library:
