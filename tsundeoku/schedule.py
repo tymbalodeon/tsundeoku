@@ -1,8 +1,8 @@
 from datetime import datetime, time
 from pathlib import Path
+from shutil import which
 from subprocess import run
 
-from rich.console import Console
 from xmltodict import parse
 from yagmail import SMTP
 
@@ -31,21 +31,18 @@ def get_schedule_help_message():
     )
 
 
-def get_log_paths() -> tuple[Path, Path]:
-    log_path = Path("/tmp/")
-    stdout = log_path / f"{APP_NAME}.stdout"
-    stderr = log_path / f"{APP_NAME}.stderr"
-    for log_file in [stdout, stderr]:
-        if not log_file.exists():
-            log_file.touch()
-    return stdout, stderr
+def get_log_path() -> Path:
+    log_path = Path("/tmp") / f"{APP_NAME}.log"
+    if not log_path.exists():
+        log_path.touch()
+    return log_path
 
 
 def load_rotate_logs_plist():
     rotate_logs_plist_label = f"com.{APP_NAME}.rotatelogs.plist"
     remove_plist(rotate_logs_plist_label)
     truncate_command = "truncate -s 0"
-    stdout, stderr = get_log_paths()
+    log_path = get_log_path()
     plist = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"'
@@ -61,8 +58,7 @@ def load_rotate_logs_plist():
         "\t\t</dict>\n"
         "\t\t<key>ProgramArguments</key>\n"
         "\t\t<array>\n"
-        f"\t\t<string>{truncate_command} {stdout}</string>\n"
-        f"\t\t<string>{truncate_command} {stderr}</string>\n"
+        f"\t\t<string>{truncate_command} {log_path}</string>\n"
         "\t\t</array>\n"
         "\t</dict>\n"
         "</plist>\n"
@@ -97,10 +93,11 @@ def get_calendar_interval(hour: int | None, minute: int | None) -> str:
 
 
 def get_command_args():
+    command = which(APP_NAME)
     command_args = [
         "zsh",
         "-lc",
-        f"{APP_NAME} import --disallow-prompt --scheduled-run",
+        f"{command} import --disallow-prompt --scheduled-run",
     ]
     strings = ""
     for arg in command_args:
@@ -109,7 +106,7 @@ def get_command_args():
 
 
 def get_plist_text(hour: int | None, minute: int | None) -> str:
-    stdout, stderr = get_log_paths()
+    log_path = get_log_path()
     calendar_interval = get_calendar_interval(hour, minute)
     command_args = get_command_args()
     return (
@@ -121,9 +118,9 @@ def get_plist_text(hour: int | None, minute: int | None) -> str:
         "\t\t<key>Label</key>\n"
         f"\t\t<string>{PLIST_LABEL}</string>\n"
         "\t\t<key>StandardOutPath</key>\n"
-        f"\t\t<string>{stdout}</string>\n"
+        f"\t\t<string>{log_path}</string>\n"
         "\t\t<key>StandardErrorPath</key>\n"
-        f"\t\t<string>{stderr}</string>\n"
+        f"\t\t<string>{log_path}</string>\n"
         f"{calendar_interval}"
         "\t\t<key>ProgramArguments</key>\n"
         "\t\t<array>\n"
@@ -163,21 +160,6 @@ def schedule_import(schedule_time: str) -> str:
     return f"{message} {schedule_type} at {display_time}."
 
 
-def tail(text: str, number_of_lines=10):
-    lines = text.splitlines()
-    for line in lines[-number_of_lines:]:
-        print(line)
-
-
-def show_logs():
-    stdout, stderr = get_log_paths()
-    console = Console()
-    console.rule("STDOUT")
-    tail(stdout.read_text())
-    console.rule("STDERR")
-    tail(stderr.read_text())
-
-
 def show_currently_scheduled():
     loaded_plists = str(run([LAUNCHCTL, "list"], capture_output=True).stdout)
     currently_scheduled = PLIST_LABEL in loaded_plists
@@ -206,10 +188,9 @@ def show_currently_scheduled():
 
 def stamp_logs():
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    log_paths = get_log_paths()
-    for path in log_paths:
-        with path.open("a") as log:
-            log.write(f"---- {current_time} ----\n")
+    log_path = get_log_path()
+    with open(log_path, "a") as log:
+        log.write(f"---- {current_time} ----\n")
 
 
 def send_email(contents: str):
@@ -219,3 +200,14 @@ def send_email(contents: str):
     email = SMTP(username, password)
     subject = f"{APP_NAME}"
     email.send(subject=subject, contents=contents)
+
+
+def tail(text: str, number_of_lines=10):
+    lines = text.splitlines()
+    for line in lines[-number_of_lines:]:
+        print(line)
+
+
+def show_logs():
+    log_path = get_log_path()
+    tail(log_path.read_text())

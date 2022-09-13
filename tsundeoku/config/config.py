@@ -1,6 +1,6 @@
 from pathlib import Path
 from subprocess import run
-from typing import cast
+from typing import Literal, cast
 
 from pydantic import (
     BaseModel,
@@ -19,12 +19,16 @@ from tsundeoku.style import StyleLevel, print_with_theme
 
 
 def get_default_shared_directories() -> set[Path]:
-    default_shared_directory = Path.home() / "Dropbox"
+    default_shared_directory = Path.home() / "Music"
     return {default_shared_directory}
 
 
 def get_default_pickle_file() -> Path:
     return Path.home() / ".config/beets/state.pickle"
+
+
+def get_default_music_player() -> Literal["Swinsian"]:
+    return "Swinsian"
 
 
 class FileSystemConfig(BaseModel):
@@ -33,7 +37,7 @@ class FileSystemConfig(BaseModel):
     )
     pickle_file: FilePath = Field(default_factory=get_default_pickle_file)
     ignored_directories: set[DirectoryPath] = Field(default_factory=list)
-    music_player = "Swinsian"
+    music_player: str = get_default_music_player()
 
     @validator("shared_directories", "ignored_directories")
     def validate_directory_paths(cls, paths: list[str]) -> set[Path]:
@@ -45,6 +49,9 @@ class FileSystemConfig(BaseModel):
 
     @validator("music_player")
     def validate_application(cls, application_name: str) -> str:
+        default_music_player = get_default_music_player()
+        if application_name == default_music_player:
+            return application_name
         command = f'mdfind "kMDItemKind == \'Application\'" | grep "{application_name}"'
         application_exists = run(command, shell=True, capture_output=True).stdout
         if not application_exists:
