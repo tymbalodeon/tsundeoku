@@ -513,9 +513,12 @@ def import_albums(
     if any(errors.values()):
         current_errors = [(key, value) for key, value in errors.items() if value]
         table = Table("Index", "Album", "Error", title="Errors")
-        index = 1
+        index = 0
         for error_name, error_albums in current_errors:
             for album in error_albums:
+                shared_directories = get_shared_directories()
+                for shared_directory in shared_directories:
+                    album = album.replace(str(shared_directory), "")
                 index = index + 1
                 table.add_row(str(index), album, error_name.value)
         Console().print(table)
