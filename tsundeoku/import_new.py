@@ -6,8 +6,10 @@ from re import escape, search, sub
 
 from beets.importer import history_add
 from pync import notify
+from rich.console import Console
 from rich.markup import escape as rich_escape
 from rich.prompt import Confirm
+from rich.table import Table
 
 from tsundeoku.reformat import reformat_albums
 
@@ -27,7 +29,7 @@ from .regex import (
     YEAR_RANGE_REGEX,
 )
 from .schedule import send_email, stamp_logs
-from .style import StyleLevel, print_with_theme, stylize
+from .style import stylize
 from .tags import (
     Tracks,
     get_album_title,
@@ -508,13 +510,15 @@ def import_albums(
         print(f"Skipped {skipped_count} previously imported albums.")
     if not allow_prompt:
         print(f"Skipped {prompt_skipped_count} albums requiring prompt.")
-    for error_name, error_albums in errors.items():
-        if error_albums:
-            album_plural = "Album" if error_albums == 1 else "Albums"
-            error_message = f"{album_plural} {error_name.value}:"
-            print_with_theme(error_message, level=StyleLevel.INFO)
+    if any(errors.values()):
+        current_errors = [(key, value) for key, value in errors.items() if value]
+        table = Table("Index", "Album", "Error", title="Errors")
+        index = 1
+        for error_name, error_albums in current_errors:
             for album in error_albums:
-                print(f"- {album}")
+                index = index + 1
+                table.add_row(str(index), album, error_name.value)
+        Console().print(table)
     if is_scheduled_run:
         config = get_loaded_config()
         email_on = config.notifications.email_on
