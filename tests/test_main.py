@@ -1,24 +1,38 @@
+from pytest import mark
 from typer.testing import CliRunner
 
 from tsundeoku import __version__
 from tsundeoku.main import tsundeoku
 
+version = "0.4.0"
+
 
 def test_version():
-    expected_version = "0.4.0"
-    expected_version_display = f"tsundeoku {expected_version}\n"
-    assert __version__ == expected_version
-    for option in ["--version", "-v"]:
-        result = CliRunner().invoke(tsundeoku, option)
-        assert result.output == expected_version_display
-        assert result.exit_code == 0
+    assert __version__ == version
 
 
-def test_help():
+version_display = f"tsundeoku {version}\n"
+
+
+@mark.parametrize(
+    "arg, version", [("--version", version_display), ("-V", version_display)]
+)
+def test_version_display(arg, version):
+    result = CliRunner().invoke(tsundeoku, arg)
+    assert result.output == version
+
+
+app_description = (
+    "CLI for importing audio files from a shared folder to a local library"
+)
+
+
+@mark.parametrize(
+    "arg, app_description", [("--help", app_description), ("-h", app_description)]
+)
+def test_help(arg, app_description):
     app_description = (
         "CLI for importing audio files from a shared folder to a local library"
     )
-    for option in ["--help", "-h"]:
-        result = CliRunner().invoke(tsundeoku, option)
-        assert app_description in result.output
-        assert result.exit_code == 0
+    result = CliRunner().invoke(tsundeoku, arg)
+    assert app_description in result.output

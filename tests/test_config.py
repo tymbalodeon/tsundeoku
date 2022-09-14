@@ -1,35 +1,9 @@
-from pathlib import Path
-
 from typer.testing import CliRunner
 
 from tsundeoku.main import tsundeoku
-
-
-def get_mock_shared_directories() -> str:
-    shared_directories = str(Path.home() / "Dropbox")
-    return f'["{shared_directories}"]'
-
-
-def get_mock_pickle_file() -> Path:
-    return Path.home() / ".config/beets/state.pickle"
-
-
-def mock_get_config_value(_):
-    return None
 
 
 def test_config_help():
     config_help_text = "Show [default] and set config values."
     result = CliRunner().invoke(tsundeoku, ["config", "-h"])
     assert config_help_text in result.output
-    assert result.exit_code == 0
-
-
-def mock_application_exists(command: str) -> bool:
-    if "Swinsian" in command:
-        return True
-    return False
-
-
-def mock_get_music_player():
-    return None

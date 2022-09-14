@@ -337,13 +337,6 @@ def get_modification(field: str, new_value: str) -> BeetsQuery:
     return [f"{field}={new_value}"]
 
 
-def get_bracket_year_range(album_title: str) -> str:
-    match = search(SOLO_INSTRUMENT_REGEX, album_title)
-    if not match:
-        return ""
-    return match.group()
-
-
 def get_bracket_solo_instrument(artist: str) -> str:
     match = search(SOLO_INSTRUMENT_REGEX, artist)
     if not match:

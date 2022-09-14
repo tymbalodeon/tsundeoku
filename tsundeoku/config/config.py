@@ -40,15 +40,15 @@ class FileSystemConfig(BaseModel):
     music_player: str = get_default_music_player()
 
     @validator("shared_directories", "ignored_directories")
-    def validate_directory_paths(cls, paths: list[str]) -> set[Path]:
+    def validate_directory_paths(_, paths: list[str]) -> set[Path]:
         return {Path(path).expanduser() for path in paths}
 
     @validator("pickle_file")
-    def validate_file_path(cls, path: str) -> Path:
+    def validate_file_path(_, path: str) -> Path:
         return Path(path)
 
     @validator("music_player")
-    def validate_application(cls, application_name: str) -> str:
+    def validate_application(_, application_name: str) -> str:
         default_music_player = get_default_music_player()
         if application_name == default_music_player:
             return application_name
