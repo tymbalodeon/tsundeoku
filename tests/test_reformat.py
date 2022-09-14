@@ -1,35 +1,32 @@
+from pytest import mark
 from typer.testing import CliRunner
 
-from tests.mocks import set_mock_home
 from tsundeoku import main
 from tsundeoku.main import tsundeoku
 
+from .conftest import get_mock_get_argvs, mock_argv
 
-def test_reformat_help(monkeypatch, tmp_path):
-    reformat_help_args = ["reformat", "-h"]
+reformat_command = "reformat"
+mock_get_argv_long, mock_get_argv_short = get_mock_get_argvs(reformat_command)
 
-    def mock_get_argv() -> list[str]:
-        return reformat_help_args
+help_texts = [
+    "Reformat metadata according to the following rules:",
+    'Remove bracketed years (e.g., "[2022]") from album fields',
+    'Expand the abbreviations "Rec.," "Rec.s," and "Orig." to "Recording,"',
+    "[Optional] Remove bracketed solo instrument indications",
+]
 
+
+def get_args() -> list[tuple[str, mock_argv, str]]:
+    args = []
+    for help_text in help_texts:
+        args.append(("--help", mock_get_argv_long, help_text))
+        args.append(("-h", mock_get_argv_short, help_text))
+    return args
+
+
+@mark.parametrize("arg, mock_get_argv, help_text", get_args())
+def test_reformat_help(arg, mock_get_argv, help_text, monkeypatch):
     monkeypatch.setattr(main, "get_argv", mock_get_argv)
-    set_mock_home(monkeypatch, tmp_path)
-    reformat_help_text = "Reformat metadata according to the following rules:"
-    remove_bracket_year_help_text = (
-        'Remove bracketed years (e.g., "[2022]") from album fields'
-    )
-    expand_abbreviation_help_text = (
-        'Expand the abbreviations "Rec.," "Rec.s," and "Orig." to "Recording,"'
-    )
-    remove_bracket_solo_help_text = (
-        "[Optional] Remove bracketed solo instrument indications"
-    )
-    result = CliRunner().invoke(tsundeoku, reformat_help_args)
-    output = result.output
-    for help_text in [
-        reformat_help_text,
-        remove_bracket_year_help_text,
-        expand_abbreviation_help_text,
-        remove_bracket_solo_help_text,
-    ]:
-        assert help_text in output
-    assert result.exit_code == 0
+    output = CliRunner().invoke(tsundeoku, [reformat_command, arg]).output
+    assert help_text in output
