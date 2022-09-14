@@ -32,7 +32,8 @@ def print_with_theme(text: Syntax | str, level: StyleLevel | None = None):
 def wrap_in_style(text: str, style: str) -> str:
     opening_tag = f"[{style}]"
     if "link" in style:
-        closing_tag = f"[/{style.split('=')[0]}]"
+        link_tag = style.split("=")[0]
+        closing_tag = f"[/{link_tag}]"
     else:
         closing_tag = f"[/{style}]"
     return f"{opening_tag}{text}{closing_tag}"
