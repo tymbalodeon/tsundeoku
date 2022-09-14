@@ -22,13 +22,8 @@ def test_version_display(arg, version):
     assert result.output == version
 
 
-app_help_text = "CLI for importing audio files from a shared folder to a local library"
-
-
-@mark.parametrize(
-    "arg, app_description",
-    [(None, app_help_text), ("--help", app_help_text), ("-h", app_help_text)],
-)
-def test_help(arg, app_description):
+@mark.parametrize("arg", [None, "--help", "-h"])
+def test_help(arg):
+    help_text = "CLI for importing audio files from a shared folder to a local library"
     result = CliRunner().invoke(tsundeoku, arg)
-    assert app_description in result.output
+    assert help_text in result.output
