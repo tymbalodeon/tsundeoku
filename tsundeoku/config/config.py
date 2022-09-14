@@ -19,7 +19,7 @@ from tsundeoku.style import StyleLevel, print_with_theme
 
 
 def get_default_shared_directories() -> set[Path]:
-    default_shared_directory = Path.home() / "Music"
+    default_shared_directory = Path.home() / "Dropbox"
     return {default_shared_directory}
 
 
