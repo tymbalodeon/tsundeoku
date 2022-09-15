@@ -2,7 +2,7 @@ from pathlib import Path
 
 from pytest import mark
 
-from tests.conftest import get_help_args, get_output
+from tests.conftest import call_command, get_command_output, get_help_args
 from tsundeoku import main
 from tsundeoku.config import main as config_main
 from tsundeoku.config.config import get_config_path
@@ -32,12 +32,12 @@ reformat_values = (
 def test_config_help(arg, mock_get_argv, monkeypatch):
     config_help_text = "Show [default] and set config values."
     monkeypatch.setattr(main, "get_argv", mock_get_argv)
-    output = get_output([config_command, arg])
+    output = get_command_output([config_command, arg])
     assert config_help_text in output
 
 
 def test_config():
-    output = get_output([config_command])
+    output = get_command_output([config_command])
     expected_config_display = (
         "[file_system]\n"
         f"{file_system_values}"
@@ -55,32 +55,42 @@ def test_config():
 
 
 def test_config_path_includes_home():
-    output = get_output([config_command, "--path"])
+    output = get_command_output([config_command, "--path"])
     home = str(Path.home())
     assert home in output.replace("\n", "")
 
 
 def test_config_path_includes_config_path():
-    output = get_output([config_command, "--path"])
+    output = get_command_output([config_command, "--path"])
     assert ".config/tsundeoku/tsundeoku.toml" in output
 
 
-def test_config_file(monkeypatch):
-    def mock_launch(config_path: str, locate: bool):
-        print(config_path, locate)
+def test_config_file(monkeypatch, mocker):
+    def mock_launch(url: str, locate: bool):
+        pass
 
     monkeypatch.setattr(config_main, "launch", mock_launch)
-    output = get_output([config_command, "--file"])
+    spy = mocker.spy(config_main, "launch")
+    call_command([config_command, "--file"])
     config_path = str(get_config_path())
-    assert config_path in output and "True" in output
+    spy.assert_called_once_with(config_path, locate=True)
 
 
-def test_config_edit(monkeypatch):
+def test_config_edit(monkeypatch, mocker):
     def mock_run(args: list[str]):
-        print(args)
+        pass
 
     monkeypatch.setattr(config_main, "run", mock_run)
     monkeypatch.setattr(config_main, "environ", {})
-    output = get_output([config_command, "--edit"])
-    config_path = str(get_config_path())
-    assert config_path in output and "vim" in output
+    spy = mocker.spy(config_main, "run")
+    call_command([config_command, "--edit"])
+    config_path = get_config_path()
+    spy.assert_called_once_with(["vim", config_path])
+
+
+def test_config_reset_all():
+    pass
+
+
+def test_config_reset_commands():
+    pass

@@ -34,7 +34,11 @@ def set_mock_home(monkeypatch, tmp_path_factory):
     monkeypatch.setattr(Path, "home", mock_home)
 
 
-def get_output(commands: list[str]) -> str:
-    if not any(commands):
-        return CliRunner().invoke(tsundeoku).output
-    return CliRunner().invoke(tsundeoku, commands).output
+def call_command(args: list[str]):
+    if not any(args):
+        return CliRunner().invoke(tsundeoku)
+    return CliRunner().invoke(tsundeoku, args)
+
+
+def get_command_output(args: list[str]) -> str:
+    return call_command(args).output
