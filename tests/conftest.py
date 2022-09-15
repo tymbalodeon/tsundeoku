@@ -19,6 +19,11 @@ def get_mock_get_argvs() -> tuple[mock_argv, mock_argv]:
     return mock_get_argv_long, mock_get_argv_short
 
 
+def get_help_args() -> list[tuple[str, mock_argv]]:
+    mock_get_argv_long, mock_get_argv_short = get_mock_get_argvs()
+    return [("--help", mock_get_argv_long), ("-h", mock_get_argv_short)]
+
+
 @fixture(autouse=True)
 def set_mock_home(monkeypatch, tmp_path_factory):
     home = tmp_path_factory.mktemp("home")
