@@ -86,7 +86,11 @@ class Config(BaseModel):
     notifications = NotificationsConfig()
 
 
-state = {"config": Config()}
+def get_default_config() -> Config:
+    return Config()
+
+
+state = {"config": get_default_config()}
 APP_NAME = "tsundeoku"
 CONFIG_PATH = f".config/{APP_NAME}"
 
@@ -175,7 +179,7 @@ class InvalidConfig(Exception):
 
 def write_config_values(config: Config | None = None):
     if not config:
-        config = Config()
+        config = get_default_config()
     elif not is_valid_config(config):
         raise InvalidConfig()
     config_toml = as_toml(config)

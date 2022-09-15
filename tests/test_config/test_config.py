@@ -2,7 +2,12 @@ from pathlib import Path
 
 from pytest import mark
 
-from tests.conftest import call_command, get_command_output, get_help_args
+from tests.conftest import (
+    call_command,
+    get_command_output,
+    get_help_args,
+    strip_newlines,
+)
 from tsundeoku import main
 from tsundeoku.config import main as config_main
 from tsundeoku.config.config import get_config_path
@@ -68,8 +73,9 @@ def test_config_help(arg, mock_get_argv, monkeypatch):
 
 def test_config():
     output = get_command_output([config_command])
-    print(output)
     expected_config_display = get_expected_config_display()
+    output = strip_newlines(output)
+    expected_config_display = strip_newlines(expected_config_display)
     assert output == expected_config_display
 
 

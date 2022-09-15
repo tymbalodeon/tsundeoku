@@ -1,7 +1,7 @@
 from pytest import mark
 from test_config import config_command, get_file_system_values
 
-from tests.conftest import get_command_output, get_help_args
+from tests.conftest import get_command_output, get_help_args, strip_newlines
 from tsundeoku import main
 
 
@@ -15,4 +15,7 @@ def test_config_file_system_help(arg, mock_get_argv, monkeypatch):
 
 def test_config_file_system():
     output = get_command_output([config_command, "file-system"])
-    assert output == get_file_system_values()
+    values = get_file_system_values()
+    output = strip_newlines(output)
+    values = strip_newlines(values)
+    assert output == values
