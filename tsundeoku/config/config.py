@@ -12,6 +12,7 @@ from pydantic import (
 )
 from rich import print
 from rich.markup import escape
+from rich.prompt import Confirm
 from tomli import loads
 from tomli_w import dumps
 
@@ -183,15 +184,16 @@ def write_config_values(config: Config | None = None):
     elif not is_valid_config(config):
         raise InvalidConfig()
     config_toml = as_toml(config)
-    config_file = get_config_path()
-    config_file.write_text(dumps(config_toml))
+    config_path = get_config_path()
+    config_path.write_text(dumps(config_toml))
+    state["config"] = get_config()
 
 
 def get_config_file() -> Path:
-    config_file = get_config_path()
-    if not config_file.is_file():
+    config_path = get_config_path()
+    if not config_path.is_file():
         write_config_values()
-    return config_file
+    return config_path
 
 
 def get_config() -> Config:
@@ -226,3 +228,9 @@ def print_config_values():
         print(section)
         print_config_section(values)
         first_item = False
+
+
+def confirm_reset() -> bool:
+    return Confirm.ask(
+        "Are you sure you want to reset your config to the default values?"
+    )

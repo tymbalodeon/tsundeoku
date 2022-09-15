@@ -13,6 +13,7 @@ from .config import (
     ImportConfig,
     InvalidConfig,
     ReformatConfig,
+    confirm_reset,
     get_config_path,
     get_loaded_config,
     print_config_section,
@@ -55,10 +56,7 @@ def config(
         editor = environ.get("EDITOR", "vim")
         run([editor, config_path])
     elif reset_all:
-        perform_reset = Confirm.ask(
-            "Are you sure you want to reset your config to the default values?"
-        )
-        if perform_reset:
+        if confirm_reset():
             try:
                 write_config_values()
             except InvalidConfig:

@@ -35,16 +35,16 @@ def get_import_values() -> str:
     )
 
 
-def get_notifications_values() -> str:
-    return "system_on=False\nemail_on=False\nusername=\npassword=\n"
-
-
 def get_reformat_values() -> str:
     return (
         "remove_bracket_years=True\n"
         "remove_bracket_instruments=True\n"
         "expand_abbreviations=True\n"
     )
+
+
+def get_notifications_values() -> str:
+    return "system_on=False\nemail_on=False\nusername=\npassword=\n"
 
 
 def get_expected_config_display() -> str:
@@ -60,6 +60,52 @@ def get_expected_config_display() -> str:
         "\n"
         "[notifications]\n"
         f"{get_notifications_values()}"
+    )
+
+
+def get_custom_config() -> str:
+    home = Path.home()
+    custom_shared_directory = home / "Custom"
+    custom_ignored_directory = home / "Ignored"
+    for path in (custom_shared_directory, custom_ignored_directory):
+        Path.mkdir(path)
+    custom_pickle_file = home / "custom.pickle"
+    custom_pickle_file.touch()
+    custom_file_system = (
+        f'shared_directories = ["{custom_shared_directory}",]\n'
+        f'pickle_file = "{custom_pickle_file}"\n'
+        f'ignored_directories = ["{custom_ignored_directory}",]\n'
+        'music_player = "Music"\n'
+    )
+    custom_import = (
+        "reformt = false\n"
+        "ask_before_disc_update = true\n"
+        "ask_before_artist_update = true\n"
+        "allow_prompt = false\n"
+    )
+    custom_reformat = (
+        "remove_bracket_years = false\n"
+        "remove_bracket_instruments = false\n"
+        "expand_abbreviations = false\n"
+    )
+    custom_notifications = (
+        "system_on = true\n"
+        "email_on = true\n"
+        'username = "username"\n'
+        'password = "password"\n'
+    )
+    return (
+        "[file_system]\n"
+        f"{custom_file_system}"
+        "\n"
+        "[import]\n"
+        f"{custom_import}"
+        "\n"
+        "[reformat]\n"
+        f"{custom_reformat}"
+        "\n"
+        "[notifications]\n"
+        f"{custom_notifications}"
     )
 
 
@@ -113,8 +159,37 @@ def test_config_edit(monkeypatch, mocker):
     spy.assert_called_once_with(["vim", config_path])
 
 
-def test_config_reset_all():
-    pass
+def set_confirm_reset(monkeypatch, yes=True):
+    def mock_confirm_reset() -> bool:
+        return yes
+
+    monkeypatch.setattr(config_main, "confirm_reset", mock_confirm_reset)
+
+
+def create_custom_config():
+    config_path = get_config_path()
+    custom_config = get_custom_config()
+    config_path.write_text(custom_config)
+
+
+def test_config_reset_all_restores_default_config(monkeypatch):
+    set_confirm_reset(monkeypatch)
+    default_output = get_command_output([config_command])
+    create_custom_config()
+    output = get_command_output([config_command])
+    assert output != default_output
+    output = get_command_output([config_command, "--reset-all"])
+    assert output == default_output
+
+
+def test_config_reset_all_false_keeps_custom_config(monkeypatch):
+    set_confirm_reset(monkeypatch, yes=False)
+    default_output = get_command_output([config_command])
+    create_custom_config()
+    output = get_command_output([config_command])
+    assert output != default_output
+    output = get_command_output([config_command, "--reset-all"])
+    assert output != default_output
 
 
 def test_config_reset_commands():

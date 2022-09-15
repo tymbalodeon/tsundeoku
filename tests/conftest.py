@@ -29,7 +29,8 @@ def set_mock_home(monkeypatch, tmp_path_factory):
         pickle_parent = default_pickle_file.parent
         paths = list(default_shared_directories) + [pickle_parent]
         for path in paths:
-            Path.mkdir(path, parents=True)
+            if not path.exists():
+                Path.mkdir(path, parents=True)
         default_pickle_file.touch()
         file_system = FileSystemConfig(
             shared_directories=default_shared_directories,
