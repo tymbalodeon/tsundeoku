@@ -1,5 +1,5 @@
 from pytest import mark
-from test_config import config_command, notifications_values
+from test_config import config_command, get_notifications_values
 
 from tests.conftest import get_command_output, get_help_args
 from tsundeoku import main
@@ -17,4 +17,4 @@ def test_config_notifications_help(arg, mock_get_argv, monkeypatch):
 
 def test_config_notifications():
     output = get_command_output([config_command, "notifications"])
-    assert output == notifications_values
+    assert output == get_notifications_values()

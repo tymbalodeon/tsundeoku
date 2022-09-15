@@ -1,5 +1,5 @@
 from pytest import mark
-from test_config import config_command, import_values
+from test_config import config_command, get_import_values
 
 from tests.conftest import get_command_output, get_help_args
 from tsundeoku import main
@@ -15,4 +15,4 @@ def test_config_import_help(arg, mock_get_argv, monkeypatch):
 
 def test_config_import():
     output = get_command_output([config_command, "import"])
-    assert output == import_values
+    assert output == get_import_values()

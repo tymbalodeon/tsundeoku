@@ -1,5 +1,5 @@
 from pytest import mark
-from test_config import config_command, reformat_values
+from test_config import config_command, get_reformat_values
 
 from tests.conftest import get_command_output, get_help_args
 from tsundeoku import main
@@ -15,4 +15,4 @@ def test_config_reformat_help(arg, mock_get_argv, monkeypatch):
 
 def test_config_reformat():
     output = get_command_output([config_command, "reformat"])
-    assert output == reformat_values
+    assert output == get_reformat_values()
