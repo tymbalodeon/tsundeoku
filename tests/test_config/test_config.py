@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pytest import mark
 
 from tests.conftest import get_help_args, get_output
@@ -48,3 +50,14 @@ def test_config():
         f"{notifications_values}"
     )
     assert output == expected_config_display
+
+
+def test_config_path_includes_home():
+    output = get_output([config_command, "--path"])
+    home = str(Path.home())
+    assert home in output.replace("\n", "")
+
+
+def test_config_path_includes_config_path():
+    output = get_output([config_command, "--path"])
+    assert ".config/tsundeoku/tsundeoku.toml" in output

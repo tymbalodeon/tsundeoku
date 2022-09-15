@@ -1,8 +1,8 @@
 from pytest import mark
+from test_config import config_command, file_system_values
 
 from tests.conftest import get_help_args, get_output
 from tsundeoku import main
-from test_config import config_command, file_system_values
 
 
 @mark.parametrize("arg, mock_get_argv", get_help_args())
