@@ -18,3 +18,32 @@ def test_config_help(arg, mock_get_argv, monkeypatch):
     monkeypatch.setattr(main, "get_argv", mock_get_argv)
     output = CliRunner().invoke(tsundeoku, [config_command, arg]).output
     assert config_help_text in output
+
+
+def test_config():
+    output = CliRunner().invoke(tsundeoku, config_command).output
+    expected_config_display = (
+        "[file_system]\n"
+        "shared_directories={'/Users/rrosen/Dropbox'}\n"
+        "pickle_file=/Users/rrosen/.config/beets/state.pickle\n"
+        "ignored_directories=None\n"
+        "music_player=Swinsian\n"
+        "\n"
+        "[import]\n"
+        "reformat=True\n"
+        "ask_before_disc_update=False\n"
+        "ask_before_artist_update=False\n"
+        "allow_prompt=True\n"
+        "\n"
+        "[reformat]\n"
+        "remove_bracket_years=True\n"
+        "remove_bracket_instruments=True\n"
+        "expand_abbreviations=True\n"
+        "\n"
+        "[notifications]\n"
+        "system_on=False\n"
+        "email_on=False\n"
+        "username=\n"
+        "password=\n"
+    )
+    assert output == expected_config_display
