@@ -1,13 +1,11 @@
 from pytest import mark
-from typer.testing import CliRunner
 
 from tsundeoku import main
-from tsundeoku.main import tsundeoku
 
-from .conftest import get_mock_get_argvs, mock_argv
+from .conftest import get_mock_get_argvs, get_output, mock_argv
 
 reformat_command = "reformat"
-mock_get_argv_long, mock_get_argv_short = get_mock_get_argvs(reformat_command)
+mock_get_argv_long, mock_get_argv_short = get_mock_get_argvs()
 
 help_texts = [
     "Reformat metadata according to the following rules:",
@@ -28,5 +26,5 @@ def get_args() -> list[tuple[str, mock_argv, str]]:
 @mark.parametrize("arg, mock_get_argv, help_text", get_args())
 def test_reformat_help(arg, mock_get_argv, help_text, monkeypatch):
     monkeypatch.setattr(main, "get_argv", mock_get_argv)
-    output = CliRunner().invoke(tsundeoku, [reformat_command, arg]).output
+    output = get_output([reformat_command, arg])
     assert help_text in output

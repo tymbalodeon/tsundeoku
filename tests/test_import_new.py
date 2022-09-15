@@ -1,13 +1,11 @@
 from pytest import mark
-from typer.testing import CliRunner
 
 from tsundeoku import main
-from tsundeoku.main import tsundeoku
 
-from .conftest import get_mock_get_argvs
+from .conftest import get_mock_get_argvs, get_output
 
 import_command = "import"
-mock_get_argv_long, mock_get_argv_short = get_mock_get_argvs(import_command)
+mock_get_argv_long, mock_get_argv_short = get_mock_get_argvs()
 
 
 @mark.parametrize(
@@ -16,5 +14,5 @@ mock_get_argv_long, mock_get_argv_short = get_mock_get_argvs(import_command)
 def test_import_help(arg, mock_get_argv, monkeypatch):
     import_new_help_text = "Copy new adds from your shared folder to your local library"
     monkeypatch.setattr(main, "get_argv", mock_get_argv)
-    output = CliRunner().invoke(tsundeoku, [import_command, arg]).output
+    output = get_output([import_command, arg])
     assert import_new_help_text in output
