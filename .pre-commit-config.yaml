@@ -46,8 +46,8 @@ repos:
         args: [--ignore-missing-imports]
   - repo: local
     hooks:
-      - id: test
-        name: test
-        entry: make test
+      - id: coverage
+        name: coverage
+        entry: make coverage fail-under=52
         language: system
         pass_filenames: false

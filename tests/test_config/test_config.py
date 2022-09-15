@@ -47,7 +47,7 @@ def get_notifications_values() -> str:
     return "system_on=False\nemail_on=False\nusername=\npassword=\n"
 
 
-def get_expected_config_display() -> str:
+def get_expected_default_config_display() -> str:
     return (
         "[file_system]\n"
         f"{get_file_system_values()}"
@@ -63,16 +63,27 @@ def get_expected_config_display() -> str:
     )
 
 
+def get_custom_shared_directories() -> Path:
+    return Path.home() / "Custom"
+
+
+def get_custom_pickle_file() -> Path:
+    return Path.home() / "custom.pickle"
+
+
+def get_custom_ignored_directories() -> Path:
+    return Path.home() / "Ignored"
+
+
 def get_custom_config() -> str:
-    home = Path.home()
-    custom_shared_directory = home / "Custom"
-    custom_ignored_directory = home / "Ignored"
-    for path in (custom_shared_directory, custom_ignored_directory):
+    custom_shared_directories = get_custom_shared_directories()
+    custom_pickle_file = get_custom_pickle_file()
+    custom_ignored_directory = get_custom_ignored_directories()
+    for path in (custom_shared_directories, custom_ignored_directory):
         Path.mkdir(path)
-    custom_pickle_file = home / "custom.pickle"
     custom_pickle_file.touch()
     custom_file_system = (
-        f'shared_directories = ["{custom_shared_directory}",]\n'
+        f'shared_directories = ["{custom_shared_directories}",]\n'
         f'pickle_file = "{custom_pickle_file}"\n'
         f'ignored_directories = ["{custom_ignored_directory}",]\n'
         'music_player = "Music"\n'
@@ -109,6 +120,38 @@ def get_custom_config() -> str:
     )
 
 
+def get_custom_file_system_values() -> str:
+    custom_shared_directories = get_custom_shared_directories()
+    custom_pickle_file = get_custom_pickle_file()
+    custom_ignored_directories = get_custom_ignored_directories()
+    return (
+        f"shared_directories={{'{custom_shared_directories}'}}\n"
+        f"pickle_file={custom_pickle_file}\n"
+        f"ignored_directories={{'{custom_ignored_directories}'}}\n"
+        "music_player=Music\n"
+    )
+
+
+def get_custom_notifications_values() -> str:
+    return "system_on=True\nemail_on=True\nusername=username\npassword=********"
+
+
+def get_expected_custom_config_display() -> str:
+    return (
+        "[file_system]\n"
+        f"{get_custom_file_system_values()}"
+        "\n"
+        "[import]\n"
+        f"{get_import_values()}"
+        "\n"
+        "[reformat]\n"
+        f"{get_reformat_values()}"
+        "\n"
+        "[notifications]\n"
+        f"{get_custom_notifications_values()}"
+    )
+
+
 @mark.parametrize("arg, mock_get_argv", get_help_args())
 def test_config_help(arg, mock_get_argv, monkeypatch):
     config_help_text = "Show [default] and set config values."
@@ -119,7 +162,7 @@ def test_config_help(arg, mock_get_argv, monkeypatch):
 
 def test_config():
     output = get_command_output([config_command])
-    expected_config_display = get_expected_config_display()
+    expected_config_display = get_expected_default_config_display()
     output = strip_newlines(output)
     expected_config_display = strip_newlines(expected_config_display)
     assert output == expected_config_display
@@ -160,37 +203,48 @@ def test_config_edit(monkeypatch, mocker):
 
 
 def set_confirm_reset(monkeypatch, yes=True):
-    def mock_confirm_reset() -> bool:
+    def mock_confirm_reset(commands=False) -> bool:
         return yes
 
     monkeypatch.setattr(config_main, "confirm_reset", mock_confirm_reset)
 
 
-def create_custom_config():
+def set_custom_config_and_get_default_output() -> str:
+    default_output = get_command_output([config_command])
     config_path = get_config_path()
     custom_config = get_custom_config()
     config_path.write_text(custom_config)
+    output = get_command_output([config_command])
+    assert output != default_output
+    return default_output
 
 
 def test_config_reset_all_restores_default_config(monkeypatch):
     set_confirm_reset(monkeypatch)
-    default_output = get_command_output([config_command])
-    create_custom_config()
-    output = get_command_output([config_command])
-    assert output != default_output
+    default_output = set_custom_config_and_get_default_output()
     output = get_command_output([config_command, "--reset-all"])
     assert output == default_output
 
 
 def test_config_reset_all_false_keeps_custom_config(monkeypatch):
     set_confirm_reset(monkeypatch, yes=False)
-    default_output = get_command_output([config_command])
-    create_custom_config()
-    output = get_command_output([config_command])
-    assert output != default_output
+    default_output = set_custom_config_and_get_default_output()
     output = get_command_output([config_command, "--reset-all"])
     assert output != default_output
 
 
-def test_config_reset_commands():
-    pass
+def test_config_reset_commands_restores_default_options(monkeypatch):
+    set_confirm_reset(monkeypatch)
+    set_custom_config_and_get_default_output()
+    expected_custom_config_display = get_expected_custom_config_display()
+    output = get_command_output([config_command, "--reset-commands"])
+    expected_custom_config_display = strip_newlines(expected_custom_config_display)
+    output = strip_newlines(output)
+    assert output == expected_custom_config_display
+
+
+def test_config_reset_commands_false_keeps_custom_config(monkeypatch):
+    set_confirm_reset(monkeypatch, yes=False)
+    default_output = set_custom_config_and_get_default_output()
+    output = get_command_output([config_command, "--reset-commands"])
+    assert output != default_output

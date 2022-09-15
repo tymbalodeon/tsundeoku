@@ -55,14 +55,12 @@ def config(
     elif edit:
         editor = environ.get("EDITOR", "vim")
         run([editor, config_path])
-    elif reset_all:
-        if confirm_reset():
-            try:
-                write_config_values()
-            except InvalidConfig:
-                return
-            print_config_values()
-    elif reset_commands:
+    elif reset_all and confirm_reset():
+        try:
+            write_config_values()
+        except InvalidConfig:
+            return
+    elif reset_commands and confirm_reset(commands=True):
         config = get_loaded_config()
         config.reformat = ReformatConfig()
         config.import_new = ImportConfig()
@@ -70,9 +68,7 @@ def config(
             write_config_values(config)
         except InvalidConfig:
             return
-        print_config_values()
-    else:
-        print_config_values()
+    print_config_values()
 
 
 def stylize_path(path: str) -> str:
