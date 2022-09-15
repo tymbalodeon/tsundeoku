@@ -27,7 +27,6 @@ def get_mock_get_argvs(command: str) -> tuple[mock_argv, mock_argv]:
 @fixture(autouse=True)
 def set_mock_home(monkeypatch, tmp_path_factory):
     def mock_home():
-        home = tmp_path_factory.mktemp("home")
-        return home
+        return tmp_path_factory.mktemp("home")
 
     monkeypatch.setattr(Path, "home", mock_home)
