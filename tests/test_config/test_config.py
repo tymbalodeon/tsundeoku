@@ -4,6 +4,8 @@ from pytest import mark
 
 from tests.conftest import get_help_args, get_output
 from tsundeoku import main
+from tsundeoku.config import main as config_main
+from tsundeoku.config.config import get_config_path
 
 config_command = "config"
 file_system_values = (
@@ -61,3 +63,24 @@ def test_config_path_includes_home():
 def test_config_path_includes_config_path():
     output = get_output([config_command, "--path"])
     assert ".config/tsundeoku/tsundeoku.toml" in output
+
+
+def test_config_file(monkeypatch):
+    def mock_launch(config_path: str, locate: bool):
+        print(config_path, locate)
+
+    monkeypatch.setattr(config_main, "launch", mock_launch)
+    output = get_output([config_command, "--file"])
+    config_path = str(get_config_path())
+    assert config_path in output and "True" in output
+
+
+def test_config_edit(monkeypatch):
+    def mock_run(args: list[str]):
+        print(args)
+
+    monkeypatch.setattr(config_main, "run", mock_run)
+    monkeypatch.setattr(config_main, "environ", {})
+    output = get_output([config_command, "--edit"])
+    config_path = str(get_config_path())
+    assert config_path in output and "vim" in output
