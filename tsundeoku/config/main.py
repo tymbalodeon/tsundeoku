@@ -76,7 +76,7 @@ def stylize_path(path: str) -> str:
     return stylize(path, "green")
 
 
-def confirm_update(value: list[str] | str, add: bool, remove: bool) -> bool:
+def confirm_update(value: list[str] | str, add=False, remove=False) -> bool:
     if isinstance(value, list):
         value = [stylize_path(path) for path in value]
         value = ", ".join(value)
@@ -152,25 +152,27 @@ def file_system(
     if no_updates_provided(context.params):
         print_config_section(file_system)
         return
-    if shared_directories:
-        if confirm_update(shared_directories, add=add, remove=remove):
-            file_system.shared_directories = get_new_directory_values(
-                section=file_system.shared_directories,
-                values=shared_directories,
-                add=add,
-                remove=remove,
-            )
-    if pickle_file:
+    if shared_directories and confirm_update(
+        shared_directories, add=add, remove=remove
+    ):
+        file_system.shared_directories = get_new_directory_values(
+            section=file_system.shared_directories,
+            values=shared_directories,
+            add=add,
+            remove=remove,
+        )
+    if pickle_file and confirm_update(pickle_file):
         file_system.pickle_file = Path(pickle_file)
-    if ignored_directories:
-        if confirm_update(ignored_directories, add=add, remove=remove):
-            file_system.ignored_directories = get_new_directory_values(
-                section=file_system.ignored_directories,
-                values=ignored_directories,
-                add=add,
-                remove=remove,
-            )
-    if music_player is not None:
+    if ignored_directories and confirm_update(
+        ignored_directories, add=add, remove=remove
+    ):
+        file_system.ignored_directories = get_new_directory_values(
+            section=file_system.ignored_directories,
+            values=ignored_directories,
+            add=add,
+            remove=remove,
+        )
+    if music_player is not None and confirm_update(music_player):
         file_system.music_player = music_player
     try:
         write_config_values(config)
