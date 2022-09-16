@@ -13,6 +13,7 @@ from tsundeoku.config.config import (
     get_default_music_player,
     get_default_pickle_file,
     get_default_shared_directories,
+    write_config_values,
 )
 from tsundeoku.main import tsundeoku
 
@@ -76,6 +77,7 @@ def set_mock_home(monkeypatch, tmp_path_factory):
 
     monkeypatch.setattr(Path, "home", mock_home)
     monkeypatch.setattr(config, "get_config_instance", mock_get_config_instance)
+    write_config_values()
 
 
 mock_argv = Callable[[], list[str]]

@@ -305,13 +305,8 @@ def test_file_system_remove(monkeypatch):
         ]
     )
     home = Path.home()
-    shared_directories = str(home / "Dropbox")
-    expected_updated_config = (
-        f"shared_directories={{'{shared_directories}'}}\n"
-        f"pickle_file={home}/.config/beets/state.pickle\n"
-        "ignored_directories=None\n"
-        "music_player=Swinsian\n"
-    )
+    str(home / "Dropbox")
+    expected_updated_config = get_file_system_values()
     output = strip_newlines(output)
     expected_updated_config = strip_newlines(expected_updated_config)
     assert output == expected_updated_config
