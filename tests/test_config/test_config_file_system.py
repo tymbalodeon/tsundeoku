@@ -11,6 +11,7 @@ from test_config import (
 )
 
 from tests.conftest import get_command_output, get_help_args, strip_newlines
+from tests.test_config.test_config import call_command
 from tsundeoku import main
 from tsundeoku.config import main as config_main
 
@@ -41,7 +42,6 @@ def set_confirm_update(monkeypatch, yes=True):
 def test_file_system_shared_directories_good_value_updates_config(monkeypatch):
     set_confirm_update(monkeypatch)
     custom_shared_directories = get_custom_shared_directories()
-    Path.mkdir(custom_shared_directories)
     output = get_command_output(
         [
             config_command,
@@ -65,7 +65,6 @@ def test_file_system_shared_directories_good_value_updates_config(monkeypatch):
 def test_file_system_shared_directories_good_value_false_keeps_config(monkeypatch):
     set_confirm_update(monkeypatch, yes=False)
     custom_shared_directories = get_custom_shared_directories()
-    Path.mkdir(custom_shared_directories)
     default_output = get_command_output([config_command, "file-system"])
     output = get_command_output(
         [
@@ -80,7 +79,7 @@ def test_file_system_shared_directories_good_value_false_keeps_config(monkeypatc
 
 def test_file_system_shared_directories_bad_value_shows_error(monkeypatch):
     set_confirm_update(monkeypatch)
-    custom_shared_directories = get_custom_shared_directories()
+    custom_shared_directories = get_custom_shared_directories(create=False)
     output = get_command_output(
         [
             config_command,
@@ -161,7 +160,6 @@ def test_file_system_pickle_file_bad_value_shows_error(monkeypatch):
 def test_file_system_ignored_directories_good_value_updates_config(monkeypatch):
     set_confirm_update(monkeypatch)
     custom_ignored_directories = get_custom_ignored_directories()
-    Path.mkdir(custom_ignored_directories)
     output = get_command_output(
         [
             config_command,
@@ -186,7 +184,6 @@ def test_file_system_ignored_directories_good_value_updates_config(monkeypatch):
 def test_file_system_ignored_directories_good_value_false_keeps_config(monkeypatch):
     set_confirm_update(monkeypatch, yes=False)
     custom_ignored_directories = get_custom_ignored_directories()
-    Path.mkdir(custom_ignored_directories)
     default_output = get_command_output([config_command, "file-system"])
     output = get_command_output(
         [
@@ -201,7 +198,7 @@ def test_file_system_ignored_directories_good_value_false_keeps_config(monkeypat
 
 def test_file_system_ignored_directories_bad_value_shows_error(monkeypatch):
     set_confirm_update(monkeypatch)
-    custom_ignored_directories = get_custom_ignored_directories()
+    custom_ignored_directories = get_custom_ignored_directories(create=False)
     output = get_command_output(
         [
             config_command,
@@ -258,3 +255,63 @@ def test_file_system_music_player_bad_value_shows_error(monkeypatch):
     output = strip_newlines(output)
     error_message = strip_newlines(error_message)
     assert output == error_message
+
+
+def test_file_system_add(monkeypatch):
+    set_confirm_update(monkeypatch)
+    custom_shared_directories = str(get_custom_shared_directories())
+    output = get_command_output(
+        [
+            config_command,
+            "file-system",
+            "--add",
+            "--shared-directories",
+            str(custom_shared_directories),
+        ]
+    )
+    home = Path.home()
+    shared_directories = str(home / "Dropbox")
+    file_system_config = (
+        f"pickle_file={home}/.config/beets/state.pickle\n"
+        "ignored_directories=None\n"
+        "music_player=Swinsian\n"
+    )
+    output = strip_newlines(output)
+    file_system_config = strip_newlines(file_system_config)
+    assert custom_shared_directories in output
+    assert shared_directories in output
+    assert file_system_config in output
+
+
+def test_file_system_remove(monkeypatch):
+    set_confirm_update(monkeypatch)
+    custom_shared_directories = str(get_custom_shared_directories())
+    call_command(
+        [
+            config_command,
+            "file-system",
+            "--add",
+            "--shared-directories",
+            str(custom_shared_directories),
+        ]
+    )
+    output = get_command_output(
+        [
+            config_command,
+            "file-system",
+            "--remove",
+            "--shared-directories",
+            str(custom_shared_directories),
+        ]
+    )
+    home = Path.home()
+    shared_directories = str(home / "Dropbox")
+    expected_updated_config = (
+        f"shared_directories={{'{shared_directories}'}}\n"
+        f"pickle_file={home}/.config/beets/state.pickle\n"
+        "ignored_directories=None\n"
+        "music_player=Swinsian\n"
+    )
+    output = strip_newlines(output)
+    expected_updated_config = strip_newlines(expected_updated_config)
+    assert output == expected_updated_config

@@ -63,16 +63,23 @@ def get_expected_default_config_display() -> str:
     )
 
 
-def get_custom_shared_directories() -> Path:
-    return Path.home() / "Custom"
+def get_custom_directories(name: str, create=True) -> Path:
+    custom_directories = Path.home() / name
+    if create:
+        Path.mkdir(custom_directories)
+    return custom_directories
+
+
+def get_custom_shared_directories(create=True) -> Path:
+    return get_custom_directories("Custom", create=create)
 
 
 def get_custom_pickle_file() -> Path:
     return Path.home() / "custom.pickle"
 
 
-def get_custom_ignored_directories() -> Path:
-    return Path.home() / "Ignored"
+def get_custom_ignored_directories(create=True) -> Path:
+    return get_custom_directories("Ignored", create=create)
 
 
 def get_custom_music_player() -> str:
@@ -84,8 +91,6 @@ def get_custom_config() -> str:
     custom_pickle_file = get_custom_pickle_file()
     custom_ignored_directory = get_custom_ignored_directories()
     custom_music_player = get_custom_music_player()
-    for path in (custom_shared_directories, custom_ignored_directory):
-        Path.mkdir(path)
     custom_pickle_file.touch()
     custom_file_system = (
         f'shared_directories = ["{custom_shared_directories}",]\n'
@@ -126,9 +131,9 @@ def get_custom_config() -> str:
 
 
 def get_custom_file_system_values() -> str:
-    custom_shared_directories = get_custom_shared_directories()
+    custom_shared_directories = get_custom_shared_directories(create=False)
     custom_pickle_file = get_custom_pickle_file()
-    custom_ignored_directories = get_custom_ignored_directories()
+    custom_ignored_directories = get_custom_ignored_directories(create=False)
     custom_music_player = get_custom_music_player()
     return (
         f"shared_directories={{'{custom_shared_directories}'}}\n"
