@@ -55,7 +55,9 @@ def set_mock_home(monkeypatch, tmp_path_factory):
     def mock_home():
         return home
 
-    def mock_get_default_config():
+    def mock_get_config_instance(config_values: dict | None = None):
+        if config_values:
+            return MockConfig(**config_values)
         default_shared_directories = get_default_shared_directories()
         default_pickle_file = get_default_pickle_file()
         default_music_player = get_default_music_player()
@@ -73,7 +75,7 @@ def set_mock_home(monkeypatch, tmp_path_factory):
         return MockConfig(**{"file_system": file_system})
 
     monkeypatch.setattr(Path, "home", mock_home)
-    monkeypatch.setattr(config, "get_default_config", mock_get_default_config)
+    monkeypatch.setattr(config, "get_config_instance", mock_get_config_instance)
 
 
 mock_argv = Callable[[], list[str]]
