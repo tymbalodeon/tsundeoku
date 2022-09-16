@@ -87,11 +87,13 @@ class Config(BaseModel):
     notifications = NotificationsConfig()
 
 
-def get_default_config() -> Config:
+def get_config_instance(config_values: dict | None = None) -> Config:
+    if config_values:
+        return Config(**config_values)
     return Config()
 
 
-state = {"config": get_default_config()}
+state = {"config": get_config_instance()}
 APP_NAME = "tsundeoku"
 CONFIG_PATH = f".config/{APP_NAME}"
 
@@ -167,7 +169,7 @@ def print_errors(validation_error: ValidationError, level: StyleLevel):
 
 def is_valid_config(config_values: Config) -> bool:
     try:
-        Config(**config_values.dict())
+        get_config_instance(config_values.dict())
         return True
     except ValidationError as error:
         print_errors(error, level=StyleLevel.ERROR)
@@ -180,7 +182,7 @@ class InvalidConfig(Exception):
 
 def write_config_values(config: Config | None = None):
     if not config:
-        config = get_default_config()
+        config = get_config_instance()
     elif not is_valid_config(config):
         raise InvalidConfig()
     config_toml = as_toml(config)
@@ -201,7 +203,7 @@ def get_config() -> Config:
     config_text = config_file.read_text()
     config_values = loads(config_text)
     config_values = convert_import_to_import_new(config_values)
-    return Config(**config_values)
+    return get_config_instance(config_values)
 
 
 def print_config_section(config: BaseModel | dict):

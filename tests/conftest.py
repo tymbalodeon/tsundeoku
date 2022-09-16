@@ -1,18 +1,51 @@
 from collections.abc import Callable
 from pathlib import Path
 
+from pydantic import BaseModel, DirectoryPath, Field, FilePath, validator
 from pytest import fixture
 from typer.testing import CliRunner
 
 from tsundeoku.config import config
 from tsundeoku.config.config import (
-    Config,
-    FileSystemConfig,
+    ImportConfig,
+    NotificationsConfig,
+    ReformatConfig,
     get_default_music_player,
     get_default_pickle_file,
     get_default_shared_directories,
 )
 from tsundeoku.main import tsundeoku
+
+
+class MockFileSystemConfig(BaseModel):
+    shared_directories: set[DirectoryPath] = Field(
+        default_factory=get_default_shared_directories
+    )
+    pickle_file: FilePath = Field(default_factory=get_default_pickle_file)
+    ignored_directories: set[DirectoryPath] = Field(default_factory=list)
+    music_player: str = get_default_music_player()
+
+    @validator("shared_directories", "ignored_directories")
+    def validate_directory_paths(cls, paths: list[str]) -> set[Path]:
+        return {Path(path).expanduser() for path in paths}
+
+    @validator("pickle_file")
+    def validate_file_path(cls, path: str) -> Path:
+        return Path(path)
+
+    @validator("music_player")
+    def validate_application(cls, application_name: str) -> str:
+        default_music_player = get_default_music_player()
+        if application_name in (default_music_player, "Custom"):
+            return application_name
+        raise ValueError(f'application "{application_name}" not found')
+
+
+class MockConfig(BaseModel):
+    file_system = MockFileSystemConfig()
+    import_new = ImportConfig()
+    reformat = ReformatConfig()
+    notifications = NotificationsConfig()
 
 
 @fixture(autouse=True)
@@ -22,7 +55,9 @@ def set_mock_home(monkeypatch, tmp_path_factory):
     def mock_home():
         return home
 
-    def mock_get_default_config():
+    def mock_get_config_instance(config_values: dict | None = None):
+        if config_values:
+            return MockConfig(**config_values)
         default_shared_directories = get_default_shared_directories()
         default_pickle_file = get_default_pickle_file()
         default_music_player = get_default_music_player()
@@ -32,15 +67,15 @@ def set_mock_home(monkeypatch, tmp_path_factory):
             if not path.exists():
                 Path.mkdir(path, parents=True)
         default_pickle_file.touch()
-        file_system = FileSystemConfig(
+        file_system = MockFileSystemConfig(
             shared_directories=default_shared_directories,
             pickle_file=default_pickle_file,
             music_player=default_music_player,
         )
-        return Config(**{"file_system": file_system})
+        return MockConfig(**{"file_system": file_system})
 
     monkeypatch.setattr(Path, "home", mock_home)
-    monkeypatch.setattr(config, "get_default_config", mock_get_default_config)
+    monkeypatch.setattr(config, "get_config_instance", mock_get_config_instance)
 
 
 mock_argv = Callable[[], list[str]]

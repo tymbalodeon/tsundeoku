@@ -63,30 +63,40 @@ def get_expected_default_config_display() -> str:
     )
 
 
-def get_custom_shared_directories() -> Path:
-    return Path.home() / "Custom"
+def get_custom_directories(name: str, create=True) -> Path:
+    custom_directories = Path.home() / name
+    if create:
+        Path.mkdir(custom_directories)
+    return custom_directories
+
+
+def get_custom_shared_directories(create=True) -> Path:
+    return get_custom_directories("Custom", create=create)
 
 
 def get_custom_pickle_file() -> Path:
     return Path.home() / "custom.pickle"
 
 
-def get_custom_ignored_directories() -> Path:
-    return Path.home() / "Ignored"
+def get_custom_ignored_directories(create=True) -> Path:
+    return get_custom_directories("Ignored", create=create)
+
+
+def get_custom_music_player() -> str:
+    return "Custom"
 
 
 def get_custom_config() -> str:
     custom_shared_directories = get_custom_shared_directories()
     custom_pickle_file = get_custom_pickle_file()
     custom_ignored_directory = get_custom_ignored_directories()
-    for path in (custom_shared_directories, custom_ignored_directory):
-        Path.mkdir(path)
+    custom_music_player = get_custom_music_player()
     custom_pickle_file.touch()
     custom_file_system = (
         f'shared_directories = ["{custom_shared_directories}",]\n'
         f'pickle_file = "{custom_pickle_file}"\n'
         f'ignored_directories = ["{custom_ignored_directory}",]\n'
-        'music_player = "Music"\n'
+        f'music_player = "{custom_music_player}"\n'
     )
     custom_import = (
         "reformt = false\n"
@@ -121,14 +131,15 @@ def get_custom_config() -> str:
 
 
 def get_custom_file_system_values() -> str:
-    custom_shared_directories = get_custom_shared_directories()
+    custom_shared_directories = get_custom_shared_directories(create=False)
     custom_pickle_file = get_custom_pickle_file()
-    custom_ignored_directories = get_custom_ignored_directories()
+    custom_ignored_directories = get_custom_ignored_directories(create=False)
+    custom_music_player = get_custom_music_player()
     return (
         f"shared_directories={{'{custom_shared_directories}'}}\n"
         f"pickle_file={custom_pickle_file}\n"
         f"ignored_directories={{'{custom_ignored_directories}'}}\n"
-        "music_player=Music\n"
+        f"music_player={custom_music_player}\n"
     )
 
 
@@ -168,15 +179,12 @@ def test_config():
     assert output == expected_config_display
 
 
-def test_config_path_includes_home():
+def test_config_path():
     output = get_command_output([config_command, "--path"])
     home = str(Path.home())
-    assert home in output.replace("\n", "")
-
-
-def test_config_path_includes_config_path():
-    output = get_command_output([config_command, "--path"])
-    assert ".config/tsundeoku/tsundeoku.toml" in output
+    output = strip_newlines(output)
+    config_path = ".config/tsundeoku/tsundeoku.toml"
+    assert home in output and config_path in output
 
 
 def test_config_file(monkeypatch, mocker):

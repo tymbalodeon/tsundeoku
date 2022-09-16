@@ -7,7 +7,7 @@ POETRY = poetry run
 PRE_COMMIT = pre-commit run
 BEETS_CONFIG_FOLDER = ~/.config/beets
 BEETS_CONFIG_PATH = $(BEETS_CONFIG_FOLDER)/config.yaml
-TEST = $(POETRY) pytest
+TEST = $(POETRY) coverage run -m pytest
 COVERAGE = $(POETRY) coverage report -m --skip-covered --sort=cover
 GET_TEST_FILE = tests/test_$(1).py
 
