@@ -46,3 +46,8 @@ def stylize(text: str, styles: list[str] | str) -> str:
         for style in styles:
             text = wrap_in_style(text, style)
     return text
+
+
+def stylize_path(path: str) -> str:
+    path = f'"{path}"'
+    return stylize(path, "green")

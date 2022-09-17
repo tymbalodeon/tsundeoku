@@ -7,7 +7,7 @@ from rich.markup import escape
 from rich.prompt import Confirm
 from typer import Context, Option, Typer, launch
 
-from tsundeoku.style import stylize
+from tsundeoku.style import stylize_path
 
 from .config import (
     ImportConfig,
@@ -69,11 +69,6 @@ def config(
         except InvalidConfig:
             return
     print_config_values()
-
-
-def stylize_path(path: str) -> str:
-    path = f'"{path}"'
-    return stylize(path, "green")
 
 
 def confirm_update(value: list[str] | str, add=False, remove=False) -> bool:
