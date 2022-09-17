@@ -10,15 +10,11 @@ def test_version():
     assert __version__ == version
 
 
-version_display = f"tsundeoku {version}\n"
-
-
-@mark.parametrize(
-    "arg, version", [("--version", version_display), ("-V", version_display)]
-)
-def test_version_display(arg, version):
+@mark.parametrize("arg", ["--version", "-V"])
+def test_version_display(arg):
+    version_display = f"tsundeoku {version}\n"
     output = get_command_output([arg])
-    assert output == version
+    assert output == version_display
 
 
 @mark.parametrize("arg", [None, "--help", "-h"])

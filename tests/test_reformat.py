@@ -6,7 +6,6 @@ from .conftest import get_command_output, get_mock_get_argvs, mock_argv
 
 reformat_command = "reformat"
 mock_get_argv_long, mock_get_argv_short = get_mock_get_argvs()
-
 help_texts = [
     "Reformat metadata according to the following rules:",
     'Remove bracketed years (e.g., "[2022]") from album fields',
