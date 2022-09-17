@@ -31,8 +31,12 @@ def get_schedule_help_message():
     )
 
 
+def get_tmp_path() -> Path:
+    return Path("/tmp")
+
+
 def get_log_path() -> Path:
-    log_path = Path("/tmp") / f"{APP_NAME}.log"
+    log_path = get_tmp_path() / f"{APP_NAME}.log"
     if not log_path.exists():
         log_path.touch()
     return log_path
@@ -186,11 +190,12 @@ def show_currently_scheduled():
     print(message)
 
 
-def stamp_logs():
+def stamp_logs() -> str:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_path = get_log_path()
     with open(log_path, "a") as log:
         log.write(f"---- {current_time} ----\n")
+    return current_time
 
 
 def send_email(contents: str):
