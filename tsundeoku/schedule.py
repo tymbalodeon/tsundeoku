@@ -42,6 +42,13 @@ def get_log_path() -> Path:
     return log_path
 
 
+def launchctl(command: str, path: Path | None = None) -> bytes:
+    args: list[Path | str] = [LAUNCHCTL, command]
+    if path:
+        args.append(path)
+    return run(args, capture_output=True).stdout
+
+
 def load_rotate_logs_plist():
     rotate_logs_plist_label = f"com.{APP_NAME}.rotatelogs.plist"
     remove_plist(rotate_logs_plist_label)
@@ -69,7 +76,7 @@ def load_rotate_logs_plist():
     )
     plist_path = get_plist_path(rotate_logs_plist_label)
     plist_path.write_text(plist)
-    run([LAUNCHCTL, "load", plist_path])
+    launchctl("load", plist_path)
 
 
 def get_plist_path(label=PLIST_LABEL) -> Path:
@@ -79,7 +86,7 @@ def get_plist_path(label=PLIST_LABEL) -> Path:
 
 def remove_plist(label=PLIST_LABEL):
     plist_path = get_plist_path(label)
-    run([LAUNCHCTL, "unload", plist_path], capture_output=True)
+    launchctl("unload", plist_path)
     if plist_path.is_file():
         plist_path.unlink()
 
@@ -141,7 +148,7 @@ def load_plist(hour: int | None, minute: int | None):
     plist = get_plist_text(hour, minute)
     plist_path = get_plist_path()
     plist_path.write_text(plist)
-    run([LAUNCHCTL, "load", plist_path])
+    launchctl("load", plist_path)
 
 
 def schedule_import(schedule_time: str) -> str:
@@ -164,10 +171,13 @@ def schedule_import(schedule_time: str) -> str:
     return f"{message} {schedule_type} at {display_time}."
 
 
+def is_currently_scheduled() -> bool:
+    loaded_plists = str(launchctl("list"))
+    return PLIST_LABEL in loaded_plists
+
+
 def show_currently_scheduled():
-    loaded_plists = str(run([LAUNCHCTL, "list"], capture_output=True).stdout)
-    currently_scheduled = PLIST_LABEL in loaded_plists
-    if not currently_scheduled:
+    if not is_currently_scheduled():
         print("Import is not currently scheduled.")
         return
     plist_path = get_plist_path()
