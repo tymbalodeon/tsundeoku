@@ -232,19 +232,16 @@ def reformat(
         None,
         "--remove-bracket-years/--years-as-is",
         help="Set default value for removing bracket years.",
-        show_default=False,
     ),
     remove_bracket_instruments: bool = Option(
         None,
         "--remove-bracket-instruments/--instruments-as-is",
         help="Set default value for removing bracket instruments.",
-        show_default=False,
     ),
     expand_abbreviations: bool = Option(
         None,
         "--expand-abbreviations/--abbreviations-as-is",
         help="Set default value for expanding abbreviations.",
-        show_default=False,
     ),
 ):
     """Show and set default values for "reformat" command."""
