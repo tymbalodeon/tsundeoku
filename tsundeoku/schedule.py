@@ -227,12 +227,24 @@ def send_email(contents: str):
     email.send(subject=subject, contents=contents)
 
 
-def tail(text: str, number_of_lines=10):
+def get_most_recent_log(text: str) -> list[str]:
     lines = text.splitlines()
-    for line in lines[-number_of_lines:]:
+    lines.reverse()
+    for index, line in enumerate(lines):
+        if line.startswith("---- "):
+            index = index + 1
+            lines = lines[:index]
+            lines.reverse()
+    return lines
+
+
+def print_most_recent_log(text: str):
+    lines = get_most_recent_log(text)
+    for line in lines:
         print(line)
 
 
 def show_logs():
     log_path = get_log_path()
-    tail(log_path.read_text())
+    text = log_path.read_text()
+    print_most_recent_log(text)
