@@ -1,7 +1,6 @@
 from collections.abc import Callable
 from pathlib import Path
 
-from click.testing import Result
 from pydantic import BaseModel, DirectoryPath, Field, FilePath, validator
 from pytest import MonkeyPatch, TempPathFactory, fixture
 from typer.testing import CliRunner
@@ -99,14 +98,10 @@ def get_help_args() -> list[tuple[str, MockArgV]]:
     return [("--help", mock_get_argv_long), ("-h", mock_get_argv_short)]
 
 
-def call_command(args: list[str]) -> Result:
+def call_command(args: list[str]) -> str:
     if not any(args):
-        return CliRunner().invoke(tsundeoku)
-    return CliRunner().invoke(tsundeoku, args)
-
-
-def get_command_output(args: list[str]) -> str:
-    return call_command(args).output
+        return CliRunner().invoke(tsundeoku).output
+    return CliRunner().invoke(tsundeoku, args).output
 
 
 def strip_newlines(text: str) -> str:

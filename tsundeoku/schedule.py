@@ -152,7 +152,7 @@ def load_plist(hour: int | None, minute: int | None):
 
 
 def schedule_import(schedule_time: str) -> str:
-    message = "Schedule import for every"
+    message = "Scheduled import for every"
     hour = None
     if "*" in schedule_time:
         schedule_type = "hour"
