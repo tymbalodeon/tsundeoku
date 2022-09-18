@@ -31,6 +31,13 @@ def get_schedule_help_message():
     )
 
 
+def remove_plist(label=PLIST_LABEL):
+    plist_path = get_plist_path(label)
+    launchctl("unload", plist_path)
+    if plist_path.is_file():
+        plist_path.unlink()
+
+
 def get_tmp_path() -> Path:
     return Path("/tmp")
 
@@ -82,13 +89,6 @@ def load_rotate_logs_plist():
 def get_plist_path(label=PLIST_LABEL) -> Path:
     launch_agents = Path.home() / "library/LaunchAgents"
     return launch_agents / label
-
-
-def remove_plist(label=PLIST_LABEL):
-    plist_path = get_plist_path(label)
-    launchctl("unload", plist_path)
-    if plist_path.is_file():
-        plist_path.unlink()
 
 
 def get_calendar_interval(hour: int | None, minute: int | None) -> str:
@@ -204,7 +204,8 @@ def show_currently_scheduled():
         scheduled_time = time(hour, minute).strftime("%I:%M%p")
         message = f"{message} day at {scheduled_time}."
     else:
-        minute = time(int(hour_and_minute)).strftime("%M")
+        minute = int(hour_and_minute)
+        minute = time(minute=minute).strftime("%M")
         scheduled_time = f"**:{minute}"
         message = f"{message} hour at {scheduled_time} minutes."
     print(message)
