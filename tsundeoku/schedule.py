@@ -188,7 +188,10 @@ def show_currently_scheduled():
     if not plist_path.exists():
         print_show_schedule_error()
         return
-    plist = parse(plist_path.read_bytes())
+    try:
+        plist = parse(plist_path.read_bytes())
+    except Exception:
+        plist = None
     if not plist:
         print_show_schedule_error()
         return

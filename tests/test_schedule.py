@@ -1,9 +1,16 @@
+from collections import namedtuple
 from pathlib import Path
 
 from pytest import MonkeyPatch, TempPathFactory, fixture, mark
 
 from tsundeoku import main, schedule
-from tsundeoku.schedule import load_plist, stamp_logs
+from tsundeoku.schedule import (
+    get_plist_path,
+    get_tmp_path,
+    launchctl,
+    load_plist,
+    stamp_logs,
+)
 
 from .conftest import MockArgV, call_command, get_help_args
 
@@ -43,20 +50,21 @@ def set_mock_is_currently_scheduled(
     monkeypatch.setattr(schedule, "is_currently_scheduled", mock_is_currently_scheduled)
 
 
-import_not_scheduled_message = "Import is not currently scheduled.\n"
+not_scheduled_message = "Import is not currently scheduled.\n"
+error_message = "Error retrieving schedule information.\n"
 
 
 def test_schedule_not_scheduled(monkeypatch: MonkeyPatch):
     set_mock_is_currently_scheduled(monkeypatch, is_currently_scheduled=False)
     output = call_command([schedule_command])
-    expected_output = import_not_scheduled_message
+    expected_output = not_scheduled_message
     assert output == expected_output
 
 
 def test_schedule_scheduled_no_file(monkeypatch: MonkeyPatch):
     set_mock_is_currently_scheduled(monkeypatch)
     output = call_command([schedule_command])
-    expected_output = "Error retrieving schedule information.\n"
+    expected_output = error_message
     assert output == expected_output
 
 
@@ -76,6 +84,22 @@ def test_schedule_scheduled_file_hourly(monkeypatch: MonkeyPatch):
     assert output == expected_output
 
 
+def test_schedule_scheduled_empty_file(monkeypatch: MonkeyPatch):
+    set_mock_is_currently_scheduled(monkeypatch)
+    plist_path = get_plist_path()
+    plist_path.touch()
+    output = call_command([schedule_command])
+    assert output == error_message
+
+
+def test_schedule_scheduled_bad_file(monkeypatch: MonkeyPatch):
+    set_mock_is_currently_scheduled(monkeypatch)
+    plist_path = get_plist_path()
+    plist_path.write_text("<Label>BadValue</Label>")
+    output = call_command([schedule_command])
+    assert output == error_message
+
+
 def test_schedule_on_daily():
     output = call_command([schedule_command, "--on", "9:00am"])
     assert output == "Scheduled import for every day at 09:00AM.\n"
@@ -91,10 +115,41 @@ def test_schedule_off():
     output = call_command([schedule_command, "--off"])
     assert output == "Turned off scheduled import.\n"
     output = call_command([schedule_command])
-    assert output == import_not_scheduled_message
+    assert output == not_scheduled_message
 
 
 def test_schedule_logs():
     time = stamp_logs()
     output = call_command([schedule_command, "--logs"])
     assert time in output
+
+
+def test_get_tmp_path():
+    tmp_path = get_tmp_path()
+    assert tmp_path == Path("/tmp")
+
+
+def test_launchctl_no_path(monkeypatch: MonkeyPatch):
+    def mock_run(args: list[Path | str], capture_output: bool):
+        Stdout = namedtuple("Stdout", "stdout")
+        output = str.encode(f"args: {args}, capture_output: {capture_output}")
+        return Stdout(output)
+
+    monkeypatch.setattr(schedule, "run", mock_run)
+    output = launchctl("load")
+    expected_output = b"args: ['launchctl', 'load'], capture_output: True"
+    assert output == expected_output
+
+
+def test_launchctl_path(monkeypatch: MonkeyPatch):
+    def mock_run(args: list[Path | str], capture_output: bool):
+        Stdout = namedtuple("Stdout", "stdout")
+        output = str.encode(f"args: {args}, capture_output: {capture_output}")
+        return Stdout(output)
+
+    monkeypatch.setattr(schedule, "run", mock_run)
+    output = launchctl("load", path=Path("path"))
+    expected_output = (
+        b"args: ['launchctl', 'load', PosixPath('path')], capture_output: True"
+    )
+    assert output == expected_output
