@@ -1,7 +1,7 @@
-from pytest import mark
+from pytest import MonkeyPatch, mark
 from test_config import call_command, config_command, get_notifications_values
 
-from tests.conftest import get_command_output, get_help_args
+from tests.conftest import MockArgV, get_command_output, get_help_args
 from tsundeoku import main
 from tsundeoku.config.config import get_loaded_config
 
@@ -9,7 +9,9 @@ notifications_command = "notifications"
 
 
 @mark.parametrize("arg, mock_get_argv", get_help_args())
-def test_config_notifications_help(arg, mock_get_argv, monkeypatch):
+def test_config_notifications_help(
+    arg: str, mock_get_argv: MockArgV, monkeypatch: MonkeyPatch
+):
     config_help_text = (
         "Show and set values for notifications from scheduled import command."
     )

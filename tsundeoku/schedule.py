@@ -176,16 +176,26 @@ def is_currently_scheduled() -> bool:
     return PLIST_LABEL in loaded_plists
 
 
+def print_show_schedule_error():
+    print_with_theme("Error retrieving schedule information.", StyleLevel.ERROR)
+
+
 def show_currently_scheduled():
+    plist_path = get_plist_path()
     if not is_currently_scheduled():
         print("Import is not currently scheduled.")
         return
-    plist_path = get_plist_path()
+    if not plist_path.exists():
+        print_show_schedule_error()
+        return
     plist = parse(plist_path.read_bytes())
-    if plist:
+    if not plist:
+        print_show_schedule_error()
+        return
+    try:
         hour_and_minute = plist["plist"]["dict"]["dict"]["integer"]
-    else:
-        print_with_theme("Error retrieving schedule information.", StyleLevel.ERROR)
+    except Exception:
+        print_show_schedule_error()
         return
     hour = "**"
     message = "Import is currently scheduled for every"

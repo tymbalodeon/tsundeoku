@@ -1,8 +1,9 @@
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
-from pytest import mark
+from pytest import MonkeyPatch, mark
 from tinytag import TinyTag
 
 from tsundeoku.tags import (
@@ -75,7 +76,12 @@ def get_args(
 @mark.parametrize(
     "mock_getter, expected_value", get_args(mock_get_albumartist, "albumartist")
 )
-def test_get_albumartist(mock_getter, expected_value, monkeypatch, tmp_path):
+def test_get_albumartist(
+    mock_getter: MockGetter,
+    expected_value: str | None,
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+):
     tracks = [tmp_path]
     monkeypatch.setattr(TinyTag, "get", mock_getter)
     albumartist = get_albumartist(tracks)
@@ -86,7 +92,12 @@ def test_get_albumartist(mock_getter, expected_value, monkeypatch, tmp_path):
     "mock_getter, expected_value",
     get_args(mock_get_artist, "artist", empty_string=False),
 )
-def test_get_artists(mock_getter, expected_value, monkeypatch, tmp_path):
+def test_get_artists(
+    mock_getter: MockGetter,
+    expected_value: str | None,
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+):
     tracks = [tmp_path]
     monkeypatch.setattr(TinyTag, "get", mock_getter)
     artists = get_artists(tracks)
@@ -94,7 +105,12 @@ def test_get_artists(mock_getter, expected_value, monkeypatch, tmp_path):
 
 
 @mark.parametrize("mock_getter, expected_value", get_args(mock_get_album, "album"))
-def test_get_album_title(mock_getter, expected_value, monkeypatch, tmp_path):
+def test_get_album_title(
+    mock_getter: MockGetter,
+    expected_value: str | None,
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+):
     tracks = [tmp_path]
     monkeypatch.setattr(TinyTag, "get", mock_getter)
     album_title = get_album_title(tracks)
@@ -104,7 +120,12 @@ def test_get_album_title(mock_getter, expected_value, monkeypatch, tmp_path):
 @mark.parametrize(
     "mock_getter, expected_value", get_args(mock_get_year, "2022", empty_string=False)
 )
-def test_get_years(mock_getter, expected_value, monkeypatch, tmp_path):
+def test_get_years(
+    mock_getter: MockGetter,
+    expected_value: str | None,
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+):
     tracks = [tmp_path]
     monkeypatch.setattr(TinyTag, "get", mock_getter)
     years = get_years(tracks)
@@ -115,7 +136,12 @@ def test_get_years(mock_getter, expected_value, monkeypatch, tmp_path):
     "mock_getter, expected_value",
     get_args(mock_get_track_totals, "10", empty_string=False),
 )
-def test_get_track_totals(mock_getter, expected_value, monkeypatch, tmp_path):
+def test_get_track_totals(
+    mock_getter: MockGetter,
+    expected_value: str | None,
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+):
     tracks = [tmp_path]
     monkeypatch.setattr(TinyTag, "get", mock_getter)
     track_totals = get_track_totals(tracks)
@@ -123,7 +149,12 @@ def test_get_track_totals(mock_getter, expected_value, monkeypatch, tmp_path):
 
 
 @mark.parametrize("mock_getter, expected_value", get_args(mock_get_disc, "5"))
-def test_get_disc_number(mock_getter, expected_value, monkeypatch, tmp_path):
+def test_get_disc_number(
+    mock_getter: MockGetter,
+    expected_value: str | None,
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+):
     tracks = [tmp_path]
     monkeypatch.setattr(TinyTag, "get", mock_getter)
     disc_number = get_disc_number(tracks)
@@ -131,7 +162,12 @@ def test_get_disc_number(mock_getter, expected_value, monkeypatch, tmp_path):
 
 
 @mark.parametrize("mock_getter, expected_value", get_args(mock_get_disc_total, "10"))
-def test_get_disc_total(mock_getter, expected_value, monkeypatch, tmp_path):
+def test_get_disc_total(
+    mock_getter: MockGetter,
+    expected_value: str | None,
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+):
     tracks = [tmp_path]
     monkeypatch.setattr(TinyTag, "get", mock_getter)
     disc_total = get_disc_total(tracks)

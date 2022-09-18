@@ -1,7 +1,7 @@
-from pytest import mark
+from pytest import MonkeyPatch, mark
 from test_config import config_command, get_reformat_values
 
-from tests.conftest import call_command, get_command_output, get_help_args
+from tests.conftest import MockArgV, call_command, get_command_output, get_help_args
 from tsundeoku import main
 from tsundeoku.config.config import get_loaded_config
 
@@ -9,7 +9,9 @@ reformat_command = "reformat"
 
 
 @mark.parametrize("arg, mock_get_argv", get_help_args())
-def test_config_reformat_help(arg, mock_get_argv, monkeypatch):
+def test_config_reformat_help(
+    arg: str, mock_get_argv: MockArgV, monkeypatch: MonkeyPatch
+):
     config_help_text = 'Show and set default values for "reformat" command.'
     monkeypatch.setattr(main, "get_argv", mock_get_argv)
     output = get_command_output([config_command, reformat_command, arg])

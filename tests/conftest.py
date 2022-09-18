@@ -1,8 +1,9 @@
 from collections.abc import Callable
 from pathlib import Path
 
+from click.testing import Result
 from pydantic import BaseModel, DirectoryPath, Field, FilePath, validator
-from pytest import fixture
+from pytest import MonkeyPatch, TempPathFactory, fixture
 from typer.testing import CliRunner
 
 from tsundeoku.config import config
@@ -50,13 +51,13 @@ class MockConfig(BaseModel):
 
 
 @fixture(autouse=True)
-def set_mock_home(monkeypatch, tmp_path_factory):
+def set_mock_home(monkeypatch: MonkeyPatch, tmp_path_factory: TempPathFactory):
     home = tmp_path_factory.mktemp("home")
 
-    def mock_home():
+    def mock_home() -> Path:
         return home
 
-    def mock_get_config_instance(config_values: dict | None = None):
+    def mock_get_config_instance(config_values: dict | None = None) -> MockConfig:
         if config_values:
             return MockConfig(**config_values)
         default_shared_directories = get_default_shared_directories()
@@ -80,10 +81,10 @@ def set_mock_home(monkeypatch, tmp_path_factory):
     write_config_values()
 
 
-mock_argv = Callable[[], list[str]]
+MockArgV = Callable[[], list[str]]
 
 
-def get_mock_get_argvs() -> tuple[mock_argv, mock_argv]:
+def get_mock_get_argvs() -> tuple[MockArgV, MockArgV]:
     def mock_get_argv_long() -> list[str]:
         return ["--help"]
 
@@ -93,12 +94,12 @@ def get_mock_get_argvs() -> tuple[mock_argv, mock_argv]:
     return mock_get_argv_long, mock_get_argv_short
 
 
-def get_help_args() -> list[tuple[str, mock_argv]]:
+def get_help_args() -> list[tuple[str, MockArgV]]:
     mock_get_argv_long, mock_get_argv_short = get_mock_get_argvs()
     return [("--help", mock_get_argv_long), ("-h", mock_get_argv_short)]
 
 
-def call_command(args: list[str]):
+def call_command(args: list[str]) -> Result:
     if not any(args):
         return CliRunner().invoke(tsundeoku)
     return CliRunner().invoke(tsundeoku, args)
