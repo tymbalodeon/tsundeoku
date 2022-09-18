@@ -211,7 +211,7 @@ def show_currently_scheduled():
 
 
 def stamp_logs() -> str:
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_time = datetime.now().strftime("%Y-%m-%d %I:%M %p")
     log_path = get_log_path()
     with open(log_path, "a") as log:
         log.write(f"---- {current_time} ----\n")
