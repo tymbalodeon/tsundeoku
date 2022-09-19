@@ -238,7 +238,7 @@ def get_most_recent_log(text: str) -> list[str]:
         if line.startswith("---- "):
             index = index + 1
             lines = lines[:index]
-            lines.reverse()
+    lines.reverse()
     return lines
 
 
