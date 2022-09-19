@@ -31,11 +31,29 @@ def get_schedule_help_message():
     )
 
 
+def remove_plist(label=PLIST_LABEL):
+    plist_path = get_plist_path(label)
+    launchctl("unload", plist_path)
+    if plist_path.is_file():
+        plist_path.unlink()
+
+
+def get_tmp_path() -> Path:
+    return Path("/tmp")
+
+
 def get_log_path() -> Path:
-    log_path = Path("/tmp") / f"{APP_NAME}.log"
+    log_path = get_tmp_path() / f"{APP_NAME}.log"
     if not log_path.exists():
         log_path.touch()
     return log_path
+
+
+def launchctl(command: str, path: Path | None = None) -> bytes:
+    args: list[Path | str] = [LAUNCHCTL, command]
+    if path:
+        args.append(path)
+    return run(args, capture_output=True).stdout
 
 
 def load_rotate_logs_plist():
@@ -65,19 +83,12 @@ def load_rotate_logs_plist():
     )
     plist_path = get_plist_path(rotate_logs_plist_label)
     plist_path.write_text(plist)
-    run([LAUNCHCTL, "load", plist_path])
+    launchctl("load", plist_path)
 
 
 def get_plist_path(label=PLIST_LABEL) -> Path:
     launch_agents = Path.home() / "library/LaunchAgents"
     return launch_agents / label
-
-
-def remove_plist(label=PLIST_LABEL):
-    plist_path = get_plist_path(label)
-    run([LAUNCHCTL, "unload", plist_path], capture_output=True)
-    if plist_path.is_file():
-        plist_path.unlink()
 
 
 def get_calendar_interval(hour: int | None, minute: int | None) -> str:
@@ -137,11 +148,11 @@ def load_plist(hour: int | None, minute: int | None):
     plist = get_plist_text(hour, minute)
     plist_path = get_plist_path()
     plist_path.write_text(plist)
-    run([LAUNCHCTL, "load", plist_path])
+    launchctl("load", plist_path)
 
 
 def schedule_import(schedule_time: str) -> str:
-    message = "Schedule import for every"
+    message = "Scheduled import for every"
     hour = None
     if "*" in schedule_time:
         schedule_type = "hour"
@@ -160,18 +171,34 @@ def schedule_import(schedule_time: str) -> str:
     return f"{message} {schedule_type} at {display_time}."
 
 
+def is_currently_scheduled() -> bool:
+    loaded_plists = str(launchctl("list"))
+    return PLIST_LABEL in loaded_plists
+
+
+def print_show_schedule_error():
+    print_with_theme("Error retrieving schedule information.", StyleLevel.ERROR)
+
+
 def show_currently_scheduled():
-    loaded_plists = str(run([LAUNCHCTL, "list"], capture_output=True).stdout)
-    currently_scheduled = PLIST_LABEL in loaded_plists
-    if not currently_scheduled:
+    plist_path = get_plist_path()
+    if not is_currently_scheduled():
         print("Import is not currently scheduled.")
         return
-    plist_path = get_plist_path()
-    plist = parse(plist_path.read_bytes())
-    if plist:
+    if not plist_path.exists():
+        print_show_schedule_error()
+        return
+    try:
+        plist = parse(plist_path.read_bytes())
+    except Exception:
+        plist = None
+    if not plist:
+        print_show_schedule_error()
+        return
+    try:
         hour_and_minute = plist["plist"]["dict"]["dict"]["integer"]
-    else:
-        print_with_theme("Error retrieving schedule information.", StyleLevel.ERROR)
+    except Exception:
+        print_show_schedule_error()
         return
     hour = "**"
     message = "Import is currently scheduled for every"
@@ -180,17 +207,19 @@ def show_currently_scheduled():
         scheduled_time = time(hour, minute).strftime("%I:%M%p")
         message = f"{message} day at {scheduled_time}."
     else:
-        minute = time(int(hour_and_minute)).strftime("%M")
+        minute = int(hour_and_minute)
+        minute = time(minute=minute).strftime("%M")
         scheduled_time = f"**:{minute}"
         message = f"{message} hour at {scheduled_time} minutes."
     print(message)
 
 
-def stamp_logs():
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+def stamp_logs() -> str:
+    current_time = datetime.now().strftime("%Y-%m-%d %I:%M %p")
     log_path = get_log_path()
     with open(log_path, "a") as log:
         log.write(f"---- {current_time} ----\n")
+    return current_time
 
 
 def send_email(contents: str):
@@ -202,12 +231,24 @@ def send_email(contents: str):
     email.send(subject=subject, contents=contents)
 
 
-def tail(text: str, number_of_lines=10):
+def get_most_recent_log(text: str) -> list[str]:
     lines = text.splitlines()
-    for line in lines[-number_of_lines:]:
+    lines.reverse()
+    for index, line in enumerate(lines):
+        if line.startswith("---- "):
+            index = index + 1
+            lines = lines[:index]
+            lines.reverse()
+    return lines
+
+
+def print_most_recent_log(text: str):
+    lines = get_most_recent_log(text)
+    for line in lines:
         print(line)
 
 
 def show_logs():
     log_path = get_log_path()
-    tail(log_path.read_text())
+    text = log_path.read_text()
+    print_most_recent_log(text)

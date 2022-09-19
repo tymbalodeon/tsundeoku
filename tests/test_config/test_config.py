@@ -1,13 +1,9 @@
 from pathlib import Path
 
-from pytest import mark
+from pytest import MonkeyPatch, mark
+from pytest_mock import MockerFixture
 
-from tests.conftest import (
-    call_command,
-    get_command_output,
-    get_help_args,
-    strip_newlines,
-)
+from tests.conftest import MockArgV, call_command, get_help_args, strip_newlines
 from tsundeoku import main
 from tsundeoku.config import main as config_main
 from tsundeoku.config.config import get_config_path
@@ -164,15 +160,15 @@ def get_expected_custom_config_display() -> str:
 
 
 @mark.parametrize("arg, mock_get_argv", get_help_args())
-def test_config_help(arg, mock_get_argv, monkeypatch):
+def test_config_help(arg: str, mock_get_argv: MockArgV, monkeypatch: MonkeyPatch):
     config_help_text = "Show [default] and set config values."
     monkeypatch.setattr(main, "get_argv", mock_get_argv)
-    output = get_command_output([config_command, arg])
+    output = call_command([config_command, arg])
     assert config_help_text in output
 
 
 def test_config():
-    output = get_command_output([config_command])
+    output = call_command([config_command])
     expected_config_display = get_expected_default_config_display()
     output = strip_newlines(output)
     expected_config_display = strip_newlines(expected_config_display)
@@ -180,14 +176,14 @@ def test_config():
 
 
 def test_config_path():
-    output = get_command_output([config_command, "--path"])
+    output = call_command([config_command, "--path"])
     home = str(Path.home())
     output = strip_newlines(output)
     config_path = ".config/tsundeoku/tsundeoku.toml"
     assert home in output and config_path in output
 
 
-def test_config_file(monkeypatch, mocker):
+def test_config_file(monkeypatch: MonkeyPatch, mocker: MockerFixture):
     def mock_launch(url: str, locate: bool):
         return url, locate
 
@@ -198,7 +194,7 @@ def test_config_file(monkeypatch, mocker):
     spy.assert_called_once_with(config_path, locate=True)
 
 
-def test_config_edit(monkeypatch, mocker):
+def test_config_edit(monkeypatch: MonkeyPatch, mocker: MockerFixture):
     def mock_run(args: list[str]):
         return args
 
@@ -210,7 +206,7 @@ def test_config_edit(monkeypatch, mocker):
     spy.assert_called_once_with(["vim", config_path])
 
 
-def set_confirm_reset(monkeypatch, yes=True):
+def set_confirm_reset(monkeypatch: MonkeyPatch, yes=True):
     def mock_confirm_reset(commands=False) -> bool:
         return yes
 
@@ -218,41 +214,41 @@ def set_confirm_reset(monkeypatch, yes=True):
 
 
 def set_custom_config_and_get_default_output() -> str:
-    default_output = get_command_output([config_command])
+    default_output = call_command([config_command])
     config_path = get_config_path()
     custom_config = get_custom_config()
     config_path.write_text(custom_config)
-    output = get_command_output([config_command])
+    output = call_command([config_command])
     assert output != default_output
     return default_output
 
 
-def test_config_reset_all_restores_default_config(monkeypatch):
+def test_config_reset_all_restores_default_config(monkeypatch: MonkeyPatch):
     set_confirm_reset(monkeypatch)
     default_output = set_custom_config_and_get_default_output()
-    output = get_command_output([config_command, "--reset-all"])
+    output = call_command([config_command, "--reset-all"])
     assert output == default_output
 
 
-def test_config_reset_all_false_keeps_custom_config(monkeypatch):
+def test_config_reset_all_false_keeps_custom_config(monkeypatch: MonkeyPatch):
     set_confirm_reset(monkeypatch, yes=False)
     default_output = set_custom_config_and_get_default_output()
-    output = get_command_output([config_command, "--reset-all"])
+    output = call_command([config_command, "--reset-all"])
     assert output != default_output
 
 
-def test_config_reset_commands_restores_default_options(monkeypatch):
+def test_config_reset_commands_restores_default_options(monkeypatch: MonkeyPatch):
     set_confirm_reset(monkeypatch)
     set_custom_config_and_get_default_output()
     expected_custom_config_display = get_expected_custom_config_display()
-    output = get_command_output([config_command, "--reset-commands"])
+    output = call_command([config_command, "--reset-commands"])
     expected_custom_config_display = strip_newlines(expected_custom_config_display)
     output = strip_newlines(output)
     assert output == expected_custom_config_display
 
 
-def test_config_reset_commands_false_keeps_custom_config(monkeypatch):
+def test_config_reset_commands_false_keeps_custom_config(monkeypatch: MonkeyPatch):
     set_confirm_reset(monkeypatch, yes=False)
     default_output = set_custom_config_and_get_default_output()
-    output = get_command_output([config_command, "--reset-commands"])
+    output = call_command([config_command, "--reset-commands"])
     assert output != default_output

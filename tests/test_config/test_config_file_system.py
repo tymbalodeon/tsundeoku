@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pytest import mark
+from pytest import MonkeyPatch, mark
 from test_config import (
     config_command,
     get_custom_ignored_directories,
@@ -10,39 +10,40 @@ from test_config import (
     get_file_system_values,
 )
 
-from tests.conftest import get_command_output, get_help_args, strip_newlines
-from tests.test_config.test_config import call_command
+from tests.conftest import MockArgV, call_command, get_help_args, strip_newlines
 from tsundeoku import main
 from tsundeoku.config import main as config_main
 
 
 @mark.parametrize("arg, mock_get_argv", get_help_args())
-def test_file_system_help(arg, mock_get_argv, monkeypatch):
+def test_file_system_help(arg: str, mock_get_argv: MockArgV, monkeypatch: MonkeyPatch):
     config_help_text = "Show and set values for the file-system."
     monkeypatch.setattr(main, "get_argv", mock_get_argv)
-    output = get_command_output(["config", "file-system", arg])
+    output = call_command(["config", "file-system", arg])
     assert config_help_text in output
 
 
 def test_file_system():
-    output = get_command_output([config_command, "file-system"])
+    output = call_command([config_command, "file-system"])
     expected_file_system_values = get_file_system_values()
     output = strip_newlines(output)
     expected_file_system_values = strip_newlines(expected_file_system_values)
     assert output == expected_file_system_values
 
 
-def set_confirm_update(monkeypatch, yes=True):
+def set_confirm_update(monkeypatch: MonkeyPatch, yes=True):
     def mock_confirm_update(value: list[str] | str, add=False, remove=False) -> bool:
         return yes
 
     monkeypatch.setattr(config_main, "confirm_update", mock_confirm_update)
 
 
-def test_file_system_shared_directories_good_value_updates_config(monkeypatch):
+def test_file_system_shared_directories_good_value_updates_config(
+    monkeypatch: MonkeyPatch,
+):
     set_confirm_update(monkeypatch)
     custom_shared_directories = get_custom_shared_directories()
-    output = get_command_output(
+    output = call_command(
         [
             config_command,
             "file-system",
@@ -62,11 +63,13 @@ def test_file_system_shared_directories_good_value_updates_config(monkeypatch):
     assert output == expected_updated_config
 
 
-def test_file_system_shared_directories_good_value_false_keeps_config(monkeypatch):
+def test_file_system_shared_directories_good_value_false_keeps_config(
+    monkeypatch: MonkeyPatch,
+):
     set_confirm_update(monkeypatch, yes=False)
     custom_shared_directories = get_custom_shared_directories()
-    default_output = get_command_output([config_command, "file-system"])
-    output = get_command_output(
+    default_output = call_command([config_command, "file-system"])
+    output = call_command(
         [
             config_command,
             "file-system",
@@ -77,10 +80,10 @@ def test_file_system_shared_directories_good_value_false_keeps_config(monkeypatc
     assert output == default_output
 
 
-def test_file_system_shared_directories_bad_value_shows_error(monkeypatch):
+def test_file_system_shared_directories_bad_value_shows_error(monkeypatch: MonkeyPatch):
     set_confirm_update(monkeypatch)
     custom_shared_directories = get_custom_shared_directories(create=False)
-    output = get_command_output(
+    output = call_command(
         [
             config_command,
             "file-system",
@@ -97,11 +100,11 @@ def test_file_system_shared_directories_bad_value_shows_error(monkeypatch):
     assert output == error_message
 
 
-def test_file_system_pickle_file_good_value_updates_config(monkeypatch):
+def test_file_system_pickle_file_good_value_updates_config(monkeypatch: MonkeyPatch):
     set_confirm_update(monkeypatch)
     custom_pickle_file = get_custom_pickle_file()
     custom_pickle_file.touch()
-    output = get_command_output(
+    output = call_command(
         [
             config_command,
             "file-system",
@@ -122,12 +125,14 @@ def test_file_system_pickle_file_good_value_updates_config(monkeypatch):
     assert output == expected_updated_config
 
 
-def test_file_system_pickle_file_good_value_false_keeps_config(monkeypatch):
+def test_file_system_pickle_file_good_value_false_keeps_config(
+    monkeypatch: MonkeyPatch,
+):
     set_confirm_update(monkeypatch, yes=False)
     custom_pickle_file = get_custom_pickle_file()
     custom_pickle_file.touch()
-    default_output = get_command_output([config_command, "file-system"])
-    output = get_command_output(
+    default_output = call_command([config_command, "file-system"])
+    output = call_command(
         [
             config_command,
             "file-system",
@@ -138,10 +143,10 @@ def test_file_system_pickle_file_good_value_false_keeps_config(monkeypatch):
     assert output == default_output
 
 
-def test_file_system_pickle_file_bad_value_shows_error(monkeypatch):
+def test_file_system_pickle_file_bad_value_shows_error(monkeypatch: MonkeyPatch):
     set_confirm_update(monkeypatch)
     custom_pickle_file = get_custom_pickle_file()
-    output = get_command_output(
+    output = call_command(
         [
             config_command,
             "file-system",
@@ -157,10 +162,12 @@ def test_file_system_pickle_file_bad_value_shows_error(monkeypatch):
     assert output == error_message
 
 
-def test_file_system_ignored_directories_good_value_updates_config(monkeypatch):
+def test_file_system_ignored_directories_good_value_updates_config(
+    monkeypatch: MonkeyPatch,
+):
     set_confirm_update(monkeypatch)
     custom_ignored_directories = get_custom_ignored_directories()
-    output = get_command_output(
+    output = call_command(
         [
             config_command,
             "file-system",
@@ -181,11 +188,13 @@ def test_file_system_ignored_directories_good_value_updates_config(monkeypatch):
     assert output == expected_updated_config
 
 
-def test_file_system_ignored_directories_good_value_false_keeps_config(monkeypatch):
+def test_file_system_ignored_directories_good_value_false_keeps_config(
+    monkeypatch: MonkeyPatch,
+):
     set_confirm_update(monkeypatch, yes=False)
     custom_ignored_directories = get_custom_ignored_directories()
-    default_output = get_command_output([config_command, "file-system"])
-    output = get_command_output(
+    default_output = call_command([config_command, "file-system"])
+    output = call_command(
         [
             config_command,
             "file-system",
@@ -196,10 +205,12 @@ def test_file_system_ignored_directories_good_value_false_keeps_config(monkeypat
     assert output == default_output
 
 
-def test_file_system_ignored_directories_bad_value_shows_error(monkeypatch):
+def test_file_system_ignored_directories_bad_value_shows_error(
+    monkeypatch: MonkeyPatch,
+):
     set_confirm_update(monkeypatch)
     custom_ignored_directories = get_custom_ignored_directories(create=False)
-    output = get_command_output(
+    output = call_command(
         [
             config_command,
             "file-system",
@@ -216,10 +227,10 @@ def test_file_system_ignored_directories_bad_value_shows_error(monkeypatch):
     assert output == error_message
 
 
-def test_file_system_music_player_good_value_updates_config(monkeypatch):
+def test_file_system_music_player_good_value_updates_config(monkeypatch: MonkeyPatch):
     set_confirm_update(monkeypatch)
     custom_music_player = get_custom_music_player()
-    output = get_command_output(
+    output = call_command(
         [config_command, "file-system", "--music-player", custom_music_player]
     )
     home = Path.home()
@@ -235,20 +246,22 @@ def test_file_system_music_player_good_value_updates_config(monkeypatch):
     assert output == expected_updated_config
 
 
-def test_file_system_music_player_good_value_false_keeps_config(monkeypatch):
+def test_file_system_music_player_good_value_false_keeps_config(
+    monkeypatch: MonkeyPatch,
+):
     set_confirm_update(monkeypatch, yes=False)
     custom_music_player = get_custom_music_player()
-    default_output = get_command_output([config_command, "file-system"])
-    output = get_command_output(
+    default_output = call_command([config_command, "file-system"])
+    output = call_command(
         [config_command, "file-system", "--music-player", custom_music_player]
     )
     assert output == default_output
 
 
-def test_file_system_music_player_bad_value_shows_error(monkeypatch):
+def test_file_system_music_player_bad_value_shows_error(monkeypatch: MonkeyPatch):
     set_confirm_update(monkeypatch)
     custom_music_player = "NotAnApplication"
-    output = get_command_output(
+    output = call_command(
         [config_command, "file-system", "--music-player", custom_music_player]
     )
     error_message = 'ERROR: application "NotAnApplication" not found'
@@ -257,10 +270,10 @@ def test_file_system_music_player_bad_value_shows_error(monkeypatch):
     assert output == error_message
 
 
-def test_file_system_add(monkeypatch):
+def test_file_system_add(monkeypatch: MonkeyPatch):
     set_confirm_update(monkeypatch)
     custom_shared_directories = str(get_custom_shared_directories())
-    output = get_command_output(
+    output = call_command(
         [
             config_command,
             "file-system",
@@ -283,7 +296,7 @@ def test_file_system_add(monkeypatch):
     assert file_system_config in output
 
 
-def test_file_system_remove(monkeypatch):
+def test_file_system_remove(monkeypatch: MonkeyPatch):
     set_confirm_update(monkeypatch)
     custom_shared_directories = str(get_custom_shared_directories())
     call_command(
@@ -295,7 +308,7 @@ def test_file_system_remove(monkeypatch):
             str(custom_shared_directories),
         ]
     )
-    output = get_command_output(
+    output = call_command(
         [
             config_command,
             "file-system",
