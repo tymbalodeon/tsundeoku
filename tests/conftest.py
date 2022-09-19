@@ -5,6 +5,7 @@ from pydantic import BaseModel, DirectoryPath, Field, FilePath, validator
 from pytest import MonkeyPatch, TempPathFactory, fixture
 from typer.testing import CliRunner
 
+from tsundeoku import reformat
 from tsundeoku.config import config
 from tsundeoku.config.config import (
     ImportConfig,
@@ -49,6 +50,14 @@ class MockConfig(BaseModel):
     notifications = NotificationsConfig()
 
 
+class MockLibrary:
+    def albums(self, query: str) -> list[str]:
+        return []
+
+    def items(self, query: str) -> list[str]:
+        return []
+
+
 @fixture(autouse=True)
 def set_mock_home(monkeypatch: MonkeyPatch, tmp_path_factory: TempPathFactory):
     home = tmp_path_factory.mktemp("home")
@@ -75,8 +84,12 @@ def set_mock_home(monkeypatch: MonkeyPatch, tmp_path_factory: TempPathFactory):
         )
         return MockConfig(**{"file_system": file_system})
 
+    def mock_get_library() -> MockLibrary:
+        return MockLibrary()
+
     monkeypatch.setattr(Path, "home", mock_home)
     monkeypatch.setattr(config, "get_config_instance", mock_get_config_instance)
+    monkeypatch.setattr(reformat, "get_library", mock_get_library)
     write_config_values()
 
 

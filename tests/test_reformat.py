@@ -1,7 +1,7 @@
 from pytest import MonkeyPatch, mark
 
 from tsundeoku import main
-from tsundeoku.reformat import get_actions
+from tests.test_config.test_config import config_command
 
 from .conftest import MockArgV, call_command, get_mock_get_argvs
 
@@ -32,10 +32,61 @@ def test_reformat_help(
     assert help_text in output
 
 
-def test_get_actions_all_false():
-    actions = get_actions(
-        remove_bracket_years=False,
-        remove_bracket_instruments=False,
-        expand_abbreviations=False,
-    )
-    assert not actions
+remove_bracket_years_text = 'Removing bracketed years from all "album" tags...'
+remove_bracket_instruments_text = (
+    'Removing bracketed solo instrument indications from all "artist" tags...'
+)
+expand_abbreviations_text = [
+    'Replacing "Rec." with "Recording" in all "album" tags...',
+    'Replacing "Recs" with "Recordings" in all "album" tags...',
+    'Replacing "Orig." with "Original" in all "album" tags...',
+    'Replacing "Ed." with "Edition" in all "album" tags...',
+]
+
+
+def get_all_reformat_texts() -> list[str]:
+    return [
+        remove_bracket_years_text,
+        remove_bracket_instruments_text,
+    ] + expand_abbreviations_text
+
+
+@mark.parametrize("text", get_all_reformat_texts())
+def test_reformat_default(text: str):
+    output = call_command([reformat_command])
+    assert text in output
+
+
+def test_reformat_config_years_as_is():
+    call_command([config_command, reformat_command, "--years-as-is"])
+    output = call_command([reformat_command])
+    assert remove_bracket_years_text not in output
+
+
+def test_reformat_years_as_is():
+    output = call_command([reformat_command, "--years-as-is"])
+    assert remove_bracket_years_text not in output
+
+
+def test_reformat_config_instruments_as_is():
+    call_command([config_command, reformat_command, "--instruments-as-is"])
+    output = call_command([reformat_command])
+    assert remove_bracket_instruments_text not in output
+
+
+def test_reformat_instruments_as_is():
+    output = call_command([reformat_command, "--instruments-as-is"])
+    assert remove_bracket_instruments_text not in output
+
+
+@mark.parametrize("text", expand_abbreviations_text)
+def test_reformat_config_abbreviations_as_is(text: str):
+    call_command([config_command, reformat_command, "--abbreviations-as-is"])
+    output = call_command([reformat_command])
+    assert text not in output
+
+
+@mark.parametrize("text", expand_abbreviations_text)
+def test_reformat_abbreviations_as_is(text: str):
+    output = call_command([reformat_command, "--abbreviations-as-is"])
+    assert text not in output
