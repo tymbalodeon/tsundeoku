@@ -23,17 +23,17 @@ class Action:
     tag: str = "album"
     operate_on_albums: bool = True
 
-
-ACTIONS = {
-    "remove_bracket_years": [
-        Action(
+    @classmethod
+    def remove_bracket_years(cls):
+        return cls(
             message='Removing bracketed years from all "album" tags...',
             find=BRACKET_YEAR_REGEX,
             replace="",
         )
-    ],
-    "remove_bracket_instruments": [
-        Action(
+
+    @classmethod
+    def remove_bracket_instruments(cls):
+        return cls(
             message=(
                 'Removing bracketed solo instrument indications from all "artist"'
                 " tags..."
@@ -43,30 +43,31 @@ ACTIONS = {
             tag="artist",
             operate_on_albums=False,
         )
-    ],
-    "expand_abbreviations": [
-        Action(
-            message='Replacing "Rec." with "Recording" in all "album" tags...',
-            find=RECORDING_REGEX,
-            replace="Recording",
-        ),
-        Action(
-            message='Replacing "Recs" with "Recordings" in all "album" tags...',
-            find=RECORDINGS_REGEX,
-            replace="Recordings",
-        ),
-        Action(
-            message='Replacing "Orig." with "Original" in all "album" tags...',
-            find=ORIGINAL_REGEX,
-            replace="Original",
-        ),
-        Action(
-            message='Replacing "Ed." with "Edition" in all "album" tags...',
-            find=EDITION_REGEX,
-            replace="Edition",
-        ),
-    ],
-}
+
+    @classmethod
+    def expand_abbreviations(cls):
+        return [
+            cls(
+                message='Replacing "Rec." with "Recording" in all "album" tags...',
+                find=RECORDING_REGEX,
+                replace="Recording",
+            ),
+            cls(
+                message='Replacing "Recs" with "Recordings" in all "album" tags...',
+                find=RECORDINGS_REGEX,
+                replace="Recordings",
+            ),
+            cls(
+                message='Replacing "Orig." with "Original" in all "album" tags...',
+                find=ORIGINAL_REGEX,
+                replace="Original",
+            ),
+            cls(
+                message='Replacing "Ed." with "Edition" in all "album" tags...',
+                find=EDITION_REGEX,
+                replace="Edition",
+            ),
+        ]
 
 
 def get_actions(
@@ -76,11 +77,11 @@ def get_actions(
 ):
     actions = []
     if remove_bracket_years:
-        actions.extend(ACTIONS["remove_bracket_years"])
+        actions.append(Action.remove_bracket_years())
     if remove_bracket_instruments:
-        actions.extend(ACTIONS["remove_bracket_instruments"])
+        actions.append(Action.remove_bracket_instruments())
     if expand_abbreviations:
-        actions.extend(ACTIONS["expand_abbreviations"])
+        actions.extend(Action.expand_abbreviations())
     return actions
 
 
