@@ -1,7 +1,7 @@
 from pytest import MonkeyPatch, fixture, mark
 
-from tsundeoku import main
 from tests.test_config.test_config import config_command
+from tsundeoku import main
 
 from .conftest import MockArgV, call_command, get_mock_get_argvs
 

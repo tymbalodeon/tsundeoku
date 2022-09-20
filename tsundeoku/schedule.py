@@ -248,7 +248,10 @@ def print_most_recent_log(text: str):
         print(line)
 
 
-def show_logs():
+def show_logs(all_logs=False):
     log_path = get_log_path()
     text = log_path.read_text()
-    print_most_recent_log(text)
+    if all_logs:
+        print(text)
+    else:
+        print_most_recent_log(text)
