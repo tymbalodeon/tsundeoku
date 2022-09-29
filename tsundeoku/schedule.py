@@ -71,7 +71,7 @@ def load_rotate_logs_plist():
         f"\t\t<string>{rotate_logs_plist_label}</string>\n"
         "\t\t<key>StartCalendarInterval</key>\n"
         "\t\t<dict>\n"
-        "\t\t\t<key>Weekday</key>\n"
+        "\t\t\t<key>Hour</key>\n"
         "\t\t\t<integer>0</integer>\n"
         "\t\t</dict>\n"
         "\t\t<key>ProgramArguments</key>\n"
