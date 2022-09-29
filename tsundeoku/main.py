@@ -148,15 +148,17 @@ def import_new(
             is_scheduled_run,
         )
     except Exception as error:
-        config = get_loaded_config()
-        email_on = config.notifications.email_on
-        system_on = config.notifications.system_on
-        if email_on or system_on:
-            contents = f"ERROR: {error}"
-            if email_on:
-                send_email(contents)
-            if system_on:
-                notify(contents, title=APP_NAME)
+        if is_scheduled_run:
+            config = get_loaded_config()
+            email_on = config.notifications.email_on
+            system_on = config.notifications.system_on
+            if email_on or system_on:
+                contents = f"ERROR: {error}"
+                if email_on:
+                    send_email(contents)
+                if system_on:
+                    notify(contents, title=APP_NAME)
+        print_with_theme(str(error), level=StyleLevel.ERROR)
 
 
 @tsundeoku.command()
