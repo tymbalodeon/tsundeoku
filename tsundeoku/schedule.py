@@ -3,6 +3,7 @@ from pathlib import Path
 from shutil import which
 from subprocess import run
 
+from rich import print
 from xmltodict import parse
 from yagmail import SMTP
 
