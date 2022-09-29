@@ -48,6 +48,6 @@ repos:
     hooks:
       - id: coverage
         name: coverage
-        entry: make coverage fail-under=78
+        entry: make coverage fail-under=76
         language: system
         pass_filenames: false
