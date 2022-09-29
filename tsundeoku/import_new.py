@@ -561,8 +561,8 @@ def get_index_offset(index: str) -> int | None:
     return index_offset
 
 
-def get_import_anyway_indices(import_any: str, albums: list) -> set[int]:
-    digits = set(split(r"\D+", import_any))
+def get_import_anyway_indices(import_anyway: str, albums: list) -> set[int]:
+    digits = set(split(r"\D+", import_anyway))
     indices = {get_index_offset(index) for index in digits if index}
     indices = {index for index in indices if index}
     indices = {index for index in indices if is_valid_index(albums, index)}
@@ -618,13 +618,13 @@ def import_new_albums(
             remove_bracket_years, remove_bracket_instruments, expand_abbreviations
         )
     if not is_scheduled_run and first_time and errors and importable_error_albums:
-        import_any = Prompt.ask(
+        import_anyway = Prompt.ask(
             "Please input the index of any album(s) you would like to import despite"
             " the error"
         )
         album_identifier = "all"
-        if import_any.lower() != "all":
-            indices = get_import_anyway_indices(import_any, importable_error_albums)
+        if import_anyway.lower() != "all":
+            indices = get_import_anyway_indices(import_anyway, importable_error_albums)
             if not indices:
                 print_with_theme("No matching albums.", level=StyleLevel.WARNING)
                 return
