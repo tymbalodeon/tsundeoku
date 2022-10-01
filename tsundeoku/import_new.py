@@ -47,6 +47,8 @@ from .tags import (
 
 BeetsQuery = list[str]
 YEAR_RANGE_SEPARATORS = {"-", "/"}
+FIRST_COLOR = "bright_yellow"
+SECOND_COLOR = "dark_orange"
 
 
 class ImportError(Enum):
@@ -513,10 +515,37 @@ def import_albums(
     return imports, errors, prompt_skipped_count
 
 
+def get_first_error(errors: list[tuple[ImportError, list[str]]]):
+    try:
+        return errors[0][0]
+    except Exception:
+        return None
+
+
+def should_change_color(error: ImportError, last_error: ImportError | None) -> bool:
+    if error != last_error:
+        return True
+    return False
+
+
+def get_new_color(last_color: str) -> str:
+    if last_color == FIRST_COLOR:
+        return SECOND_COLOR
+    return FIRST_COLOR
+
+
+def get_error_color(
+    error: ImportError, last_error: ImportError | None, last_color: str
+) -> str:
+    if should_change_color(error, last_error):
+        return get_new_color(last_color)
+    return last_color
+
+
 def stylize_album(album: str):
     paths = album.split("/")
     artist = paths[:-1]
-    album_title = stylize(paths[-1], styles="cyan")
+    album_title = stylize(paths[-1], styles=["bold", "cyan"])
     artist.append(album_title)
     return "/".join(artist)
 
@@ -551,7 +580,7 @@ def is_valid_index(importable_error_albums: list, index: int | None) -> bool:
 
 
 def get_import_anyway_indices(import_selection: str, albums: list) -> set[int]:
-    if not import_selection:
+    if import_selection in {"", "n"}:
         raise Exit()
     digits = set(split(r"\D+", import_selection))
     indices = {get_index_offset(index) for index in digits if index}
@@ -616,18 +645,24 @@ def import_new_albums(
                 importable_error_albums.extend(albums)
         error_album_count = sum(len(errors) for _, errors in current_errors)
         title = get_error_album_message(len(importable_error_albums))
-        title = stylize(title, styles="yellow")
+        title = stylize(title, styles="bold")
         table = Table("Index", "Album", "Error", title=title, box=MINIMAL)
         index = 0
+        last_error = get_first_error(current_errors)
+        last_color = FIRST_COLOR
         for error_name, error_albums in current_errors:
             for album in error_albums:
                 shared_directories = get_shared_directories()
                 for shared_directory in shared_directories:
                     album = album.replace(str(shared_directory), "")
                 index = index + 1
-                row_index = stylize(str(index), styles="yellow")
+                row_index = str(index)
                 album = stylize_album(album)
-                table.add_row(row_index, album, error_name.value)
+                color = get_error_color(error_name, last_error, last_color)
+                last_error = error_name
+                last_color = color
+                error = stylize(error_name.value, styles=color)
+                table.add_row(row_index, album, error)
         print()
         Console().print(table)
     if is_scheduled_run:
