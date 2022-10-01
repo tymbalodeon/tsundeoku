@@ -24,11 +24,12 @@ def get_format_reference_link() -> str:
 
 def get_schedule_help_message():
     format_reference_link = get_format_reference_link()
+    here = stylize("here", styles=[format_reference_link, "underline"])
     return (
         "Schedule import to run at specified time, using the format %I:%M%p for daily,"
         " **:%M"
         " for hourly. See"
-        f" {stylize('here', [format_reference_link, 'underline'])} for more info."
+        f" {here} for more info."
     )
 
 
