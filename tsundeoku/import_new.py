@@ -626,7 +626,8 @@ def import_new_albums(
                 shared_directories = get_shared_directories()
                 for shared_directory in shared_directories:
                     album = album.replace(str(shared_directory), "")
-                row_index = str(index + 1)
+                index = index + 1
+                row_index = str(index)
                 album = stylize_album(album)
                 table.add_row(row_index, album, error_name.value)
         print()
