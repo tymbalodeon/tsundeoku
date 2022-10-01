@@ -9,7 +9,6 @@ BEETS_CONFIG_FOLDER = ~/.config/beets
 BEETS_CONFIG_PATH = $(BEETS_CONFIG_FOLDER)/config.yaml
 TEST = $(POETRY) coverage run -m pytest
 COVERAGE = $(POETRY) coverage report -m --skip-covered --sort=cover
-GET_TEST_FILE = tests/test_$(1).py
 
 define BEETS_CONFIG_VALUES
 directory: ~/Music
@@ -52,19 +51,11 @@ shell: ## Run bpython in project virtual environment
 
 start: beets build ## Add beets config before installing tsundeoku
 
-test: ## Run tests (options: "print=true", "file=<module_name>", "test=<test_name>")
+test: ## Run tests (options: "print=true", "args=<args>")
 ifdef print
-ifdef test
-	$(TEST) -k $(test) -s
-else ifdef file
-	$(TEST) $(call GET_TEST_FILE,$(file)) -s
-else
 	$(TEST) -s
-endif
-else ifdef test
-	$(TEST) -k $(test)
-else ifdef file
-	$(TEST) $(call GET_TEST_FILE,$(file))
+else ifdef args
+	$(TEST) $(args)
 else
 	$(TEST)
 endif

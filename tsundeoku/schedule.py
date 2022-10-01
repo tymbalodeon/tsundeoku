@@ -3,6 +3,7 @@ from pathlib import Path
 from shutil import which
 from subprocess import run
 
+from rich import print
 from xmltodict import parse
 from yagmail import SMTP
 
@@ -23,11 +24,12 @@ def get_format_reference_link() -> str:
 
 def get_schedule_help_message():
     format_reference_link = get_format_reference_link()
+    here = stylize("here", styles=[format_reference_link, "underline"])
     return (
         "Schedule import to run at specified time, using the format %I:%M%p for daily,"
         " **:%M"
         " for hourly. See"
-        f" {stylize('here', [format_reference_link, 'underline'])} for more info."
+        f" {here} for more info."
     )
 
 
@@ -71,7 +73,7 @@ def load_rotate_logs_plist():
         f"\t\t<string>{rotate_logs_plist_label}</string>\n"
         "\t\t<key>StartCalendarInterval</key>\n"
         "\t\t<dict>\n"
-        "\t\t\t<key>Weekday</key>\n"
+        "\t\t\t<key>Hour</key>\n"
         "\t\t\t<integer>0</integer>\n"
         "\t\t</dict>\n"
         "\t\t<key>ProgramArguments</key>\n"

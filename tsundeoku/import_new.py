@@ -2,15 +2,17 @@ from enum import Enum
 from os import system, walk
 from pathlib import Path
 from pickle import load
-from re import escape, search, split, sub
+from re import IGNORECASE, escape, findall, search, split, sub
 
 from beets.importer import history_add
 from pync import notify
 from rich import print
+from rich.box import MINIMAL
 from rich.console import Console
 from rich.markup import escape as rich_escape
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
+from typer import Exit
 
 from tsundeoku.reformat import reformat_albums
 
@@ -45,6 +47,8 @@ from .tags import (
 
 BeetsQuery = list[str]
 YEAR_RANGE_SEPARATORS = {"-", "/"}
+FIRST_COLOR = "bright_yellow"
+SECOND_COLOR = "dark_orange"
 
 
 class ImportError(Enum):
@@ -173,10 +177,10 @@ def get_artist_and_artist_field_name(
 def should_update(
     field: str, bracket_value: str, existing_value: str | None, album_title: str
 ) -> bool:
-    bracket_value = stylize(bracket_value, ["bold", "yellow"])
+    bracket_value = stylize(bracket_value, styles=["bold", "yellow"])
     existing_value = existing_value or ""
-    existing_value = stylize(existing_value, ["bold", "yellow"])
-    album_title = stylize(rich_escape(album_title), "blue")
+    existing_value = stylize(existing_value, styles=["bold", "yellow"])
+    album_title = stylize(rich_escape(album_title), styles="blue")
     return Confirm.ask(
         f"Use bracket {field} {bracket_value} instead of"
         f" {field} ({existing_value}) for album:"
@@ -441,7 +445,10 @@ def import_album(
 
 
 def get_error_album_message(error_album_count: int) -> str:
-    return f"{error_album_count} albums cannot be automatically imported."
+    album_plural = "album"
+    if error_album_count > 1:
+        album_plural = f"{album_plural}s"
+    return f"{error_album_count} {album_plural} cannot be automatically imported."
 
 
 def import_albums(
@@ -451,9 +458,10 @@ def import_albums(
     ask_before_artist_update: bool,
     import_all: bool,
     allow_prompt: bool,
-    is_scheduled_run: bool,
 ):
-    errors: dict[ImportError, list] = {import_error: [] for import_error in ImportError}
+    errors: dict[ImportError, list[str]] = {
+        import_error: [] for import_error in ImportError
+    }
     imports = False
     wav_imports = 0
     skipped_count = 0
@@ -504,44 +512,62 @@ def import_albums(
         print(f"Skipped {skipped_count} previously imported albums.")
     if not allow_prompt:
         print(f"Skipped {prompt_skipped_count} albums requiring prompt.")
-    error_album_count = 0
-    importable_error_albums = []
-    if any(errors.values()):
-        current_errors = [(key, value) for key, value in errors.items() if value]
-        for _, albums in current_errors:
-            importable_error_albums.extend(albums)
-        error_album_count = sum(len(errors) for errors in current_errors)
-        table = Table(
-            "Index", "Album", "Error", title=get_error_album_message(error_album_count)
-        )
-        index = 0
-        for error_name, error_albums in current_errors:
-            for album in error_albums:
-                shared_directories = get_shared_directories()
-                for shared_directory in shared_directories:
-                    album = album.replace(str(shared_directory), "")
-                index = index + 1
-                table.add_row(str(index), album, error_name.value)
-        print()
-        Console().print(table)
-    if is_scheduled_run:
-        config = get_loaded_config()
-        email_on = config.notifications.email_on
-        system_on = config.notifications.system_on
-        if email_on or system_on:
-            error_album_count = error_album_count + prompt_skipped_count
-            if error_album_count:
-                contents = get_error_album_message(error_album_count)
-                if email_on:
-                    send_email(contents)
-                if system_on:
-                    notify(contents, title=APP_NAME)
-    return imports, errors, importable_error_albums
+    return imports, errors, prompt_skipped_count
+
+
+def get_first_error(errors: list[tuple[ImportError, list[str]]]):
+    try:
+        return errors[0][0]
+    except Exception:
+        return None
+
+
+def should_change_color(error: ImportError, last_error: ImportError | None) -> bool:
+    if error != last_error:
+        return True
+    return False
+
+
+def get_new_color(last_color: str) -> str:
+    if last_color == FIRST_COLOR:
+        return SECOND_COLOR
+    return FIRST_COLOR
+
+
+def get_error_color(
+    error: ImportError, last_error: ImportError | None, last_color: str
+) -> str:
+    if should_change_color(error, last_error):
+        return get_new_color(last_color)
+    return last_color
+
+
+def stylize_album(album: str):
+    paths = album.split("/")
+    artist = paths[:-1]
+    album_title = stylize(paths[-1], styles=["bold", "cyan"])
+    artist.append(album_title)
+    return "/".join(artist)
+
+
+def get_import_anyway(multiple_albums: bool) -> bool:
+    multiple_album_message = ""
+    if multiple_albums:
+        multiple_album_message = "select one or more albums to "
+    return Confirm.ask(f"Would you like to {multiple_album_message}import anyway?")
+
+
+def get_index_offset(index: str) -> int | None:
+    index_offset = int(index)
+    if not index_offset:
+        return None
+    return index_offset
 
 
 def is_valid_index(importable_error_albums: list, index: int | None) -> bool:
     if not index:
         return False
+    index = index - 1
     length = len(importable_error_albums)
     if not length:
         return False
@@ -554,15 +580,29 @@ def is_valid_index(importable_error_albums: list, index: int | None) -> bool:
     return False
 
 
-def get_index_offset(index: str) -> int | None:
-    index_offset = int(index)
-    if not index_offset:
-        return None
-    return index_offset
+def get_importable_errors_regex() -> str:
+    error_types = {
+        error.value for error in ImportError if error in IMPORTABLE_ERROR_KEYS
+    }
+    joined_types = "|".join(error_types)
+    return f"({joined_types})"
 
 
-def get_import_anyway_indices(import_anyway: str, albums: list) -> set[int]:
-    digits = set(split(r"\D+", import_anyway))
+def get_import_anyway_errors(
+    import_selection: str, errors: dict[ImportError, list[str]]
+) -> set[ImportError]:
+    importable_errors_regex = get_importable_errors_regex()
+    error_selections = set(
+        findall(importable_errors_regex, import_selection, flags=IGNORECASE)
+    )
+    importable_errors = [
+        key for key, value in errors.items() if key in IMPORTABLE_ERROR_KEYS and value
+    ]
+    return {error for error in importable_errors if error.value in error_selections}
+
+
+def get_import_anyway_indices(import_selection: str, albums: list) -> set[int]:
+    digits = set(split(r"\D+", import_selection))
     indices = {get_index_offset(index) for index in digits if index}
     indices = {index for index in indices if index}
     indices = {index for index in indices if is_valid_index(albums, index)}
@@ -600,14 +640,13 @@ def import_new_albums(
         first_time = True
         albums = get_albums()
     import_all = not first_time
-    imports, errors, importable_error_albums = import_albums(
+    imports, errors, prompt_skipped_count = import_albums(
         albums,
         reformat,
         ask_before_disc_update,
         ask_before_artist_update,
         import_all,
         allow_prompt,
-        is_scheduled_run,
     )
     if imports and reformat:
         reformat_settings = config.reformat
@@ -617,27 +656,90 @@ def import_new_albums(
         reformat_albums(
             remove_bracket_years, remove_bracket_instruments, expand_abbreviations
         )
-    if not is_scheduled_run and first_time and errors and importable_error_albums:
-        import_anyway = Prompt.ask(
-            "Please input the index of any album(s) you would like to import despite"
-            " the error"
-        )
-        album_identifier = "all"
-        if import_anyway.lower() != "all":
-            indices = get_import_anyway_indices(import_anyway, importable_error_albums)
-            if not indices:
-                print_with_theme("No matching albums.", level=StyleLevel.WARNING)
-                return
-            importable_error_albums = [
-                importable_error_albums[index] for index in indices
-            ]
-            albums_display = get_confirm_selected_albums_display(
-                importable_error_albums
+    error_album_count = 0
+    importable_error_albums: list[str] = []
+    if any(errors.values()):
+        current_errors = [(key, value) for key, value in errors.items() if value]
+        for _, albums in current_errors:
+            if albums:
+                importable_error_albums.extend(albums)
+        error_album_count = sum(len(errors) for _, errors in current_errors)
+        title = get_error_album_message(len(importable_error_albums))
+        title = stylize(title, styles="bold")
+        table = Table("Index", "Album", "Error", title=title, box=MINIMAL)
+        index = 0
+        last_error = get_first_error(current_errors)
+        last_color = FIRST_COLOR
+        for error_name, error_albums in current_errors:
+            for album in error_albums:
+                shared_directories = get_shared_directories()
+                for shared_directory in shared_directories:
+                    album = album.replace(str(shared_directory), "")
+                index = index + 1
+                row_index = str(index)
+                album = stylize_album(album)
+                color = get_error_color(error_name, last_error, last_color)
+                last_error = error_name
+                last_color = color
+                error = stylize(error_name.value, styles=color)
+                table.add_row(row_index, album, error)
+        print()
+        Console().print(table)
+    if is_scheduled_run:
+        config = get_loaded_config()
+        email_on = config.notifications.email_on
+        system_on = config.notifications.system_on
+        if email_on or system_on:
+            error_album_count = error_album_count + prompt_skipped_count
+            if error_album_count:
+                contents = get_error_album_message(error_album_count)
+                if email_on:
+                    send_email(contents)
+                if system_on:
+                    notify(contents, title=APP_NAME)
+        return
+    if first_time and importable_error_albums:
+        multiple_albums = len(importable_error_albums) > 1
+        import_anyway = get_import_anyway(multiple_albums)
+        if not import_anyway:
+            return
+        album_identifier = "this album"
+        if multiple_albums:
+            import_selection = Prompt.ask(
+                "Please input the index of any album(s) you would like to import or the"
+                " name of the error to import all albums in that category"
             )
-            print(f"You've selected:\n\t{albums_display}")
-            album_identifier = "these"
+            if import_selection in {"", "n"}:
+                raise Exit()
+            import_selection = import_selection.lower()
+            album_identifier = "all albums"
+            if import_selection != "all":
+                album_identifier = "these albums"
+                error_selections = get_import_anyway_errors(import_selection, errors)
+                indices = get_import_anyway_indices(
+                    import_selection, importable_error_albums
+                )
+                error_selection_albums = []
+                for import_error in error_selections:
+                    selected_albums = errors[import_error]
+                    error_selection_albums = [
+                        album
+                        for album in importable_error_albums
+                        if album in selected_albums
+                    ]
+                index_selection_albums = [
+                    importable_error_albums[index] for index in indices
+                ]
+                import_anyway_albums = error_selection_albums + index_selection_albums
+                importable_error_albums = list(set(import_anyway_albums))
+                if not importable_error_albums:
+                    print_with_theme("No matching albums.", level=StyleLevel.WARNING)
+                    return
+                print(importable_error_albums)
+        albums_display = get_confirm_selected_albums_display(importable_error_albums)
+        print(f"You've selected:\n\t{albums_display}")
         import_confirmed = Confirm.ask(
-            f"Are you sure you want to import {album_identifier} albums?"
+            f"Are you sure you want to import {album_identifier}?"
         )
         if not import_confirmed:
             return
