@@ -7,6 +7,7 @@ from re import escape, search, split, sub
 from beets.importer import history_add
 from pync import notify
 from rich import print
+from rich.box import MINIMAL, SIMPLE
 from rich.console import Console
 from rich.markup import escape as rich_escape
 from rich.prompt import Confirm, Prompt
@@ -614,12 +615,9 @@ def import_new_albums(
             if albums:
                 importable_error_albums.extend(albums)
         error_album_count = sum(len(errors) for _, errors in current_errors)
-        table = Table(
-            "Index",
-            "Album",
-            "Error",
-            title=get_error_album_message(len(importable_error_albums)),
-        )
+        title = get_error_album_message(len(importable_error_albums))
+        title = stylize(title, styles="yellow")
+        table = Table("Index", "Album", "Error", title=title, box=MINIMAL)
         index = 0
         for error_name, error_albums in current_errors:
             for album in error_albums:
@@ -627,7 +625,7 @@ def import_new_albums(
                 for shared_directory in shared_directories:
                     album = album.replace(str(shared_directory), "")
                 index = index + 1
-                row_index = str(index)
+                row_index = stylize(str(index), styles="yellow")
                 album = stylize_album(album)
                 table.add_row(row_index, album, error_name.value)
         print()
