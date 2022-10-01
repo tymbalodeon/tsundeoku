@@ -2,7 +2,7 @@ from enum import Enum
 from os import system, walk
 from pathlib import Path
 from pickle import load
-from re import escape, search, split, sub
+from re import IGNORECASE, escape, findall, search, split, sub
 
 from beets.importer import history_add
 from pync import notify
@@ -567,6 +567,7 @@ def get_index_offset(index: str) -> int | None:
 def is_valid_index(importable_error_albums: list, index: int | None) -> bool:
     if not index:
         return False
+    index = index - 1
     length = len(importable_error_albums)
     if not length:
         return False
@@ -579,9 +580,28 @@ def is_valid_index(importable_error_albums: list, index: int | None) -> bool:
     return False
 
 
+def get_importable_errors_regex() -> str:
+    error_types = {
+        error.value for error in ImportError if error in IMPORTABLE_ERROR_KEYS
+    }
+    joined_types = "|".join(error_types)
+    return f"({joined_types})"
+
+
+def get_import_anyway_errors(
+    import_selection: str, errors: dict[ImportError, list[str]]
+) -> set[ImportError]:
+    importable_errors_regex = get_importable_errors_regex()
+    error_selections = set(
+        findall(importable_errors_regex, import_selection, flags=IGNORECASE)
+    )
+    importable_errors = [
+        key for key, value in errors.items() if key in IMPORTABLE_ERROR_KEYS and value
+    ]
+    return {error for error in importable_errors if error.value in error_selections}
+
+
 def get_import_anyway_indices(import_selection: str, albums: list) -> set[int]:
-    if import_selection in {"", "n"}:
-        raise Exit()
     digits = set(split(r"\D+", import_selection))
     indices = {get_index_offset(index) for index in digits if index}
     indices = {index for index in indices if index}
@@ -678,7 +698,7 @@ def import_new_albums(
                 if system_on:
                     notify(contents, title=APP_NAME)
         return
-    if first_time and errors and importable_error_albums:
+    if first_time and importable_error_albums:
         multiple_albums = len(importable_error_albums) > 1
         import_anyway = get_import_anyway(multiple_albums)
         if not import_anyway:
@@ -686,21 +706,36 @@ def import_new_albums(
         album_identifier = "this album"
         if multiple_albums:
             import_selection = Prompt.ask(
-                "Please input the index of any album(s) you would like to import"
-                " despite the error"
+                "Please input the index of any album(s) you would like to import or the"
+                " name of the error to import all albums in that category"
             )
+            if import_selection in {"", "n"}:
+                raise Exit()
+            import_selection = import_selection.lower()
             album_identifier = "all albums"
-            if import_selection.lower() != "all":
+            if import_selection != "all":
                 album_identifier = "these albums"
+                error_selections = get_import_anyway_errors(import_selection, errors)
                 indices = get_import_anyway_indices(
                     import_selection, importable_error_albums
                 )
-                if not indices:
-                    print_with_theme("No matching albums.", level=StyleLevel.WARNING)
-                    return
-                importable_error_albums = [
+                error_selection_albums = []
+                for import_error in error_selections:
+                    selected_albums = errors[import_error]
+                    error_selection_albums = [
+                        album
+                        for album in importable_error_albums
+                        if album in selected_albums
+                    ]
+                index_selection_albums = [
                     importable_error_albums[index] for index in indices
                 ]
+                import_anyway_albums = error_selection_albums + index_selection_albums
+                importable_error_albums = list(set(import_anyway_albums))
+                if not importable_error_albums:
+                    print_with_theme("No matching albums.", level=StyleLevel.WARNING)
+                    return
+                print(importable_error_albums)
         albums_display = get_confirm_selected_albums_display(importable_error_albums)
         print(f"You've selected:\n\t{albums_display}")
         import_confirmed = Confirm.ask(
