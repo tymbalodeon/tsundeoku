@@ -7,7 +7,7 @@ from re import escape, search, split, sub
 from beets.importer import history_add
 from pync import notify
 from rich import print
-from rich.box import MINIMAL, SIMPLE
+from rich.box import MINIMAL
 from rich.console import Console
 from rich.markup import escape as rich_escape
 from rich.prompt import Confirm, Prompt
