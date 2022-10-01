@@ -7,6 +7,7 @@ from re import IGNORECASE, escape, findall, search, split, sub
 from beets.importer import history_add
 from pync import notify
 from rich import print
+from rich.box import ROUNDED
 from rich.console import Console
 from rich.markup import escape as rich_escape
 from rich.prompt import Confirm, Prompt
