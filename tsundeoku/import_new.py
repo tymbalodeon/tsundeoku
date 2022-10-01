@@ -554,7 +554,7 @@ def get_import_anyway(multiple_albums: bool) -> bool:
     multiple_album_message = ""
     if multiple_albums:
         multiple_album_message = "select one or more albums to "
-    return Confirm.ask(f"Would you like to {multiple_album_message}import anyway?")
+    return Confirm.ask(f"Would you like to {multiple_album_message}import?")
 
 
 def get_index_offset(index: str) -> int | None:
@@ -707,7 +707,7 @@ def import_new_albums(
         if multiple_albums:
             import_selection = Prompt.ask(
                 "Please input the index of any album(s) you would like to import or the"
-                " name of the error to import all albums in that category"
+                " name of\nthe error to import all albums in that category"
             )
             if import_selection in {"", "n"}:
                 raise Exit()
