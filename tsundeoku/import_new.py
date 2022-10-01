@@ -735,7 +735,6 @@ def import_new_albums(
                 if not importable_error_albums:
                     print_with_theme("No matching albums.", level=StyleLevel.WARNING)
                     return
-                print(importable_error_albums)
         albums_display = get_confirm_selected_albums_display(importable_error_albums)
         print(f"You've selected:\n\t{albums_display}")
         import_confirmed = Confirm.ask(
