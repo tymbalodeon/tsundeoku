@@ -7,7 +7,7 @@ from re import IGNORECASE, escape, findall, search, split, sub
 from beets.importer import history_add
 from pync import notify
 from rich import print
-from rich.box import MINIMAL
+from rich.box import ROUNDED
 from rich.console import Console
 from rich.markup import escape as rich_escape
 from rich.prompt import Confirm, Prompt
@@ -554,7 +554,7 @@ def get_import_anyway(multiple_albums: bool) -> bool:
     multiple_album_message = ""
     if multiple_albums:
         multiple_album_message = "select one or more albums to "
-    return Confirm.ask(f"Would you like to {multiple_album_message}import anyway?")
+    return Confirm.ask(f"Would you like to {multiple_album_message}import?")
 
 
 def get_index_offset(index: str) -> int | None:
@@ -666,12 +666,15 @@ def import_new_albums(
         error_album_count = sum(len(errors) for _, errors in current_errors)
         title = get_error_album_message(len(importable_error_albums))
         title = stylize(title, styles="bold")
-        table = Table("Index", "Album", "Error", title=title, box=MINIMAL)
+        table = Table("No.", "Album", "Error", title=title, box=ROUNDED)
         index = 0
         last_error = get_first_error(current_errors)
         last_color = FIRST_COLOR
         for error_name, error_albums in current_errors:
+            end_section = False
             for album in error_albums:
+                if album == error_albums[-1]:
+                    end_section = True
                 shared_directories = get_shared_directories()
                 for shared_directory in shared_directories:
                     album = album.replace(str(shared_directory), "")
@@ -682,7 +685,7 @@ def import_new_albums(
                 last_error = error_name
                 last_color = color
                 error = stylize(error_name.value, styles=color)
-                table.add_row(row_index, album, error)
+                table.add_row(row_index, album, error, end_section=end_section)
         print()
         Console().print(table)
     if is_scheduled_run:
@@ -707,7 +710,7 @@ def import_new_albums(
         if multiple_albums:
             import_selection = Prompt.ask(
                 "Please input the index of any album(s) you would like to import or the"
-                " name of the error to import all albums in that category"
+                " name of\nthe error to import all albums in that category"
             )
             if import_selection in {"", "n"}:
                 raise Exit()
@@ -735,7 +738,6 @@ def import_new_albums(
                 if not importable_error_albums:
                     print_with_theme("No matching albums.", level=StyleLevel.WARNING)
                     return
-                print(importable_error_albums)
         albums_display = get_confirm_selected_albums_display(importable_error_albums)
         print(f"You've selected:\n\t{albums_display}")
         import_confirmed = Confirm.ask(
