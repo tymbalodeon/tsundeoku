@@ -7,6 +7,7 @@ from rich.markup import escape
 from typer import Argument, Context, Exit, Option, Typer
 
 from tsundeoku import __version__
+from tsundeoku.style import stylize
 
 from .config.config import (
     APP_NAME,
@@ -29,8 +30,19 @@ from .schedule import (
     show_logs,
 )
 
+
+def get_name_definition() -> str:
+    app_name = '積んでおく("tsundeoku")'
+    app_name = stylize(app_name, styles="bright_green")
+    app_name = f'{app_name}: "to pile up for later"'
+    return stylize(app_name, styles="bold")
+
+
 tsundeoku = Typer(
-    help="CLI for importing audio files from a shared folder to a local library",
+    help=(
+        f"{get_name_definition()}\n\n"
+        "Import audio files from a shared folder to a local library."
+    ),
     context_settings={"help_option_names": ["-h", "--help"]},
     no_args_is_help=True,
     rich_markup_mode="rich",
@@ -72,7 +84,7 @@ def callback(
         "--version",
         "-V",
         callback=display_version,
-        help="Display version number",
+        help="Display version number.",
     ),
 ):
     if skip_validation(context):
