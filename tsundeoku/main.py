@@ -34,7 +34,8 @@ from .schedule import (
 def get_name_definition() -> str:
     app_name = '積んでおく("tsundeoku")'
     app_name = stylize(app_name, styles="bright_green")
-    app_name = f'{app_name}: "to pile up for later"'
+    definition = stylize("to pile up for later", styles="italic")
+    app_name = f'{app_name}: "{definition}"'
     return stylize(app_name, styles="bold")
 
 
