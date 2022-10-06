@@ -34,7 +34,8 @@ from .schedule import (
 def get_name_definition() -> str:
     app_name = '積んでおく("tsundeoku")'
     app_name = stylize(app_name, styles="bright_green")
-    app_name = f'{app_name}: "to pile up for later"'
+    definition = stylize("to pile up for later", styles="italic")
+    app_name = f'{app_name}: "{definition}"'
     return stylize(app_name, styles="bold")
 
 
@@ -165,9 +166,10 @@ def import_new(
             email_on = config.notifications.email_on
             system_on = config.notifications.system_on
             if email_on or system_on:
-                contents = f"ERROR: {error}"
+                subject = "ERROR"
+                contents = str(error)
                 if email_on:
-                    send_email(contents)
+                    send_email(subject, contents)
                 if system_on:
                     notify(contents, title=APP_NAME)
         print_with_theme(str(error), level=StyleLevel.ERROR)
