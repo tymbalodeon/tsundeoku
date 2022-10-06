@@ -448,7 +448,7 @@ def get_error_album_message(error_album_count: int) -> str:
     album_plural = "album"
     if error_album_count > 1:
         album_plural = f"{album_plural}s"
-    return f"{error_album_count} {album_plural} cannot be automatically imported."
+    return f"{error_album_count} {album_plural} cannot be automatically imported"
 
 
 def import_albums(
@@ -612,6 +612,25 @@ def get_confirm_selected_albums_display(albums: list) -> str:
     return "\n\t".join(albums)
 
 
+def get_email_contents(current_errors: list[tuple[ImportError, list[str]]]) -> str:
+    shared_directories = get_shared_directories()
+    email_contents = []
+    for error_name, error_albums in current_errors:
+        for album in error_albums:
+            for shared_directory in shared_directories:
+                album = album.replace(str(shared_directory), "")
+                email_contents.append(
+                    '<tr><td style="padding-right: '
+                    f'1em;">{album}</td><td>{error_name.value}</td></tr>'
+                )
+    contents = "".join(email_contents)
+    return (
+        '<table style="border: 1px solid; padding: 1em;"><tr><th'
+        ' align="left">Album</th><th'
+        f' align="left">Error</th></tr>{contents}</table>'
+    )
+
+
 def import_new_albums(
     albums: list[str] | None,
     reformat: bool | None,
@@ -659,7 +678,6 @@ def import_new_albums(
         )
     error_album_count = 0
     current_errors = [(key, value) for key, value in errors.items() if value]
-    shared_directories = get_shared_directories()
     if is_scheduled_run:
         config = get_loaded_config()
         email_on = config.notifications.email_on
@@ -669,13 +687,7 @@ def import_new_albums(
             if error_album_count:
                 subject = get_error_album_message(error_album_count)
                 if email_on:
-                    email_contents = []
-                    for error_name, error_albums in current_errors:
-                        for album in error_albums:
-                            for shared_directory in shared_directories:
-                                album = album.replace(str(shared_directory), "")
-                                email_contents.append(f"{album} ({error_name})")
-                    contents = "\n".join(email_contents)
+                    contents = get_email_contents(current_errors)
                     send_email(subject, contents)
                 if system_on:
                     notify(subject, title=APP_NAME)
