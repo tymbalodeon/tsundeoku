@@ -658,7 +658,8 @@ def import_new_albums(
             remove_bracket_years, remove_bracket_instruments, expand_abbreviations
         )
     error_album_count = 0
-    importable_error_albums: list[str] = []
+    current_errors = [(key, value) for key, value in errors.items() if value]
+    shared_directories = get_shared_directories()
     if is_scheduled_run:
         config = get_loaded_config()
         email_on = config.notifications.email_on
@@ -666,17 +667,24 @@ def import_new_albums(
         if email_on or system_on:
             error_album_count = error_album_count + prompt_skipped_count
             if error_album_count:
-                contents = get_error_album_message(error_album_count)
+                subject = get_error_album_message(error_album_count)
                 if email_on:
-                    send_email(contents)
+                    email_contents = []
+                    for error_name, error_albums in current_errors:
+                        for album in error_albums:
+                            for shared_directory in shared_directories:
+                                album = album.replace(str(shared_directory), "")
+                                email_contents.append(f"{album} ({error_name})")
+                    contents = "\n".join(email_contents)
+                    send_email(subject, contents)
                 if system_on:
-                    notify(contents, title=APP_NAME)
+                    notify(subject, title=APP_NAME)
         return
-    if any(errors.values()):
-        current_errors = [(key, value) for key, value in errors.items() if value]
-        for _, albums in current_errors:
-            if albums:
-                importable_error_albums.extend(albums)
+    importable_error_albums: list[str] = []
+    for _, albums in current_errors:
+        if albums:
+            importable_error_albums.extend(albums)
+    if importable_error_albums:
         error_album_count = sum(len(errors) for _, errors in current_errors)
         title = get_error_album_message(len(importable_error_albums))
         title = stylize(title, styles="bold")
@@ -684,12 +692,12 @@ def import_new_albums(
         index = 0
         last_error = get_first_error(current_errors)
         last_color = FIRST_COLOR
+        shared_directories = get_shared_directories()
         for error_name, error_albums in current_errors:
             end_section = False
             for album in error_albums:
                 if album == error_albums[-1]:
                     end_section = True
-                shared_directories = get_shared_directories()
                 for shared_directory in shared_directories:
                     album = album.replace(str(shared_directory), "")
                 index = index + 1

@@ -166,9 +166,10 @@ def import_new(
             email_on = config.notifications.email_on
             system_on = config.notifications.system_on
             if email_on or system_on:
-                contents = f"ERROR: {error}"
+                subject = "ERROR"
+                contents = str(error)
                 if email_on:
-                    send_email(contents)
+                    send_email(subject, contents)
                 if system_on:
                     notify(contents, title=APP_NAME)
         print_with_theme(str(error), level=StyleLevel.ERROR)

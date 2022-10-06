@@ -224,12 +224,12 @@ def stamp_logs() -> str:
     return current_time
 
 
-def send_email(contents: str):
+def send_email(subject: str, contents: str):
     config = get_loaded_config()
     username = config.notifications.username
     password = config.notifications.password
     email = SMTP(username, password)
-    subject = f"{APP_NAME}"
+    subject = f"{APP_NAME}: {subject}"
     email.send(subject=subject, contents=contents)
 
 
