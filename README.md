@@ -36,7 +36,7 @@ Full Disk Access.
 # Usage
 
 - To import new audio files from your shared folder to your music library:
-  `tsundeoku` (or `tsundeoku import --as-is` to leave the metadata untouched)
+  `tsundeoku import` (or `tsundeoku import --as-is` to leave the metadata untouched)
 - To reformat metadata for all previously imported tracks: `tsundeoku reformat`
 - Tsundeoku uses a config file that can be viewed and edited with: `tsundeoku config` and `tsundeoku config --edit`
 - For more information: `tsundeoku --help` or `tsundeoku <command> --help`
