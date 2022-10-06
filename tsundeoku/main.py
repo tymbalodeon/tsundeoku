@@ -161,6 +161,8 @@ def import_new(
             is_scheduled_run,
         )
     except Exception as error:
+        if isinstance(error, Exit):
+            return
         if is_scheduled_run:
             config = get_loaded_config()
             email_on = config.notifications.email_on

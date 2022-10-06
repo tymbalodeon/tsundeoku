@@ -510,7 +510,7 @@ def import_albums(
         print(f"Skipped {skipped_count} previously imported albums.")
     if not allow_prompt:
         print(f"Skipped {prompt_skipped_count} albums requiring prompt.")
-    return imports, errors, prompt_skipped_count
+    return imports, errors
 
 
 def get_first_error(errors: list[tuple[ImportError, list[str]]]):
@@ -631,15 +631,12 @@ def get_email_contents(current_errors: list[tuple[ImportError, list[str]]]) -> s
     )
 
 
-def send_notifications(
-    current_errors: list[tuple[ImportError, list[str]]], prompt_skipped_count: int
-):
+def send_notifications(current_errors: list[tuple[ImportError, list[str]]]):
     config = get_loaded_config()
     email_on = config.notifications.email_on
     system_on = config.notifications.system_on
     if email_on or system_on:
         error_album_count = sum(len(errors) for _, errors in current_errors)
-        error_album_count = error_album_count + prompt_skipped_count
         if not error_album_count:
             raise Exit()
         subject = get_error_album_message(error_album_count)
@@ -751,7 +748,7 @@ def import_new_albums(
     if not albums:
         import_all = False
         albums = get_albums()
-    imports, errors, prompt_skipped_count = import_albums(
+    imports, errors = import_albums(
         albums,
         reformat,
         ask_before_disc_update,
@@ -769,7 +766,7 @@ def import_new_albums(
         )
     current_errors = [(key, value) for key, value in errors.items() if value]
     if is_scheduled_run:
-        send_notifications(current_errors, prompt_skipped_count)
+        send_notifications(current_errors)
     importable_error_albums = [
         album for _, albums in current_errors for album in albums
     ]
