@@ -639,9 +639,9 @@ def import_new_albums(
     allow_prompt: bool | None,
     is_scheduled_run=False,
 ):
+    print("Importing newly added albums...")
     if is_scheduled_run:
         stamp_logs()
-    print("Importing newly added albums...")
     config = get_loaded_config()
     import_settings = config.import_new
     if reformat is None:
@@ -650,16 +650,14 @@ def import_new_albums(
         ask_before_disc_update = import_settings.ask_before_disc_update
     if ask_before_artist_update is None:
         ask_before_artist_update = import_settings.ask_before_artist_update
-    if allow_prompt is None:
-        if is_scheduled_run:
-            allow_prompt = False
-        else:
-            allow_prompt = import_settings.allow_prompt
-    first_time = False
+    if is_scheduled_run:
+        allow_prompt = False
+    elif allow_prompt is None:
+        allow_prompt = import_settings.allow_prompt
+    import_all = True
     if not albums:
-        first_time = True
+        import_all = False
         albums = get_albums()
-    import_all = not first_time
     imports, errors, prompt_skipped_count = import_albums(
         albums,
         reformat,
@@ -722,7 +720,7 @@ def import_new_albums(
                 table.add_row(row_index, album, error, end_section=end_section)
         print()
         Console().print(table)
-    if first_time and importable_error_albums:
+    if not import_all and importable_error_albums:
         multiple_albums = len(importable_error_albums) > 1
         import_anyway = get_import_anyway(multiple_albums)
         if not import_anyway:
