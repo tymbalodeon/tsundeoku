@@ -485,9 +485,8 @@ def import_albums(
                 allow_prompt=allow_prompt,
             )
             if error:
-                if allow_prompt:
-                    errors[error].append(album)
-                else:
+                errors[error].append(album)
+                if not allow_prompt:
                     prompt_skipped_count += 1
             else:
                 imports = True
@@ -496,14 +495,13 @@ def import_albums(
                 import_wav_files(album)
                 history_add([album.encode()])
                 wav_imports += 1
-            elif allow_prompt:
+            else:
                 errors[ImportError.WAV_FILES].append(album)
-            else:
-                prompt_skipped_count += 1
+                if not allow_prompt:
+                    prompt_skipped_count += 1
         if not tracks and not wav_tracks:
-            if allow_prompt:
-                errors[ImportError.NO_TRACKS].append(album)
-            else:
+            errors[ImportError.NO_TRACKS].append(album)
+            if not allow_prompt:
                 prompt_skipped_count += 1
     if wav_imports:
         album_plural = "album" if wav_imports == 1 else "albums"
@@ -634,7 +632,10 @@ def import_new_albums(
     if ask_before_artist_update is None:
         ask_before_artist_update = import_settings.ask_before_artist_update
     if allow_prompt is None:
-        allow_prompt = import_settings.allow_prompt
+        if is_scheduled_run:
+            allow_prompt = False
+        else:
+            allow_prompt = import_settings.allow_prompt
     first_time = False
     if not albums:
         first_time = True
@@ -658,6 +659,19 @@ def import_new_albums(
         )
     error_album_count = 0
     importable_error_albums: list[str] = []
+    if is_scheduled_run:
+        config = get_loaded_config()
+        email_on = config.notifications.email_on
+        system_on = config.notifications.system_on
+        if email_on or system_on:
+            error_album_count = error_album_count + prompt_skipped_count
+            if error_album_count:
+                contents = get_error_album_message(error_album_count)
+                if email_on:
+                    send_email(contents)
+                if system_on:
+                    notify(contents, title=APP_NAME)
+        return
     if any(errors.values()):
         current_errors = [(key, value) for key, value in errors.items() if value]
         for _, albums in current_errors:
@@ -688,19 +702,6 @@ def import_new_albums(
                 table.add_row(row_index, album, error, end_section=end_section)
         print()
         Console().print(table)
-    if is_scheduled_run:
-        config = get_loaded_config()
-        email_on = config.notifications.email_on
-        system_on = config.notifications.system_on
-        if email_on or system_on:
-            error_album_count = error_album_count + prompt_skipped_count
-            if error_album_count:
-                contents = get_error_album_message(error_album_count)
-                if email_on:
-                    send_email(contents)
-                if system_on:
-                    notify(contents, title=APP_NAME)
-        return
     if first_time and importable_error_albums:
         multiple_albums = len(importable_error_albums) > 1
         import_anyway = get_import_anyway(multiple_albums)

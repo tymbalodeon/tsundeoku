@@ -110,7 +110,7 @@ def get_command_args():
     command_args = [
         "zsh",
         "-lc",
-        f"{command} import --disallow-prompt --scheduled-run",
+        f"{command} import --scheduled-run",
     ]
     strings = ""
     for arg in command_args:
