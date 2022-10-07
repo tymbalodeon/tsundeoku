@@ -55,6 +55,7 @@ def config(
     elif edit:
         editor = environ.get("EDITOR", "vim")
         run([editor, config_path])
+        return
     elif reset_all and confirm_reset():
         try:
             write_config_values()
