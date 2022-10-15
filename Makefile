@@ -1,14 +1,7 @@
-ROOT_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-PYPROJECT := $(ROOT_DIR)/pyproject.toml
-COMMAND := $(shell awk -F '[ ="]+' '$$1 == "name" { print $$2 }' $(PYPROJECT))
-VERSION := $(shell awk -F '[ ="]+' '$$1 == "version" { print $$2 }' $(PYPROJECT))
-WHEEL := ./dist/$(COMMAND)-$(VERSION)-py3-none-any.whl
-POETRY = poetry run
-PRE_COMMIT = pre-commit run
-BEETS_CONFIG_FOLDER = ~/.config/beets
-BEETS_CONFIG_PATH = $(BEETS_CONFIG_FOLDER)/config.yaml
-TEST = $(POETRY) coverage run -m pytest
-COVERAGE = $(POETRY) coverage report -m --skip-covered --sort=cover
+get_pyproject_value = $(shell awk -F '[ ="]+' '$$1 == "$(1)" { print $$2 }' ./pyproject.toml)
+COMMAND := $(call get_pyproject_value,name)
+
+all: help
 
 define BEETS_CONFIG_VALUES
 directory: ~/Music
@@ -17,22 +10,23 @@ import:
   incremental: yes
   autotag: no
 endef
-
-all: help
-
+BEETS_CONFIG_FOLDER = ~/.config/beets
 export BEETS_CONFIG_VALUES
 beets:
 	mkdir -p $(BEETS_CONFIG_FOLDER)
-	echo "$$BEETS_CONFIG_VALUES" > $(BEETS_CONFIG_PATH)
+	echo "$$BEETS_CONFIG_VALUES" > $(BEETS_CONFIG_FOLDER)/config.yaml
 
+VERSION := $(call get_pyproject_value,version)
+WHEEL := ./dist/$(COMMAND)-$(VERSION)-py3-none-any.whl
 .PHONY: build
-build: ## Build the CLI and isntall it in your global pip packages
+build: ## Build the project and pipx install it.
 	poetry install && poetry build && pipx install $(WHEEL) --force --pip-args='--force-reinstall'
 
-check: ## Check for problems
-	$(POETRY) $(PRE_COMMIT) -a
+check: ## Run pre-commit checks.
+	poetry run pre-commit run -a
 
-coverage: test ## Run coverage report (options: "fail-under=<percentage>", "search=<term>")
+COVERAGE = poetry run coverage report -m --skip-covered --sort=cover
+coverage: test ## Run coverage report. [options: "fail-under=<percentage>", "search=<term>"]
 ifdef fail-under
 	$(COVERAGE) --fail-under $(fail-under)
 else ifdef search
@@ -46,23 +40,18 @@ help:
 	| sort \
 	| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-shell: ## Run bpython in project virtual environment
-	$(POETRY) bpython
+shell: ## Open bpython interpreter in the project's virtual environment.
+	poetry run bpython
 
-start: beets build ## Add beets config before installing tsundeoku
+start: beets build ## Add beets config and build.
 
-test: ## Run tests (options: "print=true", "args=<args>")
+TEST = poetry run coverage run -m pytest $(args)
+test: ## Run tests. [options: "print=true", "args=<args>"]
 ifdef print
 	$(TEST) -s
-else ifdef args
-	$(TEST) $(args)
 else
 	$(TEST)
 endif
 
-try: ## Try a command using the current state of the files without building
-ifdef args
-	$(POETRY) $(COMMAND) $(args)
-else
-	$(POETRY) $(COMMAND)
-endif
+try: ## Try a command using the current state of the files without building. [options: "args=<args>"]
+	poetry run $(COMMAND) $(args)
