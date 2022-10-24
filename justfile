@@ -13,10 +13,10 @@ _beets:
     #!/usr/bin/env zsh
     beets_config_folder=$HOME/.config/beets
     mkdir -p $beets_config_folder
-    echo "{{beets_config_values}}" > $beets_config_folder/config.yaml
+    printf "{{beets_config_values}}" > $beets_config_folder/config.yaml
 
 @_get_pyproject_value value:
-    echo `awk -F '[ ="]+' '$1 == "{{value}}" { print $2 }' pyproject.toml`
+    printf $(awk -F '[ =\"]+' '$1 == "{{value}}" { print $2 }' pyproject.toml)
 
 # try a command using the current state of the files without building.
 try *args:
