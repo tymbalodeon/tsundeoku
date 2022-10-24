@@ -36,14 +36,18 @@ try *args:
 @coverage *args:
     poetry run coverage report -m --skip-covered --sort=cover {{args}}
 
+@_get_wheel:
+    #!/usr/bin/env zsh
+    command=$(just _get_pyproject_value "name")
+    version=$(just _get_pyproject_value "version")
+    printf "./dist/$command-$version-py3-none-any.whl"
+
 # build the project and pipx install it.
-@build:
+build:
     #!/usr/bin/env zsh
     poetry install
     poetry build
-    command=$(just _get_pyproject_value "name")
-    version=$(just _get_pyproject_value "version")
-    wheel="./dist/$command-$version-py3-none-any.whl"
+    wheel=$(just _get_wheel)
     pipx install $wheel --force --pip-args='--force-reinstall'
 
 # Add beets config and build.
