@@ -18,21 +18,21 @@ _beets:
 @_get_pyproject_value value:
     printf $(awk -F '[ =\"]+' '$1 == "{{value}}" { print $2 }' pyproject.toml)
 
-# try a command using the current state of the files without building.
+# Try a command using the current state of the files without building.
 try *args:
     #!/usr/bin/env zsh
     command=$(just _get_pyproject_value "name")
     poetry run "${command}" {{args}}
 
-# run pre-commit checks.
+# Run pre-commit checks.
 @check:
     poetry run pre-commit run -a
 
-# run tests.
+# Run tests.
 @test *args:
     poetry run coverage run -m pytest {{args}}
 
-# run coverage report.
+# Run coverage report.
 @coverage *args:
     poetry run coverage report -m --skip-covered --sort=cover {{args}}
 
@@ -42,7 +42,7 @@ _get_wheel:
     version=$(just _get_pyproject_value "version")
     printf "./dist/${command}-${version}-py3-none-any.whl"
 
-# build the project and pipx install it.
+# Build the project and pipx install it.
 build:
     #!/usr/bin/env zsh
     poetry install
