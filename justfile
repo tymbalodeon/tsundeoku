@@ -11,9 +11,9 @@ import:
 
 _beets:
     #!/usr/bin/env zsh
-    beets_config_folder=$HOME/.config/beets
-    mkdir -p $beets_config_folder
-    printf "{{beets_config_values}}" > $beets_config_folder/config.yaml
+    beets_config_folder="$HOME/.config/beets"
+    mkdir -p "${beets_config_folder}"
+    printf "{{beets_config_values}}" > "${beets_config_folder}/config.yaml"
 
 @_get_pyproject_value value:
     printf $(awk -F '[ =\"]+' '$1 == "{{value}}" { print $2 }' pyproject.toml)
@@ -22,7 +22,7 @@ _beets:
 try *args:
     #!/usr/bin/env zsh
     command=$(just _get_pyproject_value "name")
-    poetry run $command {{args}}
+    poetry run "${command}" {{args}}
 
 # run pre-commit checks.
 @check:
@@ -36,11 +36,11 @@ try *args:
 @coverage *args:
     poetry run coverage report -m --skip-covered --sort=cover {{args}}
 
-@_get_wheel:
+_get_wheel:
     #!/usr/bin/env zsh
     command=$(just _get_pyproject_value "name")
     version=$(just _get_pyproject_value "version")
-    printf "./dist/$command-$version-py3-none-any.whl"
+    printf "./dist/${command}-${version}-py3-none-any.whl"
 
 # build the project and pipx install it.
 build:
@@ -48,7 +48,7 @@ build:
     poetry install
     poetry build
     wheel=$(just _get_wheel)
-    pipx install $wheel --force --pip-args='--force-reinstall'
+    pipx install "${wheel}" --force --pip-args="--force-reinstall"
 
 # Add beets config and build.
-@start: _beets build
+start: _beets build
