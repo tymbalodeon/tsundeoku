@@ -18,7 +18,9 @@ schedule_command = "schedule"
 
 
 @fixture(autouse=True)
-def set_mock_get_tmp_path(monkeypatch: MonkeyPatch, tmp_path_factory: TempPathFactory):
+def set_mock_get_tmp_path(
+    monkeypatch: MonkeyPatch, tmp_path_factory: TempPathFactory
+):
     tmp = tmp_path_factory.mktemp("tmp")
 
     def mock_get_tmp_path() -> Path:
@@ -34,7 +36,9 @@ def set_mock_get_tmp_path(monkeypatch: MonkeyPatch, tmp_path_factory: TempPathFa
 
 
 @mark.parametrize("arg, mock_get_argv", get_help_args())
-def test_config_help(arg: str, mock_get_argv: MockArgV, monkeypatch: MonkeyPatch):
+def test_config_help(
+    arg: str, mock_get_argv: MockArgV, monkeypatch: MonkeyPatch
+):
     config_help_text = "Schedule import command to run automatically."
     monkeypatch.setattr(main, "get_argv", mock_get_argv)
     output = call_command([schedule_command, arg])
@@ -47,7 +51,9 @@ def set_mock_is_currently_scheduled(
     def mock_is_currently_scheduled() -> bool:
         return is_currently_scheduled
 
-    monkeypatch.setattr(schedule, "is_currently_scheduled", mock_is_currently_scheduled)
+    monkeypatch.setattr(
+        schedule, "is_currently_scheduled", mock_is_currently_scheduled
+    )
 
 
 not_scheduled_message = "Import is not currently scheduled.\n"
@@ -72,7 +78,9 @@ def test_schedule_scheduled_file_daily(monkeypatch: MonkeyPatch):
     set_mock_is_currently_scheduled(monkeypatch)
     load_plist(9, 0)
     output = call_command([schedule_command])
-    expected_output = "Import is currently scheduled for every day at 09:00AM.\n"
+    expected_output = (
+        "Import is currently scheduled for every day at 09:00AM.\n"
+    )
     assert output == expected_output
 
 
@@ -80,7 +88,9 @@ def test_schedule_scheduled_file_hourly(monkeypatch: MonkeyPatch):
     set_mock_is_currently_scheduled(monkeypatch)
     load_plist(None, 30)
     output = call_command([schedule_command])
-    expected_output = "Import is currently scheduled for every hour at **:30 minutes.\n"
+    expected_output = (
+        "Import is currently scheduled for every hour at **:30 minutes.\n"
+    )
     assert output == expected_output
 
 

@@ -35,8 +35,8 @@ class Action:
     def remove_bracket_instruments(cls):
         return cls(
             message=(
-                'Removing bracketed solo instrument indications from all "artist"'
-                " tags..."
+                "Removing bracketed solo instrument indications from all"
+                ' "artist" tags...'
             ),
             find=SOLO_INSTRUMENT_REGEX,
             replace="",
@@ -48,22 +48,30 @@ class Action:
     def expand_abbreviations(cls):
         return [
             cls(
-                message='Replacing "Rec." with "Recording" in all "album" tags...',
+                message=(
+                    'Replacing "Rec." with "Recording" in all "album" tags...'
+                ),
                 find=RECORDING_REGEX,
                 replace="Recording",
             ),
             cls(
-                message='Replacing "Recs" with "Recordings" in all "album" tags...',
+                message=(
+                    'Replacing "Recs" with "Recordings" in all "album" tags...'
+                ),
                 find=RECORDINGS_REGEX,
                 replace="Recordings",
             ),
             cls(
-                message='Replacing "Orig." with "Original" in all "album" tags...',
+                message=(
+                    'Replacing "Orig." with "Original" in all "album" tags...'
+                ),
                 find=ORIGINAL_REGEX,
                 replace="Original",
             ),
             cls(
-                message='Replacing "Ed." with "Edition" in all "album" tags...',
+                message=(
+                    'Replacing "Ed." with "Edition" in all "album" tags...'
+                ),
                 find=EDITION_REGEX,
                 replace="Edition",
             ),
@@ -113,7 +121,10 @@ def reformat_albums(
         if action.message:
             print(action.message)
         items = list_items(action.tag, action.find, action.operate_on_albums)
-        tags = {(escape(tag), sub(action.find, action.replace, tag)) for tag in items}
+        tags = {
+            (escape(tag), sub(action.find, action.replace, tag))
+            for tag in items
+        }
         if not tags:
             print("No albums to update.")
             continue

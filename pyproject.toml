@@ -40,7 +40,7 @@ profile = "black"
 
 [tool.black]
 preview = true
+line-length = 79
 
 [tool.flake8]
-max-line-length = 88
 extend-ignore = "E203"

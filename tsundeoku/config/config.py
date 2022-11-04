@@ -53,8 +53,13 @@ class FileSystemConfig(BaseModel):
         default_music_player = get_default_music_player()
         if application_name == default_music_player:
             return application_name
-        command = f'mdfind "kMDItemKind == \'Application\'" | grep "{application_name}"'
-        application_exists = run(command, shell=True, capture_output=True).stdout
+        command = (
+            "mdfind \"kMDItemKind == 'Application'\" | grep"
+            f' "{application_name}"'
+        )
+        application_exists = run(
+            command, shell=True, capture_output=True
+        ).stdout
         if not application_exists:
             raise ValueError(f'application "{application_name}" not found')
         return application_name
@@ -136,7 +141,8 @@ def get_music_player() -> str:
 
 def update_config_key(config: dict, old_value: str, new_value: str) -> dict:
     return {
-        new_value if key == old_value else key: value for key, value in config.items()
+        new_value if key == old_value else key: value
+        for key, value in config.items()
     }
 
 

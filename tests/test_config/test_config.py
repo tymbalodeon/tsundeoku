@@ -3,7 +3,12 @@ from pathlib import Path
 from pytest import MonkeyPatch, mark
 from pytest_mock import MockerFixture
 
-from tests.conftest import MockArgV, call_command, get_help_args, strip_newlines
+from tests.conftest import (
+    MockArgV,
+    call_command,
+    get_help_args,
+    strip_newlines,
+)
 from tsundeoku import main
 from tsundeoku.config import main as config_main
 from tsundeoku.config.config import get_config_path
@@ -140,7 +145,9 @@ def get_custom_file_system_values() -> str:
 
 
 def get_custom_notifications_values() -> str:
-    return "system_on=True\nemail_on=True\nusername=username\npassword=********"
+    return (
+        "system_on=True\nemail_on=True\nusername=username\npassword=********"
+    )
 
 
 def get_expected_custom_config_display() -> str:
@@ -160,7 +167,9 @@ def get_expected_custom_config_display() -> str:
 
 
 @mark.parametrize("arg, mock_get_argv", get_help_args())
-def test_config_help(arg: str, mock_get_argv: MockArgV, monkeypatch: MonkeyPatch):
+def test_config_help(
+    arg: str, mock_get_argv: MockArgV, monkeypatch: MonkeyPatch
+):
     config_help_text = "Show [default] and set config values."
     monkeypatch.setattr(main, "get_argv", mock_get_argv)
     output = call_command([config_command, arg])
@@ -237,17 +246,23 @@ def test_config_reset_all_false_keeps_custom_config(monkeypatch: MonkeyPatch):
     assert output != default_output
 
 
-def test_config_reset_commands_restores_default_options(monkeypatch: MonkeyPatch):
+def test_config_reset_commands_restores_default_options(
+    monkeypatch: MonkeyPatch,
+):
     set_confirm_reset(monkeypatch)
     set_custom_config_and_get_default_output()
     expected_custom_config_display = get_expected_custom_config_display()
     output = call_command([config_command, "--reset-commands"])
-    expected_custom_config_display = strip_newlines(expected_custom_config_display)
+    expected_custom_config_display = strip_newlines(
+        expected_custom_config_display
+    )
     output = strip_newlines(output)
     assert output == expected_custom_config_display
 
 
-def test_config_reset_commands_false_keeps_custom_config(monkeypatch: MonkeyPatch):
+def test_config_reset_commands_false_keeps_custom_config(
+    monkeypatch: MonkeyPatch,
+):
     set_confirm_reset(monkeypatch, yes=False)
     default_output = set_custom_config_and_get_default_output()
     output = call_command([config_command, "--reset-commands"])

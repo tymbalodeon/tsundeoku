@@ -74,7 +74,8 @@ def get_args(
 
 
 @mark.parametrize(
-    "mock_getter, expected_value", get_args(mock_get_albumartist, "albumartist")
+    "mock_getter, expected_value",
+    get_args(mock_get_albumartist, "albumartist"),
 )
 def test_get_albumartist(
     mock_getter: MockGetter,
@@ -104,7 +105,9 @@ def test_get_artists(
     assert artists == {expected_value}
 
 
-@mark.parametrize("mock_getter, expected_value", get_args(mock_get_album, "album"))
+@mark.parametrize(
+    "mock_getter, expected_value", get_args(mock_get_album, "album")
+)
 def test_get_album_title(
     mock_getter: MockGetter,
     expected_value: str | None,
@@ -118,7 +121,8 @@ def test_get_album_title(
 
 
 @mark.parametrize(
-    "mock_getter, expected_value", get_args(mock_get_year, "2022", empty_string=False)
+    "mock_getter, expected_value",
+    get_args(mock_get_year, "2022", empty_string=False),
 )
 def test_get_years(
     mock_getter: MockGetter,
@@ -161,7 +165,9 @@ def test_get_disc_number(
     assert disc_number == expected_value
 
 
-@mark.parametrize("mock_getter, expected_value", get_args(mock_get_disc_total, "10"))
+@mark.parametrize(
+    "mock_getter, expected_value", get_args(mock_get_disc_total, "10")
+)
 def test_get_disc_total(
     mock_getter: MockGetter,
     expected_value: str | None,

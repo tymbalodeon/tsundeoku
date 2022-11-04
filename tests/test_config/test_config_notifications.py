@@ -64,7 +64,9 @@ def get_config_email_on():
 
 def test_notifications_email_on():
     default_email_on = get_config_email_on()
-    output = call_command([config_command, notifications_command, "--email-on"])
+    output = call_command(
+        [config_command, notifications_command, "--email-on"]
+    )
     updated_email_on = get_config_email_on()
     assert output != get_notifications_values()
     assert updated_email_on != default_email_on
@@ -74,7 +76,9 @@ def test_notifications_email_on():
 def test_notifications_email_off():
     default_email_on = get_config_email_on()
     call_command([config_command, notifications_command, "--email-on"])
-    output = call_command([config_command, notifications_command, "--email-off"])
+    output = call_command(
+        [config_command, notifications_command, "--email-off"]
+    )
     updated_email_on = get_config_email_on()
     assert output == get_notifications_values()
     assert updated_email_on == default_email_on
@@ -87,7 +91,9 @@ def get_config_system_on():
 
 def test_notifications_system_on():
     default_system_on = get_config_system_on()
-    output = call_command([config_command, notifications_command, "--system-on"])
+    output = call_command(
+        [config_command, notifications_command, "--system-on"]
+    )
     updated_system_on = get_config_system_on()
     assert output != get_notifications_values()
     assert updated_system_on != default_system_on
@@ -97,7 +103,9 @@ def test_notifications_system_on():
 def test_notifications_system_off():
     default_system_on = get_config_system_on()
     call_command([config_command, notifications_command, "--system-on"])
-    output = call_command([config_command, notifications_command, "--system-off"])
+    output = call_command(
+        [config_command, notifications_command, "--system-off"]
+    )
     updated_system_on = get_config_system_on()
     assert output == get_notifications_values()
     assert updated_system_on == default_system_on

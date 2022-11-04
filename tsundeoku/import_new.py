@@ -87,7 +87,11 @@ def get_albums() -> list[str]:
         return albums
     for directory in shared_directories:
         albums.extend(
-            [root for root, dirs, files in walk(directory) if files and not dirs]
+            [
+                root
+                for root, dirs, files in walk(directory)
+                if files and not dirs
+            ]
         )
     return albums
 
@@ -118,7 +122,9 @@ def get_track_total(tracks: Tracks) -> int | ImportError:
 def is_in_ignored_directory(album: str) -> bool:
     ignored_directories = get_ignored_directories()
     matching_directories = (
-        directory for directory in ignored_directories if str(directory) in album
+        directory
+        for directory in ignored_directories
+        if str(directory) in album
     )
     return any(matching_directories)
 
@@ -175,7 +181,10 @@ def get_artist_and_artist_field_name(
 
 
 def should_update(
-    field: str, bracket_value: str, existing_value: str | None, album_title: str
+    field: str,
+    bracket_value: str,
+    existing_value: str | None,
+    album_title: str,
 ) -> bool:
     bracket_value = stylize(bracket_value, styles=["bold", "yellow"])
     existing_value = existing_value or ""
@@ -189,12 +198,18 @@ def should_update(
 
 
 def is_bracket_number(character: str, year_format=False) -> bool:
-    if character.isnumeric() or year_format and character in YEAR_RANGE_SEPARATORS:
+    if (
+        character.isnumeric()
+        or year_format
+        and character in YEAR_RANGE_SEPARATORS
+    ):
         return True
     return False
 
 
-def get_bracket_numbers(regex: str, album_title: str, year_range=False) -> str | None:
+def get_bracket_numbers(
+    regex: str, album_title: str, year_range=False
+) -> str | None:
     match = search(regex, album_title)
     if not match:
         return None
@@ -207,7 +222,9 @@ def get_bracket_numbers(regex: str, album_title: str, year_range=False) -> str |
     return "".join(numeric_characters)
 
 
-def get_new_year(tracks: Tracks, album_title: str, allow_prompt: bool) -> str | None:
+def get_new_year(
+    tracks: Tracks, album_title: str, allow_prompt: bool
+) -> str | None:
     years = get_years(tracks)
     single_year = len(years) == 1
     if not single_year:
@@ -226,7 +243,9 @@ def get_new_year(tracks: Tracks, album_title: str, allow_prompt: bool) -> str | 
 
 def get_year_range_comment(tracks: Tracks, album_title: str) -> str | None:
     years = get_years(tracks)
-    bracket_year = get_bracket_numbers(YEAR_RANGE_REGEX, album_title, year_range=True)
+    bracket_year = get_bracket_numbers(
+        YEAR_RANGE_REGEX, album_title, year_range=True
+    )
     if not bracket_year:
         return None
     year_range = False
@@ -243,7 +262,10 @@ def get_year_range_comment(tracks: Tracks, album_title: str) -> str | None:
 
 
 def get_new_disc_numbers(
-    tracks: Tracks, album_title: str, ask_before_disc_update: bool, allow_prompt: bool
+    tracks: Tracks,
+    album_title: str,
+    ask_before_disc_update: bool,
+    allow_prompt: bool,
 ) -> tuple[str | None, str | None, bool]:
     new_disc_number = None
     new_disc_total = None
@@ -264,8 +286,8 @@ def get_new_disc_numbers(
                     or allow_prompt
                     and Confirm.ask(
                         "Apply default disc and disc total value of"
-                        f' {stylize("1", ["bold", "yellow"])} to album with'
-                        " missing disc and disc total:"
+                        f' {stylize("1", ["bold", "yellow"])} to album'
+                        " with missing disc and disc total:"
                         f" {stylize(rich_escape(album_title), 'blue')}?"
                     )
                 ):
@@ -405,7 +427,11 @@ def import_album(
         year_range_comment = None
         if not new_year:
             year_range_comment = get_year_range_comment(tracks, album_title)
-        new_disc_number, new_disc_total, remove_bracket_disc = get_new_disc_numbers(
+        (
+            new_disc_number,
+            new_disc_total,
+            remove_bracket_disc,
+        ) = get_new_disc_numbers(
             tracks, album_title, ask_before_disc_update, allow_prompt
         )
         artists_to_update = get_artists_to_update(
@@ -448,7 +474,9 @@ def get_error_album_message(error_album_count: int) -> str:
     album_plural = "album"
     if error_album_count > 1:
         album_plural = f"{album_plural}s"
-    return f"{error_album_count} {album_plural} cannot be automatically imported"
+    return (
+        f"{error_album_count} {album_plural} cannot be automatically imported"
+    )
 
 
 def import_albums(
@@ -520,7 +548,9 @@ def get_first_error(errors: list[tuple[ImportError, list[str]]]):
         return None
 
 
-def should_change_color(error: ImportError, last_error: ImportError | None) -> bool:
+def should_change_color(
+    error: ImportError, last_error: ImportError | None
+) -> bool:
     if error != last_error:
         return True
     return False
@@ -594,9 +624,13 @@ def get_import_anyway_errors(
         findall(importable_errors_regex, import_selection, flags=IGNORECASE)
     )
     importable_errors = [
-        key for key, value in errors.items() if key in IMPORTABLE_ERROR_KEYS and value
+        key
+        for key, value in errors.items()
+        if key in IMPORTABLE_ERROR_KEYS and value
     ]
-    return {error for error in importable_errors if error.value in error_selections}
+    return {
+        error for error in importable_errors if error.value in error_selections
+    }
 
 
 def get_import_anyway_indices(import_selection: str, albums: list) -> set[int]:
@@ -612,7 +646,9 @@ def get_confirm_selected_albums_display(albums: list) -> str:
     return "\n\t".join(albums)
 
 
-def get_email_contents(current_errors: list[tuple[ImportError, list[str]]]) -> str:
+def get_email_contents(
+    current_errors: list[tuple[ImportError, list[str]]]
+) -> str:
     shared_directories = get_shared_directories()
     email_contents = []
     for error_name, error_albums in current_errors:
@@ -687,8 +723,8 @@ def should_import_anyway(
     album_identifier = "this album"
     if multiple_albums:
         import_selection = Prompt.ask(
-            "Please input the index of any album(s) you would like to import or the"
-            " name of\nthe error to import all albums in that category"
+            "Please input the index of any album(s) you would like to import"
+            " or the name of\nthe error to import all albums in that category"
         )
         if import_selection in {"", "n"}:
             raise Exit()
@@ -696,7 +732,9 @@ def should_import_anyway(
         album_identifier = "all albums"
         if import_selection != "all":
             album_identifier = "these albums"
-            error_selections = get_import_anyway_errors(import_selection, errors)
+            error_selections = get_import_anyway_errors(
+                import_selection, errors
+            )
             indices = get_import_anyway_indices(
                 import_selection, importable_error_albums
             )
@@ -711,12 +749,18 @@ def should_import_anyway(
             index_selection_albums = [
                 importable_error_albums[index] for index in indices
             ]
-            import_anyway_albums = error_selection_albums + index_selection_albums
+            import_anyway_albums = (
+                error_selection_albums + index_selection_albums
+            )
             importable_error_albums = list(set(import_anyway_albums))
             if not importable_error_albums:
-                print_with_theme("No matching albums.", level=StyleLevel.WARNING)
+                print_with_theme(
+                    "No matching albums.", level=StyleLevel.WARNING
+                )
                 raise Exit()
-    albums_display = get_confirm_selected_albums_display(importable_error_albums)
+    albums_display = get_confirm_selected_albums_display(
+        importable_error_albums
+    )
     print(f"You've selected:\n\t{albums_display}")
     return Confirm.ask(f"Are you sure you want to import {album_identifier}?")
 
@@ -759,10 +803,14 @@ def import_new_albums(
     if imports and reformat:
         reformat_settings = config.reformat
         remove_bracket_years = reformat_settings.remove_bracket_years
-        remove_bracket_instruments = reformat_settings.remove_bracket_instruments
+        remove_bracket_instruments = (
+            reformat_settings.remove_bracket_instruments
+        )
         expand_abbreviations = reformat_settings.expand_abbreviations
         reformat_albums(
-            remove_bracket_years, remove_bracket_instruments, expand_abbreviations
+            remove_bracket_years,
+            remove_bracket_instruments,
+            expand_abbreviations,
         )
     current_errors = [(key, value) for key, value in errors.items() if value]
     if is_scheduled_run:

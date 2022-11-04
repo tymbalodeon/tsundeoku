@@ -35,14 +35,18 @@ def config(
     file: bool = Option(
         False, "--file", "-f", help="Open config file in file browser."
     ),
-    edit: bool = Option(False, "--edit", "-e", help="Edit config file with $EDITOR."),
+    edit: bool = Option(
+        False, "--edit", "-e", help="Edit config file with $EDITOR."
+    ),
     reset_all: bool = Option(
         False, "--reset-all", help="Reset all config values to defaults."
     ),
     reset_commands: bool = Option(
         False,
         "--reset-commands",
-        help='Reset settings for "import" and "reformat" commands to defaults.',
+        help=(
+            'Reset settings for "import" and "reformat" commands to defaults.'
+        ),
     ),
 ):
     if context.invoked_subcommand:
@@ -121,7 +125,9 @@ def file_system(
     ),
     ignored_directories: list[str] = Option(
         None,
-        help="New ignored directories to add to or replace the existing value.",
+        help=(
+            "New ignored directories to add to or replace the existing value."
+        ),
         show_default=False,
     ),
     music_player: str = Option(
@@ -183,25 +189,37 @@ def import_new(
     reformat: bool = Option(
         None,
         "--reformat/--as-is",
-        help='Set the default value for automatically calling "reformat" after import',
+        help=(
+            'Set the default value for automatically calling "reformat" after'
+            " import"
+        ),
         show_default=False,
     ),
     ask_before_disc_update: bool = Option(
         None,
         "--ask-before-disc-update/--auto-update-disc",
-        help="Set the default value for asking before adding default disc values",
+        help=(
+            "Set the default value for asking before adding default disc"
+            " values"
+        ),
         show_default=False,
     ),
     ask_before_artist_update: bool = Option(
         None,
         "--ask-before-artist-update/--auto-update-artist",
-        help="Set the default value for asking before removing bracket instruments.",
+        help=(
+            "Set the default value for asking before removing bracket"
+            " instruments."
+        ),
         show_default=False,
     ),
     allow_prompt: bool = Option(
         None,
         "--allow-prompt/--disallow-prompt",
-        help="Set the default for including imports requiring prompt for user input.",
+        help=(
+            "Set the default for including imports requiring prompt for user"
+            " input."
+        ),
         show_default=False,
     ),
 ):

@@ -65,7 +65,9 @@ def set_mock_home(monkeypatch: MonkeyPatch, tmp_path_factory: TempPathFactory):
     def mock_home() -> Path:
         return home
 
-    def mock_get_config_instance(config_values: dict | None = None) -> MockConfig:
+    def mock_get_config_instance(
+        config_values: dict | None = None,
+    ) -> MockConfig:
         if config_values:
             return MockConfig(**config_values)
         default_shared_directories = get_default_shared_directories()
@@ -88,7 +90,9 @@ def set_mock_home(monkeypatch: MonkeyPatch, tmp_path_factory: TempPathFactory):
         return MockLibrary()
 
     monkeypatch.setattr(Path, "home", mock_home)
-    monkeypatch.setattr(config, "get_config_instance", mock_get_config_instance)
+    monkeypatch.setattr(
+        config, "get_config_instance", mock_get_config_instance
+    )
     monkeypatch.setattr(reformat, "get_library", mock_get_library)
     write_config_values()
 

@@ -128,8 +128,8 @@ def import_new(
         None,
         "--ask-before-disc-update/--auto-update-disc",
         help=(
-            'Prompt for confirmation to apply default disc and disc total values of "1'
-            ' out of 1".'
+            "Prompt for confirmation to apply default disc and disc total"
+            ' values of "1 out of 1".'
         ),
         show_default=False,
     ),
@@ -217,7 +217,9 @@ def reformat(
     if remove_bracket_years is None:
         remove_bracket_years = reformat_settings.remove_bracket_years
     if remove_bracket_instruments is None:
-        remove_bracket_instruments = reformat_settings.remove_bracket_instruments
+        remove_bracket_instruments = (
+            reformat_settings.remove_bracket_instruments
+        )
     if expand_abbreviations is None:
         expand_abbreviations = reformat_settings.expand_abbreviations
     reformat_albums(
@@ -227,15 +229,21 @@ def reformat(
 
 @tsundeoku.command()
 def schedule(
-    off: bool = Option(False, "--off", help="Turn off scheduling of import command."),
+    off: bool = Option(
+        False, "--off", help="Turn off scheduling of import command."
+    ),
     on: str = Option(
         None,
         "--on",
         help=get_schedule_help_message(),
         show_default=False,
     ),
-    logs: bool = Option(False, "--logs", "-l", help="Show most recent import log."),
-    all_logs: bool = Option(False, "--all", "-a", help="Show all import logs."),
+    logs: bool = Option(
+        False, "--logs", "-l", help="Show most recent import log."
+    ),
+    all_logs: bool = Option(
+        False, "--all", "-a", help="Show all import logs."
+    ),
 ):
     """Schedule import command to run automatically."""
     if logs:

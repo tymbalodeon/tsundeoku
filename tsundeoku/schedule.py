@@ -26,10 +26,8 @@ def get_schedule_help_message():
     format_reference_link = get_format_reference_link()
     here = stylize("here", styles=[format_reference_link, "underline"])
     return (
-        "Schedule import to run at specified time, using the format %I:%M%p for daily,"
-        " **:%M"
-        " for hourly. See"
-        f" {here} for more info."
+        "Schedule import to run at specified time, using the format %I:%M%p"
+        f" for daily, **:%M for hourly. See {here} for more info."
     )
 
 
@@ -98,7 +96,9 @@ def get_calendar_interval(hour: int | None, minute: int | None) -> str:
     if hour is not None:
         hour_key = f"\t\t\t<key>Hour</key>\n\t\t\t<integer>{hour}</integer>\n"
     if minute is not None:
-        minute_key = f"\t\t\t<key>Minute</key>\n\t\t\t<integer>{minute}</integer>\n"
+        minute_key = (
+            f"\t\t\t<key>Minute</key>\n\t\t\t<integer>{minute}</integer>\n"
+        )
     return (
         "\t\t<key>StartCalendarInterval</key>\n"
         f"\t\t<dict>\n{hour_key}{minute_key}\t\t</dict>\n"
@@ -179,7 +179,9 @@ def is_currently_scheduled() -> bool:
 
 
 def print_show_schedule_error():
-    print_with_theme("Error retrieving schedule information.", StyleLevel.ERROR)
+    print_with_theme(
+        "Error retrieving schedule information.", StyleLevel.ERROR
+    )
 
 
 def show_currently_scheduled():
