@@ -9,7 +9,7 @@ readme = "README.md"
 tsundeoku = "tsundeoku.main:tsundeoku"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.11"
+python = "^3.11"
 typer = {extras = ["all"], version = "^0.6.1"}
 tinytag = "^1.8.1"
 beets = "^1.6.0"
