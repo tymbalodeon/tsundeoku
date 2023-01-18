@@ -250,7 +250,8 @@ def show_logs(all_logs=False):
     log_path = get_log_path()
     text = log_path.read_text()
     if all_logs:
-        print(text)
+        for line in text.splitlines():
+            print(line)
     else:
         lines = get_most_recent_log(text)
         lines = "\n".join(lines)
