@@ -246,16 +246,12 @@ def get_most_recent_log(text: str) -> list[str]:
     return lines
 
 
-def print_most_recent_log(text: str):
-    lines = get_most_recent_log(text)
-    for line in lines:
-        print(line)
-
-
 def show_logs(all_logs=False):
     log_path = get_log_path()
     text = log_path.read_text()
     if all_logs:
         print(text)
     else:
-        print_most_recent_log(text)
+        lines = get_most_recent_log(text)
+        lines = "\n".join(lines)
+        print(lines)
