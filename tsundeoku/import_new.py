@@ -286,7 +286,7 @@ def get_new_disc_numbers(
                     or allow_prompt
                     and Confirm.ask(
                         "Apply default disc and disc total value of"
-                        f' {stylize("1", ["bold", "yellow"])} to album'
+                        f" {stylize('1', ['bold', 'yellow'])} to album"
                         " with missing disc and disc total:"
                         f" {stylize(rich_escape(album_title), 'blue')}?"
                     )

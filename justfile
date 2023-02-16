@@ -24,9 +24,29 @@ try *args:
     command=$(just _get_pyproject_value "name")
     poetry run "${command}" {{args}}
 
-# Run pre-commit checks.
-@check:
-    poetry run pre-commit run -a
+pre_commit := "poetry run pre-commit"
+
+# Run pre-commit checks or autoupdate ("--autoupdate").
+check *autoupdate:
+    #!/usr/bin/env zsh
+    if [ "{{autoupdate}}" = "--autoupdate" ]; then
+        {{pre_commit}} autoupdate
+    else
+        {{pre_commit}} run --all-files
+    fi
+
+# Clean Python cache.
+clean:
+    #!/usr/bin/env zsh
+    cached_files=(**/**.pyc(N))
+    if [ -z "${cached_files[*]}" ]; then
+        echo "No cached files found."
+        exit
+    fi
+    for file in "${cached_files[@]}"; do
+        rm "${file}"
+        echo "Removed ${file}."
+    done
 
 # Run tests.
 @test *args:
