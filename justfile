@@ -62,16 +62,16 @@ _get_wheel:
     version=$(just _get_pyproject_value "version")
     printf "./dist/${command}-${version}-py3-none-any.whl"
 
-# Build the project and install it, optionally using pipx ("--pipx").
-build *pipx:
+# Build the project and install it using pipx, or optionally with pip ("--pip").
+build *pip:
     #!/usr/bin/env zsh
     poetry install
     poetry build
     wheel="$(just _get_wheel)"
-    if [ "{{pipx}}" = "--pipx" ]; then
-        pipx install "${wheel}" --force --pip-args="--force-reinstall"
-    else
+    if [ "{{pip}}" = "--pip" ]; then
         pip install --user "${wheel}" --force-reinstall
+    else
+        pipx install "${wheel}" --force --pip-args="--force-reinstall"
     fi
 
 # Add beets config and build.
