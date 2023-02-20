@@ -19,7 +19,7 @@ fields. Run `tsundeoku reformat --help` to see all reformat rules.
 
 ## Installation
 
-- Install [poetry](https://python-poetry.org/docs/#installing-with-the-official-installer)
+- Install [pdm](https://pdm.fming.dev/latest/)
 - Run `just build` to install the `tsundeoku` command in your shell.
 
 You will need to [configure beets](https://beets.readthedocs.io/en/stable/guides/main.html#configuring).

@@ -22,9 +22,9 @@ _beets:
 try *args:
     #!/usr/bin/env zsh
     command=$(just _get_pyproject_value "name")
-    poetry run "${command}" {{args}}
+    pdm run "${command}" {{args}}
 
-pre_commit := "poetry run pre-commit"
+pre_commit := "pdm run pre-commit"
 
 # Run pre-commit checks or autoupdate ("--autoupdate").
 check *autoupdate:
@@ -50,11 +50,11 @@ clean:
 
 # Run tests.
 @test *args:
-    poetry run coverage run -m pytest {{args}}
+    pdm run coverage run -m pytest {{args}}
 
 # Run coverage report.
 @coverage *args:
-    poetry run coverage report -m --skip-covered --sort=cover {{args}}
+    pdm run coverage report -m --skip-covered --sort=cover {{args}}
 
 _get_wheel:
     #!/usr/bin/env zsh
@@ -65,8 +65,8 @@ _get_wheel:
 # Build the project and install it using pipx, or optionally with pip ("--pip").
 build *pip:
     #!/usr/bin/env zsh
-    poetry install
-    poetry build
+    pdm install
+    pdm build
     wheel="$(just _get_wheel)"
     if [ "{{pip}}" = "--pip" ]; then
         pip install --user "${wheel}" --force-reinstall
