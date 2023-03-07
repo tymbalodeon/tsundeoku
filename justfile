@@ -49,8 +49,14 @@ clean:
     done
 
 # Run tests.
-@test *args:
-    pdm run coverage run -m pytest {{args}}
+test *args:
+    #!/usr/bin/env zsh
+    if [ -z "{{args}}" ]; then
+        args="tests"
+    else
+        args="{{args}}"
+    fi
+    pdm run coverage run -m pytest "${args}"
 
 # Run coverage report.
 @coverage *args:
