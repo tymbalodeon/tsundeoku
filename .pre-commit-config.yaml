@@ -62,6 +62,8 @@ repos:
           - ./
           - --exclude
           - "*/__pypackages__/*,*/.venv/*,*/tests/*"
+          - --ignore-names
+          - "validate_*,schedule"
   - repo: https://github.com/pdm-project/pdm
     rev: 2.4.6
     hooks:
