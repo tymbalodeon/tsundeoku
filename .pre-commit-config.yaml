@@ -47,13 +47,6 @@ repos:
     hooks:
       - id: mypy
         args: [--ignore-missing-imports]
-  - repo: local
-    hooks:
-      - id: coverage
-        name: coverage
-        entry: just coverage --fail-under=61
-        language: system
-        pass_filenames: false
   - repo: https://github.com/jendrikseipp/vulture
     rev: v2.7
     hooks:
@@ -64,6 +57,16 @@ repos:
           - "*/__pypackages__/*,*/.venv/*,*/tests/*"
           - --ignore-names
           - "validate_*,schedule"
+  - repo: local
+    hooks:
+      - id: coverage
+        name: coverage
+        entry: just coverage
+        args:
+          - --fail-under
+          - "74"
+        language: system
+        pass_filenames: false
   - repo: https://github.com/pdm-project/pdm
     rev: 2.4.6
     hooks:

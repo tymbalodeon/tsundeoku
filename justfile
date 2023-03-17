@@ -1,27 +1,16 @@
-beets_config_values := """
-directory: ~/Music
-library: ~/.config/beets/library.db
-import:
-  incremental: yes
-  autotag: no
-"""
-
 @_help:
     just --list
 
-_beets:
-    #!/usr/bin/env zsh
-    beets_config_folder="$HOME/.config/beets"
-    mkdir -p "${beets_config_folder}"
-    printf "{{beets_config_values}}" > "${beets_config_folder}/config.yaml"
-
 @_get_pyproject_value value:
-    printf $(awk -F '[ =\"]+' '$1 == "{{value}}" { print $2 }' pyproject.toml)
+    printf "$(awk -F '[ =\"]+' '$1 == "{{value}}" { print $2 }' pyproject.toml)"
+
+@_get_command_name:
+    just _get_pyproject_value "name"
 
 # Try a command using the current state of the files without building.
 try *args:
     #!/usr/bin/env zsh
-    command=$(just _get_pyproject_value "name")
+    command="$(just _get_command_name)"
     pdm run "${command}" {{args}}
 
 pre_commit := "pdm run pre-commit"
@@ -48,6 +37,16 @@ clean:
         echo "Removed ${file}."
     done
 
+coverage := "pdm run coverage"
+
+# Run coverage report.
+@coverage *args:
+    {{coverage}} report -m \
+        --omit "__pypackages__/*" \
+        --skip-covered \
+        --sort "cover" \
+        {{args}}
+
 # Run tests.
 test *args:
     #!/usr/bin/env zsh
@@ -56,16 +55,13 @@ test *args:
     else
         args="{{args}}"
     fi
-    pdm run coverage run -m pytest "${args}"
+    {{coverage}} run -m pytest "${args}"
 
-# Run coverage report.
-@coverage *args:
-    pdm run coverage report -m --skip-covered --sort=cover {{args}}
 
 _get_wheel:
     #!/usr/bin/env zsh
-    command=$(just _get_pyproject_value "name")
-    version=$(just _get_pyproject_value "version")
+    command="$(just _get_command_name)"
+    version="$(just _get_pyproject_value "version")"
     printf "./dist/${command}-${version}-py3-none-any.whl"
 
 # Build the project and install it using pipx, or optionally with pip ("--pip").
@@ -80,5 +76,19 @@ build *pip:
         pipx install "${wheel}" --force --pip-args="--force-reinstall"
     fi
 
+beets_config_values := """
+directory: ~/Music
+library: ~/.config/beets/library.db
+import:
+  incremental: yes
+  autotag: no
+"""
+
+_beets:
+    #!/usr/bin/env zsh
+    beets_config_folder="$HOME/.config/beets"
+    mkdir -p "${beets_config_folder}"
+    printf "{{beets_config_values}}" > "${beets_config_folder}/config.yaml"
+
 # Add beets config and build.
-start: _beets build
+setup: _beets build
