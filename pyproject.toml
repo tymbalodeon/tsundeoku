@@ -1,15 +1,15 @@
 [project]
 name = "tsundeoku"
 version = "0.5.0"
-description = """ \
+description = """\
     CLI for managing imports from a shared folder to a \"beets\" library \
 """
-readme = "README.md"
-requires-python = ">=3.11"
-license = {text = "GPL-3.0-or-later"}
 authors = [
     {name = "Ben Rosen", email = "benjamin.j.rosen@gmail.com"},
 ]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
 dependencies = [
     "typer[all]>=0.7.0",
     "tinytag>=1.8.1",
@@ -33,12 +33,15 @@ dev = [
     "bpython>=0.24",
 ]
 
+[project.urls]
+repository = "https://github.com/tymbalodeon/tsundeoku"
+
+[project.scripts]
+agni = "agni.main:agni"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-
-[project.scripts]
-tsundeoku = "tsundeoku.main:tsundeoku"
 
 [tool.black]
 preview = true
