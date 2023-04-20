@@ -3,6 +3,5 @@
 .coverage
 .pdm-python
 __pycache__/
-__pypackages__/
 build/
 dist/
