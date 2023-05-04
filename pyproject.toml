@@ -37,7 +37,7 @@ dev = [
 repository = "https://github.com/tymbalodeon/tsundeoku"
 
 [project.scripts]
-agni = "agni.main:agni"
+tsundeoku = "tsundeoku.main:tsundeoku"
 
 [build-system]
 requires = ["hatchling"]
