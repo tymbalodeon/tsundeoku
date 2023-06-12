@@ -42,7 +42,7 @@ coverage := "pdm run coverage"
 # Run coverage report.
 @coverage *args: test
     {{coverage}} report -m \
-        --omit "__pypackages__/*" \
+        --omit "*/pdm/*" \
         --skip-covered \
         --sort "cover" \
         {{args}}
