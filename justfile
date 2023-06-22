@@ -15,10 +15,10 @@ try *args:
 
 pre_commit := "pdm run pre-commit"
 
-# Run pre-commit checks or autoupdate ("--autoupdate").
+# Run pre-commit checks or autoupdate ("autoupdate").
 check *autoupdate:
     #!/usr/bin/env zsh
-    if [ "{{autoupdate}}" = "--autoupdate" ]; then
+    if [ "{{autoupdate}}" = "autoupdate" ]; then
         {{pre_commit}} autoupdate
     else
         {{pre_commit}} run --all-files
