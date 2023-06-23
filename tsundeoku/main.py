@@ -238,16 +238,18 @@ def schedule(
         help=get_schedule_help_message(),
         show_default=False,
     ),
-    logs: bool = Option(
-        False, "--logs", "-l", help="Show most recent import log."
+    log: bool = Option(
+        False, "--log", "-l", help="Show most recent import log."
     ),
     all_logs: bool = Option(
-        False, "--all", "-a", help="Show all import logs."
+        False, "--all-logs", "-a", help="Show all import logs."
     ),
 ):
     """Schedule import command to run automatically."""
-    if logs:
-        show_logs(all_logs=all_logs)
+    if log:
+        show_logs()
+    elif all_logs:
+        show_logs(all_logs=True)
     elif off:
         remove_plist()
         print("Turned off scheduled import.")
