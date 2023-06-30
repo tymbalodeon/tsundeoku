@@ -37,7 +37,7 @@ class FileSystemConfig(BaseModel):
         default_factory=get_default_shared_directories
     )
     pickle_file: FilePath = Field(default_factory=get_default_pickle_file)
-    ignored_directories: set[DirectoryPath] = Field(default_factory=list)
+    ignored_directories: set[DirectoryPath] = Field(default_factory=set)
     music_player: str = get_default_music_player()
 
     @field_validator("shared_directories", "ignored_directories")
