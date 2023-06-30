@@ -102,13 +102,8 @@ def test_file_system_shared_directories_bad_value_shows_error(
             str(custom_shared_directories),
         ]
     )
-    error_message = (
-        f'ERROR: file or directory at path "{custom_shared_directories}" does'
-        " not exist\n\n"
-    )
     output = strip_newlines(output)
-    error_message = strip_newlines(error_message)
-    assert output == error_message
+    assert output == "ERROR: Path does not point to a directory"
 
 
 def test_file_system_pickle_file_good_value_updates_config(
@@ -169,13 +164,8 @@ def test_file_system_pickle_file_bad_value_shows_error(
             str(custom_pickle_file),
         ]
     )
-    error_message = (
-        f'ERROR: file or directory at path "{custom_pickle_file}" does not'
-        " exist\n\n"
-    )
     output = strip_newlines(output)
-    error_message = strip_newlines(error_message)
-    assert output == error_message
+    assert output == "ERROR: Path does not point to a file"
 
 
 def test_file_system_ignored_directories_good_value_updates_config(
@@ -234,13 +224,8 @@ def test_file_system_ignored_directories_bad_value_shows_error(
             str(custom_ignored_directories),
         ]
     )
-    error_message = (
-        f'ERROR: file or directory at path "{custom_ignored_directories}" does'
-        " not exist\n\n"
-    )
     output = strip_newlines(output)
-    error_message = strip_newlines(error_message)
-    assert output == error_message
+    assert output == "ERROR: Path does not point to a directory"
 
 
 def test_file_system_music_player_good_value_updates_config(
@@ -284,10 +269,11 @@ def test_file_system_music_player_bad_value_shows_error(
     output = call_command(
         [config_command, "file-system", "--music-player", custom_music_player]
     )
-    error_message = 'ERROR: application "NotAnApplication" not found'
     output = strip_newlines(output)
-    error_message = strip_newlines(error_message)
-    assert output == error_message
+    assert (
+        output
+        == 'ERROR: Value error, application "NotAnApplication" not found'
+    )
 
 
 def test_file_system_add(monkeypatch: MonkeyPatch):

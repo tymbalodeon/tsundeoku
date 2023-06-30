@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from pathlib import Path
 
-from pydantic import BaseModel, DirectoryPath, Field, FilePath, validator
+from pydantic import BaseModel, DirectoryPath, Field, FilePath, field_validator
 from pytest import MonkeyPatch, TempPathFactory, fixture
 from typer.testing import CliRunner
 
@@ -27,15 +27,15 @@ class MockFileSystemConfig(BaseModel):
     ignored_directories: set[DirectoryPath] = Field(default_factory=list)
     music_player: str = get_default_music_player()
 
-    @validator("shared_directories", "ignored_directories")
+    @field_validator("shared_directories", "ignored_directories")
     def validate_directory_paths(cls, paths: list[str]) -> set[Path]:
         return {Path(path).expanduser() for path in paths}
 
-    @validator("pickle_file")
+    @field_validator("pickle_file")
     def validate_file_path(cls, path: str) -> Path:
         return Path(path)
 
-    @validator("music_player")
+    @field_validator("music_player")
     def validate_application(cls, application_name: str) -> str:
         default_music_player = get_default_music_player()
         if application_name in (default_music_player, "Custom"):
@@ -44,10 +44,10 @@ class MockFileSystemConfig(BaseModel):
 
 
 class MockConfig(BaseModel):
-    file_system = MockFileSystemConfig()
-    import_new = ImportConfig()
-    reformat = ReformatConfig()
-    notifications = NotificationsConfig()
+    file_system: MockFileSystemConfig = MockFileSystemConfig()
+    import_new: ImportConfig = ImportConfig()
+    reformat: ReformatConfig = ReformatConfig()
+    notifications: NotificationsConfig = NotificationsConfig()
 
 
 class MockLibrary:

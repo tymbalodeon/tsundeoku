@@ -130,7 +130,7 @@ def test_schedule_off():
 
 def test_schedule_logs():
     time = stamp_logs()
-    output = call_command([schedule_command, "--logs"])
+    output = call_command([schedule_command, "--log"])
     assert time in output
 
 

@@ -8,7 +8,7 @@ from pydantic import (
     Field,
     FilePath,
     ValidationError,
-    validator,
+    field_validator,
 )
 from rich import print
 from rich.markup import escape
@@ -40,15 +40,15 @@ class FileSystemConfig(BaseModel):
     ignored_directories: set[DirectoryPath] = Field(default_factory=list)
     music_player: str = get_default_music_player()
 
-    @validator("shared_directories", "ignored_directories")
+    @field_validator("shared_directories", "ignored_directories")
     def validate_directory_paths(cls, paths: list[str]) -> set[Path]:
         return {Path(path).expanduser() for path in paths}
 
-    @validator("pickle_file")
+    @field_validator("pickle_file")
     def validate_file_path(cls, path: str) -> Path:
         return Path(path)
 
-    @validator("music_player")
+    @field_validator("music_player")
     def validate_application(cls, application_name: str) -> str:
         default_music_player = get_default_music_player()
         if application_name == default_music_player:
@@ -66,30 +66,30 @@ class FileSystemConfig(BaseModel):
 
 
 class ImportConfig(BaseModel):
-    reformat = True
-    ask_before_disc_update = False
-    ask_before_artist_update = False
-    allow_prompt = True
+    reformat: bool = True
+    ask_before_disc_update: bool = False
+    ask_before_artist_update: bool = False
+    allow_prompt: bool = True
 
 
 class ReformatConfig(BaseModel):
-    remove_bracket_years = True
-    remove_bracket_instruments = True
-    expand_abbreviations = True
+    remove_bracket_years: bool = True
+    remove_bracket_instruments: bool = True
+    expand_abbreviations: bool = True
 
 
 class NotificationsConfig(BaseModel):
-    system_on = False
-    email_on = False
-    username = ""
-    password = ""
+    system_on: bool = False
+    email_on: bool = False
+    username: str = ""
+    password: str = ""
 
 
 class Config(BaseModel):
-    file_system = FileSystemConfig()
-    import_new = ImportConfig()
-    reformat = ReformatConfig()
-    notifications = NotificationsConfig()
+    file_system: FileSystemConfig = FileSystemConfig()
+    import_new: ImportConfig = ImportConfig()
+    reformat: ReformatConfig = ReformatConfig()
+    notifications: NotificationsConfig = NotificationsConfig()
 
 
 def get_config_instance(config_values: dict | None = None) -> Config:
@@ -155,7 +155,7 @@ def convert_import_to_import_new(config: dict) -> dict:
 
 
 def as_toml(config: Config) -> dict:
-    config_toml: dict = config.dict()
+    config_toml: dict = config.model_dump()
     file_system = config_toml["file_system"]
     for key, value in file_system.items():
         if isinstance(value, set):
@@ -175,7 +175,7 @@ def print_errors(validation_error: ValidationError, level: StyleLevel):
 
 def is_valid_config(config_values: Config) -> bool:
     try:
-        get_config_instance(config_values.dict())
+        get_config_instance(config_values.model_dump())
         return True
     except ValidationError as error:
         print_errors(error, level=StyleLevel.ERROR)
@@ -214,7 +214,7 @@ def get_config() -> Config:
 
 def print_config_section(config: BaseModel | dict):
     if isinstance(config, BaseModel):
-        section = config.dict()
+        section = config.model_dump()
     else:
         section = config
     for key, value in section.items():
@@ -228,7 +228,7 @@ def print_config_section(config: BaseModel | dict):
 def print_config_values():
     config = get_loaded_config()
     first_item = True
-    for section, values in config.dict().items():
+    for section, values in config.model_dump().items():
         if not first_item:
             print()
         section = section.replace("_new", "")
