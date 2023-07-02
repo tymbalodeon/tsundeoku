@@ -27,13 +27,18 @@ check *autoupdate:
 # Clean Python cache.
 clean:
     #!/usr/bin/env zsh
-    cached_files=(**/**.pyc(N))
+    cached_files=(**/**(cache|__pycache__)(N))
+    cached_files+=(.*cache(N))
     if [ -z "${cached_files[*]}" ]; then
         echo "No cached files found."
         exit
     fi
     for file in "${cached_files[@]}"; do
-        rm "${file}"
+        if [ -d "${file}" ]; then
+            rm -rf "${file}"
+        else
+            rm "${file}"
+        fi
         echo "Removed ${file}."
     done
 
