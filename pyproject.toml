@@ -22,6 +22,7 @@ dependencies = [
     "xmltodict>=0.13.0",
     "yagmail>=0.15.293",
     "pync>=2.0.3",
+    "requests>=2.31.0",
 ]
 
 [tool.pdm.dev-dependencies]
