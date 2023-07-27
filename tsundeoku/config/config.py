@@ -18,6 +18,9 @@ from tomli_w import dumps
 
 from tsundeoku.style import StyleLevel, print_with_theme
 
+APP_NAME = "tsundeoku"
+CONFIG_PATH = f".config/{APP_NAME}"
+
 
 def get_default_shared_directories() -> set[Path]:
     default_shared_directory = Path.home() / "Dropbox"
@@ -98,11 +101,6 @@ def get_config_instance(config_values: dict | None = None) -> Config:
     return Config()
 
 
-state = {"config": get_config_instance()}
-APP_NAME = "tsundeoku"
-CONFIG_PATH = f".config/{APP_NAME}"
-
-
 def get_config_path() -> Path:
     config_directory = Path.home() / CONFIG_PATH
     if not config_directory.exists():
@@ -110,8 +108,27 @@ def get_config_path() -> Path:
     return config_directory / f"{APP_NAME}.toml"
 
 
+def get_config_file() -> Path:
+    config_path = get_config_path()
+    if not config_path.is_file():
+        write_config_values()
+    return config_path
+
+
+def convert_import_to_import_new(config: dict) -> dict:
+    return update_config_key(config, "import", "import_new")
+
+
+def get_config() -> Config:
+    config_file = get_config_file()
+    config_text = config_file.read_text()
+    config_values = loads(config_text)
+    config_values = convert_import_to_import_new(config_values)
+    return get_config_instance(config_values)
+
+
 def get_loaded_config() -> Config:
-    return cast(Config, state["config"])
+    return cast(Config, STATE["config"])
 
 
 def get_file_system_config() -> FileSystemConfig:
@@ -148,10 +165,6 @@ def update_config_key(config: dict, old_value: str, new_value: str) -> dict:
 
 def convert_import_new_to_import(config: dict) -> dict:
     return update_config_key(config, "import_new", "import")
-
-
-def convert_import_to_import_new(config: dict) -> dict:
-    return update_config_key(config, "import", "import_new")
 
 
 def as_toml(config: Config) -> dict:
@@ -194,22 +207,7 @@ def write_config_values(config: Config | None = None):
     config_toml = as_toml(config)
     config_path = get_config_path()
     config_path.write_text(dumps(config_toml))
-    state["config"] = get_config()
-
-
-def get_config_file() -> Path:
-    config_path = get_config_path()
-    if not config_path.is_file():
-        write_config_values()
-    return config_path
-
-
-def get_config() -> Config:
-    config_file = get_config_file()
-    config_text = config_file.read_text()
-    config_values = loads(config_text)
-    config_values = convert_import_to_import_new(config_values)
-    return get_config_instance(config_values)
+    STATE["config"] = get_config()
 
 
 def print_config_section(config: BaseModel | dict):
@@ -246,3 +244,6 @@ def confirm_reset(commands=False) -> bool:
     return Confirm.ask(
         f"Are you sure you want to reset your {changes} to the default values?"
     )
+
+
+STATE = {"config": get_config()}

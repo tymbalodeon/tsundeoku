@@ -11,12 +11,12 @@ from tsundeoku.style import stylize
 
 from .config.config import (
     APP_NAME,
+    STATE,
     StyleLevel,
     get_config,
     get_loaded_config,
     print_errors,
     print_with_theme,
-    state,
 )
 from .config.main import config_command
 from .import_new import import_new_albums
@@ -92,7 +92,7 @@ def callback(
         return
     is_valid = True
     try:
-        state["config"] = get_config()
+        STATE["config"] = get_config()
     except ValidationError as error:
         is_valid = False
         print_errors(error, level=StyleLevel.WARNING)
