@@ -13,7 +13,7 @@ click==8.1.6
 colorama==0.4.6
 commonmark==0.9.1
 confuse==2.0.0
-coverage==7.2.7
+coverage==7.3.0
 cssselect==1.2.0
 cssutils==2.6.0
 curtsies==0.4.1
