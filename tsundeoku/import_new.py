@@ -90,7 +90,7 @@ def get_albums() -> list[str]:
             [
                 root
                 for root, dirs, files in walk(directory)
-                if files and not dirs
+                if files and not dirs and Path(root) not in shared_directories
             ]
         )
     return albums
