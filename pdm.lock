@@ -743,11 +743,12 @@ files = [
 
 [[package]]
 name = "tinytag"
-version = "1.9.0"
+version = "1.10.0"
 requires_python = ">=2.7"
 summary = "Read music meta data and length of MP3, OGG, OPUS, MP4, M4A, FLAC, WMA and Wave files"
 files = [
-    {file = "tinytag-1.9.0.tar.gz", hash = "sha256:f8d71110e1e680a33d99202e00a5a698481d25d20173b81ba3e863423979e014"},
+    {file = "tinytag-1.10.0-py3-none-any.whl", hash = "sha256:ff0e3ec99ffe54a328db78a85894f9f53cc941d897f45bb2ae579518c25859c2"},
+    {file = "tinytag-1.10.0.tar.gz", hash = "sha256:ad8ce5286229fb17f64e6202ce5131a5039c2c79a740e901dca15ceca0a8d4de"},
 ]
 
 [[package]]
