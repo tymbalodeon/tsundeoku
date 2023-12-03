@@ -1,6 +1,31 @@
 @_help:
     just --list
 
+# Create a new virtual environment, overwriting an existing one if present.
+@venv:
+    rm -f .pdm-python
+    pdm venv create --force
+
+# Install external dependencies.
+@install:
+    pdm install
+
+pre_commit := "pdm run pre-commit"
+
+# Run pre-commit checks or "autoupdate".
+check *autoupdate:
+    #!/usr/bin/env zsh
+    if [ "{{autoupdate}}" = "autoupdate" ]; then
+        {{pre_commit}} autoupdate
+    else
+        {{pre_commit}} run --all-files
+    fi
+
+# Update project dependencies and pre-commit hooks
+@update:
+    pdm update
+    just check autoupdate
+
 @_get_pyproject_value value:
     printf "$(awk -F '[ =\"]+' '$1 == "{{value}}" { print $2 }' pyproject.toml)"
 
@@ -11,18 +36,8 @@
 try *args:
     #!/usr/bin/env zsh
     command="$(just _get_command_name)"
-    pdm run "${command}" {{args}}
-
-pre_commit := "pdm run pre-commit"
-
-# Run pre-commit checks or autoupdate ("autoupdate").
-check *autoupdate:
-    #!/usr/bin/env zsh
-    if [ "{{autoupdate}}" = "autoupdate" ]; then
-        {{pre_commit}} autoupdate
-    else
-        {{pre_commit}} run --all-files
-    fi
+    pdm run "${command}" {{args}} || \
+        just install pdm run "${command}" {{args}}
 
 # Clean Python cache.
 clean:
@@ -70,15 +85,15 @@ _get_wheel:
     printf "./dist/${command}-${version}-py3-none-any.whl"
 
 # Build the project and install it using pipx, or optionally with pip ("--pip").
-build *pip:
+build *pip: install
     #!/usr/bin/env zsh
-    pdm install
     pdm build
     wheel="$(just _get_wheel)"
     if [ "{{pip}}" = "--pip" ]; then
-        pip install --user "${wheel}" --force-reinstall
+        pdm run python -m pip install --user "${wheel}" --force-reinstall
     else
-        pipx install "${wheel}" --force --pip-args="--force-reinstall"
+        pdm run python -m pipx install "${wheel}" \
+            --force --pip-args="--force-reinstall"
     fi
 
 beets_config_values := """
