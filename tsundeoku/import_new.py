@@ -86,13 +86,11 @@ def get_albums() -> list[str]:
     if not shared_directories:
         return albums
     for directory in shared_directories:
-        albums.extend(
-            [
-                root
-                for root, dirs, files in walk(directory)
-                if files and not dirs and Path(root) not in shared_directories
-            ]
-        )
+        albums.extend([
+            root
+            for root, dirs, files in walk(directory)
+            if files and not dirs and Path(root) not in shared_directories
+        ])
     return albums
 
 

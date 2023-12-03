@@ -11,13 +11,11 @@ class StyleLevel(Enum):
     ERROR = "error"
 
 
-THEME = Theme(
-    {
-        StyleLevel.INFO.value: "dim cyan",
-        StyleLevel.WARNING.value: "yellow",
-        StyleLevel.ERROR.value: "bold red",
-    }
-)
+THEME = Theme({
+    StyleLevel.INFO.value: "dim cyan",
+    StyleLevel.WARNING.value: "yellow",
+    StyleLevel.ERROR.value: "bold red",
+})
 
 
 def print_with_theme(text: Syntax | str, level: StyleLevel | None = None):

@@ -30,9 +30,9 @@ def get_config_remove_bracket_years():
 def test_reformat_remove_bracket_years():
     default_remove_bracket_years = get_config_remove_bracket_years()
     call_command([config_command, reformat_command, "--years-as-is"])
-    output = call_command(
-        [config_command, reformat_command, "--remove-bracket-years"]
-    )
+    output = call_command([
+        config_command, reformat_command, "--remove-bracket-years"
+    ])
     updated_remove_bracket_years = get_config_remove_bracket_years()
     assert output == get_reformat_values()
     assert updated_remove_bracket_years == default_remove_bracket_years
@@ -57,9 +57,9 @@ def test_reformat_remove_bracket_instruments():
         get_config_remove_bracket_instruments()
     )
     call_command([config_command, reformat_command, "--instruments-as-is"])
-    output = call_command(
-        [config_command, reformat_command, "--remove-bracket-instruments"]
-    )
+    output = call_command([
+        config_command, reformat_command, "--remove-bracket-instruments"
+    ])
     updated_remove_bracket_instruments = (
         get_config_remove_bracket_instruments()
     )
@@ -75,9 +75,9 @@ def test_reformat_instruments_as_is():
     default_remove_bracket_instruments = (
         get_config_remove_bracket_instruments()
     )
-    output = call_command(
-        [config_command, reformat_command, "--instruments-as-is"]
-    )
+    output = call_command([
+        config_command, reformat_command, "--instruments-as-is"
+    ])
     updated_remove_bracket_instruments = (
         get_config_remove_bracket_instruments()
     )
@@ -96,9 +96,9 @@ def get_config_expand_abbreviations():
 def test_reformat_expand_abbreviations():
     default_expand_abbreviations = get_config_expand_abbreviations()
     call_command([config_command, reformat_command, "--abbreviations-as-is"])
-    output = call_command(
-        [config_command, reformat_command, "--expand-abbreviations"]
-    )
+    output = call_command([
+        config_command, reformat_command, "--expand-abbreviations"
+    ])
     updated_expand_abbreviations = get_config_expand_abbreviations()
     assert output == get_reformat_values()
     assert updated_expand_abbreviations == default_expand_abbreviations
@@ -107,9 +107,9 @@ def test_reformat_expand_abbreviations():
 
 def test_reformat_abbreviations_as_is():
     default_expand_abbreviations = get_config_expand_abbreviations()
-    output = call_command(
-        [config_command, reformat_command, "--abbreviations-as-is"]
-    )
+    output = call_command([
+        config_command, reformat_command, "--abbreviations-as-is"
+    ])
     updated_expand_abbreviations = get_config_expand_abbreviations()
     assert output != get_reformat_values()
     assert updated_expand_abbreviations != default_expand_abbreviations
