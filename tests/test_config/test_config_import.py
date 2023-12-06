@@ -52,9 +52,9 @@ def get_config_ask_before_disc_update():
 
 def test_import_ask_before_disc_update():
     default_ask_before_disc_update = get_config_ask_before_disc_update()
-    output = call_command([
-        config_command, import_command, "--ask-before-disc-update"
-    ])
+    output = call_command(
+        [config_command, import_command, "--ask-before-disc-update"]
+    )
     updated_ask_before_disc_update = get_config_ask_before_disc_update()
     assert output != get_import_values()
     assert updated_ask_before_disc_update != default_ask_before_disc_update
@@ -64,9 +64,9 @@ def test_import_ask_before_disc_update():
 def test_import_auto_update_disc():
     default_ask_before_disc_update = get_config_ask_before_disc_update()
     call_command([config_command, import_command, "--ask-before-disc-update"])
-    output = call_command([
-        config_command, import_command, "--auto-update-disc"
-    ])
+    output = call_command(
+        [config_command, import_command, "--auto-update-disc"]
+    )
     updated_ask_before_disc_update = get_config_ask_before_disc_update()
     assert output == get_import_values()
     assert updated_ask_before_disc_update == default_ask_before_disc_update
@@ -79,9 +79,9 @@ def get_config_ask_before_artist_update():
 
 def test_import_ask_before_artist_update():
     default_ask_before_artist_update = get_config_ask_before_artist_update()
-    output = call_command([
-        config_command, import_command, "--ask-before-artist-update"
-    ])
+    output = call_command(
+        [config_command, import_command, "--ask-before-artist-update"]
+    )
     updated_ask_before_artist_update = get_config_ask_before_artist_update()
     assert output != get_import_values()
     assert updated_ask_before_artist_update != default_ask_before_artist_update
@@ -90,12 +90,12 @@ def test_import_ask_before_artist_update():
 
 def test_import_auto_update_artist():
     default_ask_before_artist_update = get_config_ask_before_artist_update()
-    call_command([
-        config_command, import_command, "--ask-before-artist-update"
-    ])
-    output = call_command([
-        config_command, import_command, "--auto-update-artist"
-    ])
+    call_command(
+        [config_command, import_command, "--ask-before-artist-update"]
+    )
+    output = call_command(
+        [config_command, import_command, "--auto-update-artist"]
+    )
     updated_ask_before_artist_update = get_config_ask_before_artist_update()
     assert output == get_import_values()
     assert updated_ask_before_artist_update == default_ask_before_artist_update
@@ -118,9 +118,9 @@ def test_import_allow_prompt():
 
 def test_import_disallow_prompt():
     default_allow_prompt = get_config_allow_prompt()
-    output = call_command([
-        config_command, import_command, "--disallow-prompt"
-    ])
+    output = call_command(
+        [config_command, import_command, "--disallow-prompt"]
+    )
     updated_allow_prompt = get_config_allow_prompt()
     assert output != get_import_values()
     assert updated_allow_prompt != default_allow_prompt

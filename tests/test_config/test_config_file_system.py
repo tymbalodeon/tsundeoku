@@ -52,12 +52,14 @@ def test_file_system_shared_directories_good_value_updates_config(
 ):
     set_confirm_update(monkeypatch)
     custom_shared_directories = get_custom_shared_directories()
-    output = call_command([
-        config_command,
-        "file-system",
-        "--shared-directories",
-        str(custom_shared_directories),
-    ])
+    output = call_command(
+        [
+            config_command,
+            "file-system",
+            "--shared-directories",
+            str(custom_shared_directories),
+        ]
+    )
     home = Path.home()
     expected_updated_config = (
         f"shared_directories={{'{custom_shared_directories}'}}\n"
@@ -76,12 +78,14 @@ def test_file_system_shared_directories_good_value_false_keeps_config(
     set_confirm_update(monkeypatch, yes=False)
     custom_shared_directories = get_custom_shared_directories()
     default_output = call_command([config_command, "file-system"])
-    output = call_command([
-        config_command,
-        "file-system",
-        "--shared-directories",
-        str(custom_shared_directories),
-    ])
+    output = call_command(
+        [
+            config_command,
+            "file-system",
+            "--shared-directories",
+            str(custom_shared_directories),
+        ]
+    )
     assert output == default_output
 
 
@@ -90,12 +94,14 @@ def test_file_system_shared_directories_bad_value_shows_error(
 ):
     set_confirm_update(monkeypatch)
     custom_shared_directories = get_custom_shared_directories(create=False)
-    output = call_command([
-        config_command,
-        "file-system",
-        "--shared-directories",
-        str(custom_shared_directories),
-    ])
+    output = call_command(
+        [
+            config_command,
+            "file-system",
+            "--shared-directories",
+            str(custom_shared_directories),
+        ]
+    )
     output = strip_newlines(output)
     assert output == "ERROR: Path does not point to a directory"
 
@@ -106,12 +112,14 @@ def test_file_system_pickle_file_good_value_updates_config(
     set_confirm_update(monkeypatch)
     custom_pickle_file = get_custom_pickle_file()
     custom_pickle_file.touch()
-    output = call_command([
-        config_command,
-        "file-system",
-        "--pickle-file",
-        str(custom_pickle_file),
-    ])
+    output = call_command(
+        [
+            config_command,
+            "file-system",
+            "--pickle-file",
+            str(custom_pickle_file),
+        ]
+    )
     home = Path.home()
     shared_directories = home / "Dropbox"
     expected_updated_config = (
@@ -132,12 +140,14 @@ def test_file_system_pickle_file_good_value_false_keeps_config(
     custom_pickle_file = get_custom_pickle_file()
     custom_pickle_file.touch()
     default_output = call_command([config_command, "file-system"])
-    output = call_command([
-        config_command,
-        "file-system",
-        "--pickle-file",
-        str(custom_pickle_file),
-    ])
+    output = call_command(
+        [
+            config_command,
+            "file-system",
+            "--pickle-file",
+            str(custom_pickle_file),
+        ]
+    )
     assert output == default_output
 
 
@@ -146,12 +156,14 @@ def test_file_system_pickle_file_bad_value_shows_error(
 ):
     set_confirm_update(monkeypatch)
     custom_pickle_file = get_custom_pickle_file()
-    output = call_command([
-        config_command,
-        "file-system",
-        "--pickle-file",
-        str(custom_pickle_file),
-    ])
+    output = call_command(
+        [
+            config_command,
+            "file-system",
+            "--pickle-file",
+            str(custom_pickle_file),
+        ]
+    )
     output = strip_newlines(output)
     assert output == "ERROR: Path does not point to a file"
 
@@ -161,12 +173,14 @@ def test_file_system_ignored_directories_good_value_updates_config(
 ):
     set_confirm_update(monkeypatch)
     custom_ignored_directories = get_custom_ignored_directories()
-    output = call_command([
-        config_command,
-        "file-system",
-        "--ignored-directories",
-        str(custom_ignored_directories),
-    ])
+    output = call_command(
+        [
+            config_command,
+            "file-system",
+            "--ignored-directories",
+            str(custom_ignored_directories),
+        ]
+    )
     home = Path.home()
     shared_directories = home / "Dropbox"
     expected_updated_config = (
@@ -186,12 +200,14 @@ def test_file_system_ignored_directories_good_value_false_keeps_config(
     set_confirm_update(monkeypatch, yes=False)
     custom_ignored_directories = get_custom_ignored_directories()
     default_output = call_command([config_command, "file-system"])
-    output = call_command([
-        config_command,
-        "file-system",
-        "--ignored-directories",
-        str(custom_ignored_directories),
-    ])
+    output = call_command(
+        [
+            config_command,
+            "file-system",
+            "--ignored-directories",
+            str(custom_ignored_directories),
+        ]
+    )
     assert output == default_output
 
 
@@ -200,12 +216,14 @@ def test_file_system_ignored_directories_bad_value_shows_error(
 ):
     set_confirm_update(monkeypatch)
     custom_ignored_directories = get_custom_ignored_directories(create=False)
-    output = call_command([
-        config_command,
-        "file-system",
-        "--ignored-directories",
-        str(custom_ignored_directories),
-    ])
+    output = call_command(
+        [
+            config_command,
+            "file-system",
+            "--ignored-directories",
+            str(custom_ignored_directories),
+        ]
+    )
     output = strip_newlines(output)
     assert output == "ERROR: Path does not point to a directory"
 
@@ -215,9 +233,9 @@ def test_file_system_music_player_good_value_updates_config(
 ):
     set_confirm_update(monkeypatch)
     custom_music_player = get_custom_music_player()
-    output = call_command([
-        config_command, "file-system", "--music-player", custom_music_player
-    ])
+    output = call_command(
+        [config_command, "file-system", "--music-player", custom_music_player]
+    )
     home = Path.home()
     shared_directories = home / "Dropbox"
     expected_updated_config = (
@@ -237,9 +255,9 @@ def test_file_system_music_player_good_value_false_keeps_config(
     set_confirm_update(monkeypatch, yes=False)
     custom_music_player = get_custom_music_player()
     default_output = call_command([config_command, "file-system"])
-    output = call_command([
-        config_command, "file-system", "--music-player", custom_music_player
-    ])
+    output = call_command(
+        [config_command, "file-system", "--music-player", custom_music_player]
+    )
     assert output == default_output
 
 
@@ -248,9 +266,9 @@ def test_file_system_music_player_bad_value_shows_error(
 ):
     set_confirm_update(monkeypatch)
     custom_music_player = "NotAnApplication"
-    output = call_command([
-        config_command, "file-system", "--music-player", custom_music_player
-    ])
+    output = call_command(
+        [config_command, "file-system", "--music-player", custom_music_player]
+    )
     output = strip_newlines(output)
     assert (
         output
@@ -261,13 +279,15 @@ def test_file_system_music_player_bad_value_shows_error(
 def test_file_system_add(monkeypatch: MonkeyPatch):
     set_confirm_update(monkeypatch)
     custom_shared_directories = str(get_custom_shared_directories())
-    output = call_command([
-        config_command,
-        "file-system",
-        "--add",
-        "--shared-directories",
-        str(custom_shared_directories),
-    ])
+    output = call_command(
+        [
+            config_command,
+            "file-system",
+            "--add",
+            "--shared-directories",
+            str(custom_shared_directories),
+        ]
+    )
     home = Path.home()
     shared_directories = str(home / "Dropbox")
     file_system_config = (
@@ -285,20 +305,24 @@ def test_file_system_add(monkeypatch: MonkeyPatch):
 def test_file_system_remove(monkeypatch: MonkeyPatch):
     set_confirm_update(monkeypatch)
     custom_shared_directories = str(get_custom_shared_directories())
-    call_command([
-        config_command,
-        "file-system",
-        "--add",
-        "--shared-directories",
-        str(custom_shared_directories),
-    ])
-    output = call_command([
-        config_command,
-        "file-system",
-        "--remove",
-        "--shared-directories",
-        str(custom_shared_directories),
-    ])
+    call_command(
+        [
+            config_command,
+            "file-system",
+            "--add",
+            "--shared-directories",
+            str(custom_shared_directories),
+        ]
+    )
+    output = call_command(
+        [
+            config_command,
+            "file-system",
+            "--remove",
+            "--shared-directories",
+            str(custom_shared_directories),
+        ]
+    )
     home = Path.home()
     str(home / "Dropbox")
     expected_updated_config = get_file_system_values()

@@ -84,7 +84,7 @@ def set_mock_home(monkeypatch: MonkeyPatch, tmp_path_factory: TempPathFactory):
             pickle_file=default_pickle_file,
             music_player=default_music_player,
         )
-        return MockConfig(**{"file_system": file_system})
+        return MockConfig(**{"file_system": file_system, "import_new": None})
 
     def mock_get_library() -> MockLibrary:
         return MockLibrary()

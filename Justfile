@@ -99,7 +99,7 @@ list tree="":
 
 # Lint and apply fixes.
 @lint:
-    just _install_and_run pdm run ruff check --fix
+    just _install_and_run pdm run ruff check --fix ./
 
 # Format.
 @format:

@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["cross_platform"]
 lock_version = "4.4"
-content_hash = "sha256:310ae70868b58c5502da0c57b7a28cb1900a486e886e112cc71a53345c06677a"
+content_hash = "sha256:658a93637f925fbbce6c1366bd495b1c910765b9be51a2afe79e24d0bc585abf"
 
 [[package]]
 name = "annotated-types"
@@ -591,6 +591,19 @@ dependencies = [
 ]
 files = [
     {file = "pync-2.0.3.tar.gz", hash = "sha256:38b9e61735a3161f9211a5773c5f5ea698f36af4ff7f77fa03e8d1ff0caa117f"},
+]
+
+[[package]]
+name = "pyright"
+version = "1.1.339"
+requires_python = ">=3.7"
+summary = "Command line wrapper for pyright"
+dependencies = [
+    "nodeenv>=1.6.0",
+]
+files = [
+    {file = "pyright-1.1.339-py3-none-any.whl", hash = "sha256:662f3df170fdeda76fd21b158ab20c518dad99c2f14b0a7f84c2bfd60d5a8d2a"},
+    {file = "pyright-1.1.339.tar.gz", hash = "sha256:581ce4e281575814380dd67a331e75c0ccdca31eb848005ee1ae46e7bfa8b4f9"},
 ]
 
 [[package]]

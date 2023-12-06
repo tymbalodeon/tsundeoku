@@ -2,7 +2,7 @@
 name = "tsundeoku"
 version = "0.5.0"
 description = """\
-    CLI for managing imports from a shared folder to a \"beets\" library \
+CLI for managing imports from a shared folder to a \"beets\" library \
 """
 authors = [
     {name = "Ben Rosen", email = "benjamin.j.rosen@gmail.com"},
@@ -10,6 +10,12 @@ authors = [
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.11"
+keywords = [
+    "audio files",
+    "beets",
+    "music library",
+    "music",
+]
 dependencies = [
     "typer[all]>=0.7.0",
     "tinytag>=1.8.1",
@@ -25,15 +31,6 @@ dependencies = [
     "requests>=2.31.0",
 ]
 
-[tool.pdm.dev-dependencies]
-dev = [
-    "pytest-mock>=3.10.0",
-    "pytest>=7.2.1",
-    "pre-commit>=3.0.4",
-    "coverage>=7.2.1",
-    "bpython>=0.24",
-]
-
 [project.urls]
 repository = "https://github.com/tymbalodeon/tsundeoku"
 
@@ -44,12 +41,27 @@ tsundeoku = "tsundeoku.main:tsundeoku"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.black]
-preview = true
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+
+[tool.ruff]
+exclude = [
+    ".git",
+    ".ruff_cache",
+    ".venv",
+    "build",
+    "dist",
+]
 line-length = 79
+indent-width = 4
 
-[tool.flake8]
-extend-ignore = "E203"
-
-[tool.isort]
-profile = "black"
+[tool.pdm.dev-dependencies]
+dev = [
+    "pytest-mock>=3.10.0",
+    "pytest>=7.2.1",
+    "pre-commit>=3.0.4",
+    "coverage>=7.2.1",
+    "bpython>=0.24",
+    "pyright>=1.1.339",
+]
