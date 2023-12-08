@@ -12,15 +12,15 @@ _install_and_run *command:
 
     {{command}}
 
-# Add dependencies.
+# Add dependencies
 @add *dependencies:
     pdm add {{dependencies}}
 
-# Add dev dependencies.
+# Add dev dependencies
 @add-dev *dependencies:
     pdm add --dev {{dependencies}}
 
-# Remove dependencies.
+# Remove dependencies
 remove *dependencies:
     #!/usr/bin/env nu
     try {
@@ -30,7 +30,6 @@ remove *dependencies:
     }
 
 dependencies := "
-let dependencies = [
     rtx
     python
     pdm
@@ -38,13 +37,14 @@ let dependencies = [
     pnpm
     speedscope
     gh
-]
 "
 
-# Install dependencies.
+# Install dependencies
 install project="--project":
     #!/usr/bin/env nu
-    {{dependencies}}
+    let dependencies = [
+        {{dependencies}}
+    ]
 
     $dependencies | each {
         |dependency|
@@ -58,10 +58,12 @@ install project="--project":
     just _install_and_run pdm run pre-commit install out+err> /dev/null
 
 
-# Update dependencies.
+# Update dependencies
 update project="--project": (install "--no-project")
     #!/usr/bin/env nu
-    {{dependencies}}
+    let dependencies = [
+        {{dependencies}}
+    ]
 
     ./scripts/install_dependencies.zsh --update
 
@@ -76,7 +78,7 @@ update project="--project": (install "--no-project")
         pdm update
     }
 
-# Show dependencies as a list or "--tree".
+# Show dependencies as a list or "--tree"
 list tree="":
     #!/usr/bin/env nu
     if "{{tree}}" == "--tree" {
@@ -89,28 +91,28 @@ list tree="":
         )
     }
 
-# Create a new virtual environment, overwriting an existing one if present.
+# Create a new virtual environment, overwriting an existing one if present
 @venv:
     pdm venv create --force
 
-# Format.
+# Format
 [no-exit-message]
 @check:
     just _install_and_run pdm run pyright
 
-# Lint and apply fixes.
+# Lint and apply fixes
 @lint:
     just _install_and_run pdm run ruff check --fix ./
 
-# Format.
+# Format
 @format:
     just _install_and_run pdm run ruff format
 
-# Run pre-commit hooks.
+# Run pre-commit hooks
 @pre-commit:
     just _install_and_run pdm run pre-commit run --all-files
 
-# Open a python shell with project dependencies available.
+# Open a python shell with project dependencies available
 @shell:
     just _install_and_run pdm run bpython
 
@@ -118,11 +120,11 @@ get_pyproject_value := "open pyproject.toml | get project."
 command := "(" + get_pyproject_value + "name)"
 version := "(" + get_pyproject_value + "version)"
 
-# Try a command using the current state of the files without building.
+# Try a command using the current state of the files without building
 @try *args:
     just _install_and_run pdm run {{command}} {{args}}
 
-# Run the py-spy profiler on a command and its <args> and open the results with speedscope.
+# Run the py-spy profiler on a command and its <args> and open the results with speedscope
 profile *args: (install "--no-project")
     #!/usr/bin/env nu
     let output_directory = "profiles"
@@ -140,7 +142,7 @@ profile *args: (install "--no-project")
 
     speedscope $output_file
 
-# Run coverage report.
+# Run coverage report
 @coverage *args: test
     just _install_and_run pdm run coverage report -m \
         --omit "*/pdm/*" \
@@ -148,7 +150,7 @@ profile *args: (install "--no-project")
         --sort "cover" \
         {{args}}
 
-# Run tests.
+# Run tests
 test *args:
     #!/usr/bin/env nu
     mut args = "{{args}}"
@@ -171,7 +173,7 @@ build: (install "--no-project")
             --pip-args="--force-reinstall"
     )
 
-# Clean Python cache or generated pdfs.
+# Clean Python cache or generated pdfs
 clean *args: (install "--no-project")
     #!/usr/bin/env nu
     let args = "{{args}}" | split row " "
@@ -214,6 +216,14 @@ clean *args: (install "--no-project")
 
     if $all or ("venv" in $args) { pdm venv remove in-project --yes }
 
+# Open the repository page in the browser
+@repo:
+    gh browse
+
+# List repository issues
+@issues:
+    gh issue list
+
 beets_config_values := """
 directory: ~/Music
 library: ~/.config/beets/library.db
@@ -228,11 +238,5 @@ _beets:
     mkdir $beets_config_folder
     echo "{{beets_config_values}}" | save --raw $"($beets_config_folder)/config.yaml"
 
-# Add beets config and build.
+# Add beets config and build
 setup: _beets build
-
-@repo:
-    gh browse
-
-@issues:
-    gh issue list
