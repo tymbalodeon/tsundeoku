@@ -37,6 +37,7 @@ let dependencies = [
     pipx
     pnpm
     speedscope
+    gh
 ]
 "
 
@@ -229,3 +230,9 @@ _beets:
 
 # Add beets config and build.
 setup: _beets build
+
+@repo:
+    gh browse
+
+@issues:
+    gh issue list
