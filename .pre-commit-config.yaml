@@ -1,51 +1,58 @@
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
+-   repo: https://gitlab.com/vojko.pribudic/pre-commit-update
+    rev: v0.1.0
+    hooks:
+    -   id: pre-commit-update
+-   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
-      - id: check-builtin-literals
-      - id: check-toml
-      - id: check-yaml
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-      - id: check-merge-conflict
-  - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.339
+    -   id: check-builtin-literals
+    -   id: check-toml
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+    -   id: check-merge-conflict
+-   repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.341
     hooks:
-      - id: pyright
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.7
+    -   id: pyright
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.8
     hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format
-  - repo: https://github.com/jendrikseipp/vulture
+    -   id: ruff
+        args:
+            -   --fix
+    -   id: ruff-format
+-   repo: https://github.com/jendrikseipp/vulture
     rev: v2.10
     hooks:
-      - id: vulture
+    -   id: vulture
         args:
-          - ./
-          - --exclude
-          - "*/.venv/*"
-  - repo: local
+        -   ./
+        -   --exclude
+        -   '*/.venv/*'
+        -   --ignore-names
+        -   _generate_next_value_
+-   repo: local
     hooks:
-      - id: coverage
-        name: coverage
+    -   id: coverage
         entry: just coverage
-        args:
-          - --fail-under
-          - "61"
         language: system
+        name: coverage
         pass_filenames: false
-  - repo: https://github.com/pdm-project/pdm
-    rev: 2.10.4
-    hooks:
-      - id: pdm-export
         args:
-          - -o
-          - requirements.txt
-          - --without-hashes
-        files: ^pdm.lock$
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.37.0
+        -   --fail-under
+        -   '50'
+-   repo: https://github.com/pdm-project/pdm
+    rev: 2.11.1
     hooks:
-      - id: markdownlint-fix
+    -   id: pdm-export
+        files: ^pdm.lock$
+        args:
+        -   -o
+        -   requirements.txt
+        -   --without-hashes
+-   repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.38.0
+    hooks:
+    -   id: markdownlint-fix

@@ -3,5 +3,6 @@
 .coverage
 .pdm-python
 __pycache__/
+Brewfile*json
 build/
 dist/

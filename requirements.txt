@@ -2,6 +2,7 @@
 # Please do not edit it manually.
 
 annotated-types==0.5.0
+ansicon==1.89.0; platform_system == "Windows"
 beets==1.6.0
 blessed==1.20.0
 bpython==0.24
@@ -13,7 +14,7 @@ click==8.1.7
 colorama==0.4.6
 commonmark==0.9.1
 confuse==2.0.0
-coverage==7.3.2
+coverage==7.3.3
 cssselect==1.2.0
 cssutils==2.6.0
 curtsies==0.4.1
@@ -25,6 +26,7 @@ identify==2.5.22
 idna==3.4
 iniconfig==2.0.0
 jellyfish==0.9.0
+jinxed==1.2.0; platform_system == "Windows"
 lxml==4.9.2
 mediafile==0.11.0
 munkres==1.1.4
@@ -34,13 +36,13 @@ nodeenv==1.7.0
 packaging==23.1
 platformdirs==3.2.0
 pluggy==1.0.0
-pre-commit==3.5.0
+pre-commit==3.6.0
 premailer==3.10.0
 pydantic==2.5.2
 pydantic-core==2.14.5
 pygments==2.14.0
 pync==2.0.3
-pyright==1.1.339
+pyright==1.1.341
 pytest==7.4.3
 pytest-mock==3.12.0
 python-dateutil==2.8.2
