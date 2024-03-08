@@ -14,7 +14,7 @@ click==8.1.7
 colorama==0.4.6
 commonmark==0.9.1
 confuse==2.0.0
-coverage==7.3.3
+coverage==7.4.3
 cssselect==1.2.0
 cssutils==2.6.0
 curtsies==0.4.1
@@ -27,7 +27,7 @@ idna==3.4
 iniconfig==2.0.0
 jellyfish==0.9.0
 jinxed==1.2.0; platform_system == "Windows"
-lxml==4.9.2
+lxml==5.1.0
 mediafile==0.11.0
 munkres==1.1.4
 musicbrainzngs==0.7.1
@@ -35,22 +35,22 @@ mutagen==1.46.0
 nodeenv==1.7.0
 packaging==23.1
 platformdirs==3.2.0
-pluggy==1.0.0
-pre-commit==3.6.0
+pluggy==1.4.0
+pre-commit==3.6.2
 premailer==3.10.0
-pydantic==2.5.2
-pydantic-core==2.14.5
+pydantic==2.6.3
+pydantic-core==2.16.3
 pygments==2.14.0
 pync==2.0.3
-pyright==1.1.341
-pytest==7.4.3
+pyright==1.1.353
+pytest==8.0.2
 pytest-mock==3.12.0
 python-dateutil==2.8.2
 pyxdg==0.28
 pyyaml==6.0
 requests==2.31.0
 rich==12.6.0
-rtoml==0.9.0
+rtoml==0.10.0
 setuptools==67.6.1
 shellingham==1.5.0.post1
 six==1.16.0

@@ -1,8 +1,11 @@
 *.pyc
 .DS_Store
+.direnv
+.envrc
 .coverage
 .pdm-python
 __pycache__/
 Brewfile*json
 build/
 dist/
+node_modules

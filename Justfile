@@ -55,49 +55,6 @@ search *regex:
 
     search {{ regex }}
 
-# Manage project Python version
-python *args:
-    #!/usr/bin/env nu
-
-    # Manage project Python version
-    def python [
-        --installed # Show installed Python versions
-        --latest # Show the latest available Python version
-        --path # Show the path of the current Python
-        --use: string # Specify a new Python version to use
-        --version # (default) Show the current Python version
-    ] {
-        if $latest {
-            rtx latest python
-            exit
-        } else if $installed {
-            rtx list python
-            exit
-        } else if $path {
-            rtx which python
-            exit
-        } else if $version or ($use | is-empty) {
-            ^python -V
-            exit
-        }
-
-        let version = if $use == "latest" {
-            (rtx latest python)
-        } else {
-            $use
-        }
-
-        if $version in ((^python -V) | split row " "  | last)  {
-            exit
-        }
-
-        rtx local $"python@($version)"
-        pdm venv create --force (rtx where $"python@($version)")
-        just install --minimal
-    }
-
-    python {{ args }}
-
 get-pyproject-value := "open pyproject.toml | get project."
 application-command := "(" + get-pyproject-value + "name)"
 
@@ -256,27 +213,6 @@ install *args:
             exit
         }
 
-        if (not $minimal) and (not $app) {
-            mut brewfiles = ["Brewfile.prod"]
-
-            if not $prod {
-                $brewfiles = ($brewfiles | append "Brewfile.dev")
-            }
-
-            for file in $brewfiles {
-                brew bundle --no-upgrade --file $file
-            }
-        }
-
-        if (
-            rtx outdated --log-level error
-            | complete
-            | get exit_code
-            | into bool
-        ) {
-            rtx install
-        }
-
         if not $prod {
             if (module-not-installed pip) {
                 pdm run python -m ensurepip --upgrade --default-pip
@@ -287,7 +223,7 @@ install *args:
                 pdm run python -m pipx ensurepath
             }
 
-            if (not-installed speedscope) { pnpm add --global speedscope }
+            if (not-installed speedscope) { pnpm add speedscope }
 
             if (not-installed cargo) {
                 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -336,21 +272,9 @@ update *args:
             just install --minimal
         }
 
-        mut brewfiles = ["Brewfile.prod"]
-
-        if not $prod {
-            $brewfiles = ($brewfiles | append "Brewfile.dev")
-        }
-
-        for file in $brewfiles {
-            brew bundle --file $file
-        }
-
-        rtx upgrade
-
         if not $prod {
             pdm run python -m pip install --upgrade pip pipx
-            pnpm update --global speedscope
+            pnpm update speedscope
             rustup update
             cargo install-update checkexec
         }
@@ -379,26 +303,6 @@ dependencies *args:
         | str join "\n"
     }
 
-    def get-brew-dependencies [--dev] {
-        let brewfile = if $dev {
-            "Brewfile.dev"
-        } else {
-            "Brewfile.prod"
-        }
-
-        mut dependencies = indent (
-            brew bundle list --file $brewfile
-            | lines
-            | str join "\n"
-        )
-
-        if not $dev {
-            $dependencies = "Production build:\n" + $dependencies
-        }
-
-        $dependencies
-    }
-
     # Show application dependencies
     def show-dependencies [
         --dev # Show only development dependencies
@@ -418,11 +322,7 @@ dependencies *args:
             let dependencies = if $dev {
                 list-dependencies --include-version --dev
             } else if $prod {
-                (
-                    (list-dependencies --include-version --prod)
-                    + "\n\n"
-                    + (get-brew-dependencies)
-                )
+                list-dependencies --include-version --prod
             } else {
                 let prod_dependencies = (
                     indent (list-dependencies --include-version --prod)
@@ -432,23 +332,12 @@ dependencies *args:
                     indent (list-dependencies --include-version --dev)
                 )
 
-                let brew_prod_dependencies = (
-                    get-brew-dependencies
-                )
-
-                let brew_dev_dependencies = (
-                    get-brew-dependencies --dev
-                )
-
                 [
                     Production:
                     $prod_dependencies
                     ""
-                    $brew_prod_dependencies
-                    ""
                     Development:
                     $dev_dependencies
-                    $brew_dev_dependencies
                 ]
                 | str join "\n"
             }
