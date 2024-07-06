@@ -3,7 +3,7 @@
 
 annotated-types==0.5.0
 ansicon==1.89.0; platform_system == "Windows"
-beets==1.6.0
+beets==2.0.0
 blessed==1.20.0
 bpython==0.24
 cachetools==5.3.0
@@ -11,10 +11,10 @@ certifi==2022.12.7
 cfgv==3.3.1
 charset-normalizer==3.1.0
 click==8.1.7
-colorama==0.4.6
+colorama==0.4.6; platform_system == "Windows" or sys_platform == "win32"
 commonmark==0.9.1
 confuse==2.0.0
-coverage==7.4.3
+coverage==7.5.4
 cssselect==1.2.0
 cssutils==2.6.0
 curtsies==0.4.1
@@ -27,38 +27,38 @@ idna==3.4
 iniconfig==2.0.0
 jellyfish==0.9.0
 jinxed==1.2.0; platform_system == "Windows"
-lxml==5.1.0
-mediafile==0.11.0
+lxml==5.2.2
+mediafile==0.12.0
 munkres==1.1.4
 musicbrainzngs==0.7.1
 mutagen==1.46.0
 nodeenv==1.7.0
 packaging==23.1
 platformdirs==3.2.0
-pluggy==1.4.0
-pre-commit==3.6.2
+pluggy==1.5.0
+pre-commit==3.7.1
 premailer==3.10.0
-pydantic==2.6.3
-pydantic-core==2.16.3
+pydantic==2.8.2
+pydantic-core==2.20.1
 pygments==2.14.0
 pync==2.0.3
-pyright==1.1.353
-pytest==8.0.2
-pytest-mock==3.12.0
+pyright==1.1.370
+pytest==8.2.2
+pytest-mock==3.14.0
 python-dateutil==2.8.2
 pyxdg==0.28
 pyyaml==6.0
-requests==2.31.0
+requests==2.32.3
 rich==12.6.0
-rtoml==0.10.0
+rtoml==0.11.0
 setuptools==67.6.1
 shellingham==1.5.0.post1
 six==1.16.0
 tinytag==1.10.1
 tomli==2.0.1
 tomli-w==1.0.0
-typer==0.9.0
-typing-extensions==4.6.3
+typer==0.12.3
+typing-extensions==4.12.2
 unidecode==1.3.6
 urllib3==1.26.15
 virtualenv==20.22.0

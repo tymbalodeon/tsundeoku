@@ -1,10 +1,10 @@
 repos:
--   repo: https://gitlab.com/vojko.pribudic/pre-commit-update
-    rev: v0.1.6
+-   repo: https://gitlab.com/vojko.pribudic.foss/pre-commit-update
+    rev: v0.3.3post1
     hooks:
     -   id: pre-commit-update
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
     -   id: check-builtin-literals
     -   id: check-toml
@@ -13,11 +13,11 @@ repos:
     -   id: trailing-whitespace
     -   id: check-merge-conflict
 -   repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.353
+    rev: v1.1.370
     hooks:
     -   id: pyright
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.1
+    rev: v0.5.1
     hooks:
     -   id: ruff
         args:
@@ -44,7 +44,7 @@ repos:
         -   --fail-under
         -   '50'
 -   repo: https://github.com/pdm-project/pdm
-    rev: 2.12.4
+    rev: 2.16.1
     hooks:
     -   id: pdm-export
         files: ^pdm.lock$
@@ -53,6 +53,6 @@ repos:
         -   requirements.txt
         -   --without-hashes
 -   repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.39.0
+    rev: v0.41.0
     hooks:
     -   id: markdownlint-fix
