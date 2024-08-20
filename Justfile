@@ -174,7 +174,7 @@ remove *args:
 _get-application-version:
     #!/usr/bin/env nu
 
-    open agni/__init__.py
+    open tsundeoku/__init__.py
     | split row " "
     | last
     | str replace --all '"' ""
