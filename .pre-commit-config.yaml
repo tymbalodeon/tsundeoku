@@ -1,38 +1,38 @@
 repos:
-  - repo: https://gitlab.com/vojko.pribudic.foss/pre-commit-update
-    rev: v0.4.0post1
+-   repo: https://gitlab.com/vojko.pribudic.foss/pre-commit-update
+    rev: v0.5.1post1
     hooks:
-      - id: pre-commit-update
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    -   id: pre-commit-update
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
     hooks:
-      - id: check-builtin-literals
-      - id: check-toml
-      - id: check-yaml
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-      - id: check-merge-conflict
-  - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.376
+    -   id: check-builtin-literals
+    -   id: check-toml
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+    -   id: check-merge-conflict
+-   repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.385
     hooks:
-      - id: pyright
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.1
+    -   id: pyright
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.0
     hooks:
-      - id: ruff
+    -   id: ruff
         args:
-          - --fix
-      - id: ruff-format
-  - repo: https://github.com/jendrikseipp/vulture
-    rev: v2.11
+        -   --fix
+    -   id: ruff-format
+-   repo: https://github.com/jendrikseipp/vulture
+    rev: v2.13
     hooks:
-      - id: vulture
+    -   id: vulture
         args:
-          - ./
-          - --exclude
-          - '*/.venv/*'
-          - --ignore-names
-          - _generate_next_value_
+        -   ./
+        -   --exclude
+        -   '*/.venv/*'
+        -   --ignore-names
+        -   _generate_next_value_
   # -   repo: local
   #     hooks:
   #     -   id: coverage
@@ -43,16 +43,16 @@ repos:
   #         args:
   #         -   --fail-under
   #         -   '50'
-  - repo: https://github.com/pdm-project/pdm
-    rev: 2.18.1
+-   repo: https://github.com/pdm-project/pdm
+    rev: 2.19.3
     hooks:
-      - id: pdm-export
+    -   id: pdm-export
         files: ^pdm.lock$
         args:
-          - -o
-          - requirements.txt
-          - --without-hashes
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.41.0
+        -   -o
+        -   requirements.txt
+        -   --without-hashes
+-   repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.42.0
     hooks:
-      - id: markdownlint-fix
+    -   id: markdownlint-fix
