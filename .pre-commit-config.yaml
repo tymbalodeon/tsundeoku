@@ -72,12 +72,8 @@ repos:
       - id: conventional-pre-commit
         stages:
           - commit-msg
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.43.0
-    hooks:
-      - id: markdownlint-fix
+  # python
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    # python
     rev: v5.0.0
     hooks:
       - id: check-json
