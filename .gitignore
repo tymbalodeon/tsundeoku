@@ -1,11 +1,13 @@
-*.pyc
-.DS_Store
+.config
 .direnv
+.env
 .envrc
-.coverage
 .pdm-python
+.venv
+
+# python
+*.pyc
+.coverage
 __pycache__/
-Brewfile*json
 build/
 dist/
-node_modules

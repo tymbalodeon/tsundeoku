@@ -1,40 +1,90 @@
 {
-  description = "tsundeoku";
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
-  inputs = {
-    flake-schemas.url =
-      "https://flakehub.com/f/DeterminateSystems/flake-schemas/*.tar.gz";
-    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1.*.tar.gz";
+  outputs = {nixpkgs, ...}: let
+    forEachSupportedSystem = f:
+      nixpkgs.lib.genAttrs supportedSystems
+      (system:
+        f rec {
+          mergeModuleAttrs = {
+            attr,
+            nullValue,
+          }:
+            pkgs.lib.lists.flatten
+            (map (module: module.${attr} or nullValue) modules);
+
+          modules =
+            map (module: (import ./nix/${module} {inherit pkgs;}))
+            (builtins.attrNames (builtins.readDir ./nix));
+
+          pkgs = import nixpkgs {inherit system;};
+        });
+
+    supportedSystems = [
+      "x86_64-darwin"
+      "x86_64-linux"
+    ];
+  in {
+    devShells = forEachSupportedSystem ({
+      mergeModuleAttrs,
+      modules,
+      pkgs,
+    }: {
+      default = pkgs.mkShell ({
+          packages = with pkgs;
+            [
+              alejandra
+              ansible-language-server
+              bat
+              cocogitto
+              deadnix
+              delta
+              eza
+              fd
+              flake-checker
+              fzf
+              gh
+              git
+              glab
+              just
+              lychee
+              markdown-oxide
+              marksman
+              nb
+              nil
+              nodePackages.prettier
+              nushell
+              pre-commit
+              python312Packages.pre-commit-hooks
+              ripgrep
+              statix
+              stylelint
+              taplo
+              tokei
+              vscode-langservers-extracted
+              yaml-language-server
+              yamlfmt
+            ]
+            ++ mergeModuleAttrs {
+              attr = "packages";
+              nullValue = [];
+            };
+
+          shellHook = with pkgs;
+            lib.concatLines (
+              ["pre-commit install --hook-type commit-msg"]
+              ++ mergeModuleAttrs {
+                attr = "shellHook";
+                nullValue = "";
+              }
+            );
+        }
+        // builtins.foldl'
+        (a: b: a // b)
+        {}
+        (map
+          (module: builtins.removeAttrs module ["packages" "shellHook"])
+          modules));
+    });
   };
-
-  outputs = { self, flake-schemas, nixpkgs }:
-    let
-      supportedSystems = [ "x86_64-darwin" "x86_64-linux" ];
-
-      forEachSupportedSystem = f:
-        nixpkgs.lib.genAttrs supportedSystems
-        (system: f { pkgs = import nixpkgs { inherit system; }; });
-    in {
-      schemas = flake-schemas.schemas;
-
-      devShells = forEachSupportedSystem ({ pkgs }: {
-        default = pkgs.mkShell {
-          packages = with pkgs; [
-            bat
-            fzf
-            gh
-            git-cliff
-            just
-            nixpkgs-fmt
-            nushell
-            onefetch
-            pdm
-            nodePackages.pnpm
-            python311
-            (with python311Packages; [ pip pre-commit-hooks ])
-            tokei
-          ];
-        };
-      });
-    };
 }

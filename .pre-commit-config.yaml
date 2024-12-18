@@ -1,58 +1,99 @@
 repos:
--   repo: https://gitlab.com/vojko.pribudic.foss/pre-commit-update
-    rev: v0.5.1post1
+  - repo: https://gitlab.com/vojko.pribudic.foss/pre-commit-update
+    rev: v0.6.0post1
     hooks:
-    -   id: pre-commit-update
--   repo: https://github.com/pre-commit/pre-commit-hooks
+      - id: pre-commit-update
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
-    -   id: check-builtin-literals
-    -   id: check-toml
-    -   id: check-yaml
-    -   id: end-of-file-fixer
-    -   id: trailing-whitespace
-    -   id: check-merge-conflict
--   repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.385
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.16.0
     hooks:
-    -   id: pyright
--   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.7.0
-    hooks:
-    -   id: ruff
+      - id: markdownlint-cli2
         args:
-        -   --fix
-    -   id: ruff-format
--   repo: https://github.com/jendrikseipp/vulture
-    rev: v2.13
+          - --fix
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
     hooks:
-    -   id: vulture
+      - id: prettier
+        types:
+          - markdown
+  - repo: https://github.com/kamadorueda/alejandra
+    rev: 3.1.0
+    hooks:
+      - id: alejandra-system
+  - repo: https://github.com/astro/deadnix
+    rev: v1.2.1
+    hooks:
+      - id: deadnix
         args:
-        -   ./
-        -   --exclude
-        -   '*/.venv/*'
-        -   --ignore-names
-        -   _generate_next_value_
-  # -   repo: local
-  #     hooks:
-  #     -   id: coverage
-  #         entry: just coverage
-  #         language: system
-  #         name: coverage
-  #         pass_filenames: false
-  #         args:
-  #         -   --fail-under
-  #         -   '50'
--   repo: https://github.com/pdm-project/pdm
-    rev: 2.19.3
+          - --edit
+  - repo: local
     hooks:
-    -   id: pdm-export
-        files: ^pdm.lock$
+      - id: flake-checker
+        name: flake-checker
+        entry: flake-checker
+        language: system
+        pass_filenames: false
+      - id: justfile
+        name: justfile
+        entry: just --fmt --unstable
+        language: system
+        pass_filenames: false
+      - id: statix
+        name: statix
+        entry: statix fix
+        language: system
+        pass_filenames: false
+      - id: yamlfmt
+        name: yamlfmt
+        entry: yamlfmt
+        language: system
+        pass_filenames: false
+  - repo: https://github.com/lycheeverse/lychee.git
+    rev: v0.15.1
+    hooks:
+      - id: lychee
         args:
-        -   -o
-        -   requirements.txt
-        -   --without-hashes
--   repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.42.0
+          - --no-progress
+          - .
+        pass_filenames: false
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
     hooks:
-    -   id: markdownlint-fix
+      - id: conventional-pre-commit
+        stages:
+          - commit-msg
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.43.0
+    hooks:
+      - id: markdownlint-fix
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    # python
+    rev: v5.0.0
+    hooks:
+      - id: check-json
+      - id: check-toml
+      - id: pretty-format-json
+        args:
+          - --autofix
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        types:
+          - json
+  - repo: local
+    hooks:
+      - id: taplo
+        name: taplo
+        entry: taplo format
+        language: system

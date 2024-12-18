@@ -1,32 +1,25 @@
+# python
 [project]
 name = "tsundeoku"
-version = "0.5.0"
-description = """\
-CLI for managing imports from a shared folder to a \"beets\" library \
-"""
-authors = [{ name = "Ben Rosen", email = "benjamin.j.rosen@gmail.com" }]
+version = "0.1.0"
+description = "Add your description here"
 readme = "README.md"
-license = { text = "MIT" }
-requires-python = ">=3.11"
-keywords = ["audio files", "beets", "music library", "music"]
+requires-python = ">=3.12"
 dependencies = [
-    "typer[all]>=0.7.0",
-    "tinytag>=1.8.1",
-    "beets>=1.6.0",
-    "click>=8.1.3",
-    "pydantic>=1.10.5",
-    "rtoml>=0.9.0",
-    "tomli>=2.0.1",
-    "tomli-w>=1.0.0",
-    "xmltodict>=0.13.0",
-    "yagmail>=0.15.293",
-    "pync>=2.0.3",
-    "requests>=2.31.0",
-    "lxml>=5.1.0",
+  "beets>=2.2.0",
+  "pydantic>=2.10.3",
+  "pync>=2.0.3",
+  "rich>=13.9.4",
+  "tinytag>=2.0.0",
+  "tomli-w>=1.1.0",
+  "tomli>=2.2.1",
+  "typer>=0.15.1",
+  "xmltodict>=0.14.2",
+  "yagmail>=0.15.293",
 ]
 
-[project.urls]
-repository = "https://github.com/tymbalodeon/tsundeoku"
+[dependency-groups]
+dev = ["bpython>=0.24", "pytest>=8.3.3"]
 
 [project.scripts]
 tsundeoku = "tsundeoku.main:tsundeoku"
@@ -34,22 +27,3 @@ tsundeoku = "tsundeoku.main:tsundeoku"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-
-[tool.pyright]
-venvPath = "."
-venv = ".venv"
-
-[tool.ruff]
-exclude = [".git", ".ruff_cache", ".venv", "build", "dist"]
-line-length = 79
-indent-width = 4
-
-[tool.pdm.dev-dependencies]
-dev = [
-  "pytest-mock>=3.10.0",
-  "pytest>=7.2.1",
-  "pre-commit>=3.0.4",
-  "coverage>=7.2.1",
-  "bpython>=0.24",
-  "pyright>=1.1.339",
-]

@@ -1,719 +1,93 @@
-set shell := ["nu", "-c"]
+# View help text
+@help *recipe:
+    ./scripts/help.nu {{ recipe }}
 
-_help:
-    #!/usr/bin/env nu
+# Check flake and run pre-commit hooks
+@check *args:
+    ./scripts/check.nu {{ args }}
 
-    (
-        just --list
-            --color always
-            --list-heading (
-                [
-                    "Available recipes:"
-                    "(run `<recipe> --help/-h` for more info)\n"
-                ]
-                | str join " "
-            )
-    )
+# List dependencies (alias: `deps`)
+@dependencies *args:
+    ./scripts/dependencies.nu {{ args }}
 
-alias source := src
-# Display the source code for a recipe
-src recipe *args="_":
-    #!/usr/bin/env nu
+alias deps := dependencies
 
-    # Display the source code for a recipe. If no args are provided, display
-    # the raw `just` code, otherwise display the code with the args provided
-    # to `just` applied. Pass `""` as args to see the code when no args are
-    # provided to a recipe.
-    def src [
-        recipe: string # The recipe command
-        ...args: string # Arguments to the recipe
-    ] {
-        if "_" in $args {
-            just --show $recipe
-        } else {
-            just --dry-run $recipe $args
-        }
-    }
+# Manage environments
+@environment *args:
+    ./scripts/environment.nu {{ args }}
 
-    src {{ recipe }} `{{ args }}`
+alias env := environment
 
-# Search available `just` commands
+# Search available `just` recipes
+[no-cd]
 [no-exit-message]
-search *regex:
-    #!/usr/bin/env nu
-
-    # Search available `just` commands, interactively, or by regex
-    def search [
-        regex?: string # Regex pattern to match
-    ] {
-        if ($regex | is-empty) {
-            just --list | fzf
-        } else {
-            just | grep --color=always --extended-regexp $regex
-        }
-    }
-
-    search {{ regex }}
-
-get-pyproject-value := "open pyproject.toml | get project."
-application-command := "(" + get-pyproject-value + "name)"
-
-[no-exit-message]
-_install_and_run *command:
-    #!/usr/bin/env nu
-
-    let command = (
-        echo `{{ command }}`
-        | split row --regex "sudo pdm run |pdm run "
-        | last
-        | split words
-        | filter { |arg| $arg != "pdm" }
-        | first
-    )
-
-    if not ($command in (pdm list --fields name --csv)) {
-        if $command == {{ application-command }} {
-            just install --prod
-        } else {
-            just install
-        }
-    }
-
-    {{ command }}
-
-# Add dependencies
-add *args:
-    #!/usr/bin/env nu
-
-    # Add dependencies
-    def add [
-        ...dependencies: string,
-        --dev # Add dependencies to the development group
-    ]: {
-        if $dev {
-            pdm add --dev $dependencies
-        } else {
-            pdm add $dependencies
-        }
-    }
-
-    add {{ args }}
-
-use-list-dependencies := """
-    def list-dependencies [
-        --dev
-        --prod
-        --include-version
-    ] {
-        let export = if $dev {
-            pdm export --pyproject --no-default
-        } else if $prod {
-            pdm export --pyproject --prod
-        } else {
-            pdm export --pyproject
-        }
-
-        mut dependencies = $export
-            | lines
-            | filter {
-                |line|
-
-                (
-                    (not ($line | is-empty))
-                    and (not ($line | str starts-with "#"))
-                )
-            }
-
-        if not $include_version {
-            $dependencies = (
-                $dependencies
-                | each {
-                    |dependency|
-
-                    $dependency | split row ">=" | first
-                }
-            )
-        }
-
-        $dependencies | str join "\n"
-    }
-"""
-
-# Remove dependencies
-remove *args:
-    #!/usr/bin/env nu
-
-    {{ use-list-dependencies }}
-
-    def is-a-dependency [
-        dependency: string
-        --dev
-    ] {
-        let dependencies = if $dev {
-            list-dependencies --dev
-        } else {
-            list-dependencies
-        }
-
-        $dependency in $dependencies
-    }
-
-    # Remove dependencies
-    def remove [...dependencies: string] {
-        for $dependency in [$dependencies] {
-            if (is-a-dependency $dependency --dev) {
-                pdm remove --dev $dependency
-            } else if (is-a-dependency $dependency) {
-                pdm remove $dependency
-            }
-        }
-    }
-
-    remove {{ args }}
-
-_get-application-version:
-    #!/usr/bin/env nu
-
-    open tsundeoku/__init__.py
-    | split row " "
-    | last
-    | str replace --all '"' ""
-
-# Install dependencies
-install *args:
-    #!/usr/bin/env nu
-
-    def not-installed [command: string] {
-        (command -v $command | is-empty)
-    }
-
-    def module-not-installed [command: string] {
-        (
-            pdm run python -m $command --help err> /dev/null
-            | complete
-            | get exit_code
-            | into bool
-        )
-    }
-
-    # Install dependencies
-    def install [
-        --app # (Build and) install the application
-        --dry-run # Display dependencies without installing
-        --minimal # Install only dependencies necessary for other commands
-        --prod # Install production dependencies only
-    ] {
-        if $dry_run {
-            if $app or $prod {
-                just dependencies --prod
-            } else {
-                just dependencies
-            }
-
-            exit
-        }
-
-        if not $prod {
-            if (module-not-installed pip) {
-                pdm run python -m ensurepip --upgrade --default-pip
-            }
-
-            if (module-not-installed pipx) {
-                pdm run python -m pip install --upgrade pip pipx;
-                pdm run python -m pipx ensurepath
-            }
-
-            if (not-installed speedscope) { pnpm add speedscope }
-
-            if (not-installed cargo) {
-                curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-            }
-
-            if (not-installed cargo) { cargo install checkexec }
-        }
-
-        if $minimal {
-            just _install_and_run pdm run pre-commit install out+err> /dev/null
-        } else {
-            if $app or $prod {
-                pdm install --prod
-            } else {
-                pdm install
-                just _install_and_run pdm run pre-commit install
-            }
-        }
-
-        if $app {
-            just build
-            let application_version = (just _get-application-version)
-
-            (
-                pdm run python -m pipx install
-                    $"./dist/{{ application-command }}-($application_version)-py3-none-any.whl"
-                    --force
-                    --pip-args="--force-reinstall"
-            )
-        }
-    }
-
-    install {{ args }}
-
-# Update dependencies
-update *args:
-    #!/usr/bin/env nu
-
-    # Update dependencies
-    def update [
-        --prod # Update production dependencies
-    ] {
-        if $prod {
-            just install --minimal --prod
-        } else {
-            just install --minimal
-        }
-
-        if not $prod {
-            pdm run python -m pip install --upgrade pip pipx
-            pnpm update speedscope
-            rustup update
-            cargo install-update checkexec
-        }
-
-        if $prod {
-            pdm update --prod
-        } else {
-            pdm update
-        }
-
-        just pre-commit --update
-    }
-
-    update {{ args }}
-
-# Show application dependencies
-dependencies *args:
-    #!/usr/bin/env nu
-
-    {{ use-list-dependencies }}
-
-    def indent [text: string] {
-        $text
-        | lines
-        | each { |line| $"\t($line)" }
-        | str join "\n"
-    }
-
-    # Show application dependencies
-    def show-dependencies [
-        --dev # Show only development dependencies
-        --prod # Show only production dependencies
-        --installed # Show installed dependencies
-        --tree # Show installed dependencies as a tree
-    ] {
-        if $tree {
-            pdm list --tree
-        } else if $installed {
-            (
-                pdm list
-                    --fields name,version
-                    --sort name
-            )
-        } else {
-            let dependencies = if $dev {
-                list-dependencies --include-version --dev
-            } else if $prod {
-                list-dependencies --include-version --prod
-            } else {
-                let prod_dependencies = (
-                    indent (list-dependencies --include-version --prod)
-                )
-
-                let dev_dependencies = (
-                    indent (list-dependencies --include-version --dev)
-                )
-
-                [
-                    Production:
-                    $prod_dependencies
-                    ""
-                    Development:
-                    $dev_dependencies
-                ]
-                | str join "\n"
-            }
-
-            if (command -v bat | is-empty) {
-                just install
-            }
-
-            let bat_command = (
-                "bat --language pip --plain --theme gruvbox-dark"
-            )
-            zsh -c $"echo \"($dependencies)\" | ($bat_command)"
-        }
-    }
-
-    show-dependencies {{ args }}
-
-# Type-check
-[no-exit-message]
-type-check *args:
-    #!/usr/bin/env nu
-
-    # Type-check
-    def type-check [
-        ...files: string # Files to check
-    ] {
-        just _install_and_run pdm run pyright $files
-    }
-
-    type-check {{ args }}
-
-# Lint and apply fixes
-lint *args:
-    #!/usr/bin/env nu
-
-    def lint [] {
-        just _install_and_run pdm run ruff check --fix
-    }
-
-    lint {{ args }}
-
-alias format := fmt
-# Format
-fmt *args:
-    #!/usr/bin/env nu
-
-    # Format
-    def fmt [] {
-        just --unstable --fmt
-        just _install_and_run pdm run ruff format
-    }
-
-    fmt {{ args }}
-
-# Run pre-commit hooks
-pre-commit *args:
-    #!/usr/bin/env nu
-
-    # Run pre-commit hook by name, all hooks, or update all hooks
-    def pre-commit [
-        hook?: string # The hook to run
-        --hooks # Display all hook ids
-        --update # Update all pre-commit hooks
-    ] {
-        if $hooks {
-            echo (
-                grep id .pre-commit-config.yaml
-                | str replace --all --regex "- +id:" ""
-                | lines
-                | each { |line| ($line | str trim) }
-                | sort
-                | str join "\n"
-            )
-
-            exit
-        }
-
-        if $update {
-            just _install_and_run pdm run pre-commit autoupdate
-            exit
-        }
-
-        if not ($hook | is-empty) {
-            just _install_and_run pdm run pre-commit run $hook --all-files
-        } else {
-            just _install_and_run pdm run pre-commit run --all-files
-        }
-    }
-
-    pre-commit {{ args }}
-
-# Open an interactive python shell
-shell *args:
-    #!/usr/bin/env nu
-
-    # Open an interactive python shell
-    def shell [] {
-        just _install_and_run pdm run bpython
-    }
-
-    shell {{ args }}
-
-# Run the application
-run *args:
-    #!/usr/bin/env nu
-
-    let args = (
-        ["{{ args }}"]
-        | split row " "
-        | each { |arg| $"\"($arg)\"" }
-        | str join " "
-    )
-
-    if $args == '""' {
-        just _install_and_run pdm run {{ application-command }}
-    } else {
-        just _install_and_run pdm run {{ application-command }} $"`($args)`"
-    }
-
-# Profile a command and view results
-profile *args:
-    #!/usr/bin/env nu
-
-    # Profile a command and view results
-    def profile [
-        ...args: string # Arguments to the command being profiled
-    ] {
-        just install --minimal
-
-        let output_directory = "profiles"
-        mkdir $output_directory
-
-        let output_file = $"($output_directory)/profile.json"
-
-        (
-            just _install_and_run sudo pdm run py-spy record
-                --format speedscope
-                --output $output_file
-                --subprocesses
-                -- pdm run python -m {{ application-command }} $args
-        )
-
-        speedscope $output_file
-    }
-
-    profile {{ args }}
-
-# Run coverage report
-coverage *args:
-    #!/usr/bin/env nu
-
-    # Run coverage report
-    def coverage [
-        --fail-under: string # Fail if coverage is less than this percentage
-    ] {
-        just test out+err> /dev/null
-
-        if not ($fail_under | is-empty) {
-            (
-                just _install_and_run pdm run coverage report -m
-                    --skip-covered
-                    --sort "cover"
-                    --fail-under $fail_under
-            )
-        } else {
-            (
-                just _install_and_run pdm run coverage report -m
-                    --skip-covered
-                    --sort "cover"
-            )
-        }
-    }
-
-    coverage {{ args }}
+@find-recipe *search_term:
+    ./scripts/find-recipe.nu {{ search_term }}
+
+alias find := find-recipe
+
+# View project history
+[no-cd]
+@history *args:
+    ./scripts/history.nu {{ args }}
+
+# View issues
+@issue *args:
+    ./scripts/issue.nu {{ args }}
+
+# Create a new release
+@release *preview:
+    ./scripts/release.nu  {{ preview }}
+
+# View remote repository
+@remote *web:
+    ./scripts/remote.nu  {{ web }}
+
+# View repository analytics
+@stats *help:
+    ./scripts/stats.nu {{ help }}
 
 # Run tests
-test *args:
-    #!/usr/bin/env nu
+@test *args:
+    ./scripts/test.nu {{ args }}
 
-    # Run tests
-    def test [] {
-        just _install_and_run pdm run coverage run -m pytest tests
-    }
+# View the source code for a recipe
+[no-cd]
+@view-source *recipe:
+    ./scripts/view-source.nu {{ recipe }}
 
-    test {{ args }}
+alias src := view-source
 
-# Build and install the application
-build *args:
-    #!/usr/bin/env nu
+mod python "just/python.just"
 
-    # Build and install the application
-    def build [] {
-        pdm build
-    }
+# alias for `python _help`
+@_help *args:
+    just python _help {{ args }}
 
-    build {{ args }}
+# alias for `python add`
+@add *args:
+    just python add {{ args }}
 
-generated_files := """
-[
-    [Option "Files to clean"];
-    [<default> "<all EXCEPT dist and venv>"]
-    [--all <all>]
-    [coverage .coverage]
-    [dist dist/]
-    [ds-store **/.DS_Store]
-    [pdfs **/*.pdf]
-    [profiles profiles]
-    [pycache **/__pycache__]
-    [pytest .pytest_cache]
-    [ruff .ruff_cache]
-    [venv .venv]
-]
-"""
+# alias for `python build`
+@build *args:
+    just python build {{ args }}
 
-# Clean generated files
-clean *args:
-    #!/usr/bin/env nu
+# alias for `python profile`
+@profile *args:
+    just python profile {{ args }}
 
-    # Remove generated files
-    def clean [
-        --choices, # Display possible values for ...(files)
-        --all (-a), # Clean all files
-        ...files: string # Which files to clean (see --choices for available files)
-    ] {
-        if ($choices) {
-            echo {{ generated_files }}
-            exit
-        }
+# alias for `python remove`
+@remove *args:
+    just python remove {{ args }}
 
-        let default_files_to_clean = [
-            coverage
-            ds-store
-            pdfs
-            profiles
-            pycache
-            pytest
-            ruff
-        ]
+# alias for `python run`
+@run *args:
+    just python run {{ args }}
 
-        let files_to_clean = if $all {
-            $default_files_to_clean | append [dist venv] | sort
-        } else if ($files | is-empty) {
-            $default_files_to_clean
-        } else {
-            $files
-        }
+# alias for `python shell`
+@shell *args:
+    just python shell {{ args }}
 
-        for file in $files_to_clean {
-            let files_list = (
-                {{ generated_files }}
-                | where Option == $file
-                | get "Files to clean"
-            )
-
-            if ($files_list | is-empty) {
-                echo $"Unknown option: \"($file)\""
-                continue
-            }
-
-            if $file == "venv" and (
-                not (command -v pdm | is-empty)) and (
-                not (pdm run command -v pre-commit | is-empty)
-            ) {
-                echo "Uninstalling pre-commit..."
-                pdm run pre-commit uninstall
-            }
-
-            let files = $files_list | first
-
-            echo $"Removing generated ($file) files..."
-            rm --recursive --force $files
-        }
-    }
-
-    clean {{ args }}
-
-# Release a new version of the application
-release *target:
-    #!/usr/bin/env nu
-
-    # Release a new version of the application
-    def release [
-        target = "patch" # Type of release to target (major, minor, or patch)
-    ] {
-        let current_version = just _get-application-version | split row "."
-
-        mut major = ($current_version.0 | into int)
-        mut minor = ($current_version.1 | into int)
-        mut patch = ($current_version.2 | into int)
-
-        if $target in [major minor patch] {
-            if $target == "major" {
-                $major += 1
-                $minor = 0
-                $patch = 0
-            } else if $target == "minor" {
-                $minor += 1
-                $patch = 0
-            } else if $target == "patch" {
-               $patch += 1
-            }
-
-            let new_version = ([$major $minor $patch] | str join ".")
-            $"($current_version | str join ".") --> ($new_version)"
-        } else {
-            just release --help
-        }
-    }
-
-    release {{ target }}
-
-
-# Open the repository page in the browser
-@repo:
-    gh browse
-
-# List repository issues
-@issues:
-    gh issue list
-
-# Create issue interactively or view issue by <id>
-issue *args:
-    #!/usr/bin/env nu
-
-    # Create issue interactively or view issue by <id>
-    def issue [
-        id?: string # The ID of the issue to view
-        --web # View the issue in the browser
-    ] {
-        if $id == null {
-            gh issue create
-        } else if $web {
-            gh issue view $id --web
-        } else {
-            gh issue view $id
-        }
-    }
-
-    issue {{ args }}
-
-# Show project statistics
-stats *args:
-    #!/usr/bin/env nu
-
-    # Show project statistics
-    def stats [
-        --code # Show stats about the project code
-        --git # Show stats related to git activity
-    ] {
-        let default = not ([$code $git] | any { |arg| $arg })
-
-        if $default or $git {
-            onefetch
-        }
-
-        if $default or $code {
-            tokei --sort code
-        }
-    }
-
-    stats {{ args }}
-
-beets_config_values := """
-directory: ~/Music
-library: ~/.config/beets/library.db
-import:
-  incremental: yes
-  autotag: no
-"""
-
-_beets:
-    #!/usr/bin/env nu
-
-    let beets_config_folder = $"($env.HOME)/.config/beets"
-    mkdir $beets_config_folder
-    echo "{{beets_config_values}}" | save --raw $"($beets_config_folder)/config.yaml"
-
-# Add beets config and build
-setup: _beets build
+# alias for `python update`
+@update *args:
+    just python update {{ args }}
