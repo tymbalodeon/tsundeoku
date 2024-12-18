@@ -1,4 +1,3 @@
-# python
 [project]
 name = "tsundeoku"
 version = "0.1.0"
@@ -7,13 +6,13 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "beets>=2.2.0",
+  "cyclopts>=3.1.2",
   "pydantic>=2.10.3",
   "pync>=2.0.3",
   "rich>=13.9.4",
   "tinytag>=2.0.0",
   "tomli-w>=1.1.0",
   "tomli>=2.2.1",
-  "typer>=0.15.1",
   "xmltodict>=0.14.2",
   "yagmail>=0.15.293",
 ]

@@ -1,10 +1,11 @@
 from sys import argv
 
+from cyclopts import App
+
 from pydantic import ValidationError
 from pync import notify
 from rich import print
 from rich.markup import escape
-from typer import Argument, Context, Exit, Option, Typer
 
 from tsundeoku import __version__
 from tsundeoku.style import stylize
@@ -39,7 +40,7 @@ def get_name_definition() -> str:
     return stylize(app_name, styles="bold")
 
 
-tsundeoku = Typer(
+tsundeoku = App(
     help=(
         f"{get_name_definition()}\n\n"
         "Import audio files from a shared folder to a local library."
@@ -53,8 +54,7 @@ tsundeoku.add_typer(config_command, name="config")
 
 def display_version(version: bool):
     if version:
-        print(f"tsundeoku {__version__}")
-        raise Exit()
+        return f"tsundeoku {__version__}"
 
 
 def get_argv() -> list[str]:
@@ -217,9 +217,7 @@ def reformat(
     if remove_bracket_years is None:
         remove_bracket_years = reformat_settings.remove_bracket_years
     if remove_bracket_instruments is None:
-        remove_bracket_instruments = (
-            reformat_settings.remove_bracket_instruments
-        )
+        remove_bracket_instruments = reformat_settings.remove_bracket_instruments
     if expand_abbreviations is None:
         expand_abbreviations = reformat_settings.expand_abbreviations
     reformat_albums(
@@ -229,21 +227,15 @@ def reformat(
 
 @tsundeoku.command()
 def schedule(
-    off: bool = Option(
-        False, "--off", help="Turn off scheduling of import command."
-    ),
+    off: bool = Option(False, "--off", help="Turn off scheduling of import command."),
     on: str = Option(
         None,
         "--on",
         help=get_schedule_help_message(),
         show_default=False,
     ),
-    log: bool = Option(
-        False, "--log", "-l", help="Show most recent import log."
-    ),
-    all_logs: bool = Option(
-        False, "--all-logs", "-a", help="Show all import logs."
-    ),
+    log: bool = Option(False, "--log", "-l", help="Show most recent import log."),
+    all_logs: bool = Option(False, "--all-logs", "-a", help="Show all import logs."),
 ):
     """Schedule import command to run automatically."""
     if log:
