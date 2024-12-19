@@ -6,12 +6,15 @@ from subprocess import run
 from rich import print
 from xmltodict import parse
 from yagmail import SMTP
+from cyclopts import App
 
 from .config.config import APP_NAME, get_loaded_config
 from .style import StyleLevel, print_with_theme, stylize
 
 PLIST_LABEL = f"com.{APP_NAME}.import.plist"
 LAUNCHCTL = "launchctl"
+
+schedule = App()
 
 
 def get_format_reference_link() -> str:
@@ -29,13 +32,6 @@ def get_schedule_help_message():
         "Schedule import to run at specified time, using the format %I:%M%p"
         f" for daily, **:%M for hourly. See {here} for more info."
     )
-
-
-def remove_plist(label=PLIST_LABEL):
-    plist_path = get_plist_path(label)
-    launchctl("unload", plist_path)
-    if plist_path.is_file():
-        plist_path.unlink()
 
 
 def get_tmp_path() -> Path:
@@ -153,26 +149,6 @@ def load_plist(hour: int | None, minute: int | None):
     launchctl("load", plist_path)
 
 
-def schedule_import(schedule_time: str) -> str:
-    message = "Scheduled import for every"
-    hour = None
-    if "*" in schedule_time:
-        schedule_type = "hour"
-        time_format = "%M"
-        scheduled_time = datetime.strptime(schedule_time, f"**:{time_format}")
-        padded_minute = scheduled_time.strftime(time_format)
-        display_time = f"**:{padded_minute} minutes"
-    else:
-        schedule_type = "day"
-        time_format = "%I:%M%p"
-        scheduled_time = datetime.strptime(schedule_time, time_format)
-        hour = scheduled_time.hour
-        display_time = scheduled_time.strftime(time_format)
-    minute = scheduled_time.minute
-    load_plist(hour=hour, minute=minute)
-    return f"{message} {schedule_type} at {display_time}."
-
-
 def is_currently_scheduled() -> bool:
     loaded_plists = str(launchctl("list"))
     return PLIST_LABEL in loaded_plists
@@ -182,40 +158,6 @@ def print_show_schedule_error():
     print_with_theme(
         "Error retrieving schedule information.", StyleLevel.ERROR
     )
-
-
-def show_currently_scheduled():
-    plist_path = get_plist_path()
-    if not is_currently_scheduled():
-        print("Import is not currently scheduled.")
-        return
-    if not plist_path.exists():
-        print_show_schedule_error()
-        return
-    try:
-        plist = parse(plist_path.read_bytes())
-    except Exception:
-        plist = None
-    if not plist:
-        print_show_schedule_error()
-        return
-    try:
-        hour_and_minute = plist["plist"]["dict"]["dict"]["integer"]
-    except Exception:
-        print_show_schedule_error()
-        return
-    hour = "**"
-    message = "Import is currently scheduled for every"
-    if isinstance(hour_and_minute, list):
-        hour, minute = (int(value) for value in hour_and_minute)
-        scheduled_time = time(hour, minute).strftime("%I:%M%p")
-        message = f"{message} day at {scheduled_time}."
-    else:
-        minute = int(hour_and_minute)
-        minute = time(minute=minute).strftime("%M")
-        scheduled_time = f"**:{minute}"
-        message = f"{message} hour at {scheduled_time} minutes."
-    print(message)
 
 
 def stamp_logs() -> str:
@@ -251,11 +193,77 @@ def print_lines(lines: list[str]):
         print(line)
 
 
-def show_logs(all_logs=False):
+@schedule.command()
+def logs(all=False):
     log_path = get_log_path()
     text = log_path.read_text()
-    if all_logs:
+    if all:
         lines = text.splitlines()
     else:
         lines = get_most_recent_log(text)
     print_lines(lines)
+
+
+@schedule.command()
+def remove_plist(label=PLIST_LABEL):
+    plist_path = get_plist_path(label)
+    launchctl("unload", plist_path)
+    if plist_path.is_file():
+        plist_path.unlink()
+    print("Turned off scheduled import.")
+
+
+@schedule.command()
+def schedule_import(schedule_time: str) -> str:
+    message = "Scheduled import for every"
+    hour = None
+    if "*" in schedule_time:
+        schedule_type = "hour"
+        time_format = "%M"
+        scheduled_time = datetime.strptime(schedule_time, f"**:{time_format}")
+        padded_minute = scheduled_time.strftime(time_format)
+        display_time = f"**:{padded_minute} minutes"
+    else:
+        schedule_type = "day"
+        time_format = "%I:%M%p"
+        scheduled_time = datetime.strptime(schedule_time, time_format)
+        hour = scheduled_time.hour
+        display_time = scheduled_time.strftime(time_format)
+    minute = scheduled_time.minute
+    load_plist(hour=hour, minute=minute)
+    return f"{message} {schedule_type} at {display_time}."
+
+
+@schedule.default()
+def show_currently_scheduled():
+    plist_path = get_plist_path()
+    if not is_currently_scheduled():
+        print("Import is not currently scheduled.")
+        return
+    if not plist_path.exists():
+        print_show_schedule_error()
+        return
+    try:
+        plist = parse(plist_path.read_bytes())
+    except Exception:
+        plist = None
+    if not plist:
+        print_show_schedule_error()
+        return
+    try:
+        hour_and_minute = plist["plist"]["dict"]["dict"]["integer"]
+    except Exception:
+        print_show_schedule_error()
+        return
+    hour = "**"
+    message = "Import is currently scheduled for every"
+    if isinstance(hour_and_minute, list):
+        hour, minute = (int(value) for value in hour_and_minute)
+        scheduled_time = time(hour, minute).strftime("%I:%M%p")
+        message = f"{message} day at {scheduled_time}."
+    else:
+        minute = int(hour_and_minute)
+        minute = time(minute=minute).strftime("%M")
+        scheduled_time = f"**:{minute}"
+        message = f"{message} hour at {scheduled_time} minutes."
+    print(message)

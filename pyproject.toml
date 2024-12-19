@@ -18,7 +18,10 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["bpython>=0.24", "pytest>=8.3.3"]
+dev = [
+    "bpython>=0.24",
+    "pytest>=8.3.3",
+]
 
 [project.scripts]
 tsundeoku = "tsundeoku.main:tsundeoku"
@@ -26,3 +29,8 @@ tsundeoku = "tsundeoku.main:tsundeoku"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.ruff]
+# exclude = [".git", ".ruff_cache", ".venv", "build", "dist"]
+line-length = 79
+indent-width = 4
