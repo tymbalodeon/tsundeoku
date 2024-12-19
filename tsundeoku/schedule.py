@@ -3,10 +3,10 @@ from pathlib import Path
 from shutil import which
 from subprocess import run
 
+from cyclopts import App
 from rich import print
 from xmltodict import parse
 from yagmail import SMTP
-from cyclopts import App
 
 from .config.config import APP_NAME, get_loaded_config
 from .style import StyleLevel, print_with_theme, stylize
@@ -14,7 +14,7 @@ from .style import StyleLevel, print_with_theme, stylize
 PLIST_LABEL = f"com.{APP_NAME}.import.plist"
 LAUNCHCTL = "launchctl"
 
-schedule = App()
+schedule = App(help="Schedule import command to run automatically.")
 
 
 def get_format_reference_link() -> str:
@@ -54,7 +54,7 @@ def launchctl(command: str, path: Path | None = None) -> bytes:
 
 def load_rotate_logs_plist():
     rotate_logs_plist_label = f"com.{APP_NAME}.rotatelogs.plist"
-    remove_plist(rotate_logs_plist_label)
+    off(rotate_logs_plist_label)
     truncate_command = "truncate -s 0"
     log_path = get_log_path()
     plist = (
@@ -142,7 +142,7 @@ def get_plist_text(hour: int | None, minute: int | None) -> str:
 
 def load_plist(hour: int | None, minute: int | None):
     load_rotate_logs_plist()
-    remove_plist()
+    off()
     plist = get_plist_text(hour, minute)
     plist_path = get_plist_path()
     plist_path.write_text(plist)
@@ -195,6 +195,7 @@ def print_lines(lines: list[str]):
 
 @schedule.command()
 def logs(all=False):
+    """Show import logs"""
     log_path = get_log_path()
     text = log_path.read_text()
     if all:
@@ -205,7 +206,8 @@ def logs(all=False):
 
 
 @schedule.command()
-def remove_plist(label=PLIST_LABEL):
+def off(label=PLIST_LABEL):
+    """Turn off scheduling of import command"""
     plist_path = get_plist_path(label)
     launchctl("unload", plist_path)
     if plist_path.is_file():
@@ -214,19 +216,20 @@ def remove_plist(label=PLIST_LABEL):
 
 
 @schedule.command()
-def schedule_import(schedule_time: str) -> str:
+def on(time: str) -> str:
+    """Schedule import to run at specified time, using the format %I:%M%p for daily, \\*\\*:%M for hourly. See here for more info"""
     message = "Scheduled import for every"
     hour = None
-    if "*" in schedule_time:
+    if "*" in time:
         schedule_type = "hour"
         time_format = "%M"
-        scheduled_time = datetime.strptime(schedule_time, f"**:{time_format}")
+        scheduled_time = datetime.strptime(time, f"**:{time_format}")
         padded_minute = scheduled_time.strftime(time_format)
         display_time = f"**:{padded_minute} minutes"
     else:
         schedule_type = "day"
         time_format = "%I:%M%p"
-        scheduled_time = datetime.strptime(schedule_time, time_format)
+        scheduled_time = datetime.strptime(time, time_format)
         hour = scheduled_time.hour
         display_time = scheduled_time.strftime(time_format)
     minute = scheduled_time.minute
@@ -234,8 +237,9 @@ def schedule_import(schedule_time: str) -> str:
     return f"{message} {schedule_type} at {display_time}."
 
 
-@schedule.default()
-def show_currently_scheduled():
+@schedule.command()
+def show():
+    """Show active schedule"""
     plist_path = get_plist_path()
     if not is_currently_scheduled():
         print("Import is not currently scheduled.")

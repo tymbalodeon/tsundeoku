@@ -1,24 +1,7 @@
-from sys import argv
 
 from cyclopts import App
 
-from pydantic import ValidationError
-from pync import notify
-from rich import print
-from rich.markup import escape
-
-from tsundeoku import __version__
 from tsundeoku.style import stylize
-
-from .config.config import (
-    APP_NAME,
-    STATE,
-    StyleLevel,
-    get_config,
-    get_loaded_config,
-    print_errors,
-    print_with_theme,
-)
 
 from .config.main import config
 
