@@ -1,4 +1,3 @@
-
 from cyclopts import App
 
 from .config import (
@@ -8,7 +7,7 @@ from .config import (
     write_config_values,
 )
 
-config = App()
+config = App(help="Show (default) and set config values")
 
 
 # @config_command.callback(invoke_without_command=True)
