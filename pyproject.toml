@@ -28,6 +28,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.ruff]
-# exclude = [".git", ".ruff_cache", ".venv", "build", "dist"]
 line-length = 79
-indent-width = 4
