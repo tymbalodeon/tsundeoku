@@ -1,11 +1,14 @@
-
 from cyclopts import App
 
-from tsundeoku.style import stylize
+from tsundeoku.config.config import APP_NAME, get_loaded_config
+from tsundeoku.style import StyleLevel, print_with_theme, stylize
 
+from pync import notify
 from .config.main import config
 
-# from .import_new import import_new_albums
+from .import_new import import_new_albums
+from .schedule import send_email
+
 # from .reformat import reformat_albums
 from .schedule import schedule
 
@@ -90,67 +93,76 @@ tsundeoku.command(schedule, name="schedule")
 
 # solo_instrument = escape("[solo <instrument>]")
 
+# albums: list[str] = Argument(None, hidden=True),
+# reformat: bool = Option(
+#     None,
+#     "--reformat/--as-is",
+#     help="Import new albums without altering metadata.",
+#     show_default=False,
+# ),
+# ask_before_disc_update: bool = Option(
+#     None,
+#     "--ask-before-disc-update/--auto-update-disc",
+#     help=(
+#         "Prompt for confirmation to apply default disc and disc total"
+#         ' values of "1 out of 1".'
+#     ),
+#     show_default=False,
+# ),
+# ask_before_artist_update: bool = Option(
+#     None,
+#     "--ask-before-artist-update/--auto-update-artist",
+#     help=(
+#         f'Prompt for confirmation to remove bracketed "{solo_instrument}"'
+#         " indications."
+#     ),
+#     show_default=False,
+# ),
+# allow_prompt: bool = Option(
+#     None,
+#     "--allow-prompt/--disallow-prompt",
+#     help="Allow prompts for user confirmation to update metadata.",
+#     show_default=False,
+# ),
+# is_scheduled_run: bool = Option(False, "--scheduled-run", hidden=True),
 
-# @tsundeoku.command(name="import")
-# def import_new(
-#     albums: list[str] = Argument(None, hidden=True),
-#     reformat: bool = Option(
-#         None,
-#         "--reformat/--as-is",
-#         help="Import new albums without altering metadata.",
-#         show_default=False,
-#     ),
-#     ask_before_disc_update: bool = Option(
-#         None,
-#         "--ask-before-disc-update/--auto-update-disc",
-#         help=(
-#             "Prompt for confirmation to apply default disc and disc total"
-#             ' values of "1 out of 1".'
-#         ),
-#         show_default=False,
-#     ),
-#     ask_before_artist_update: bool = Option(
-#         None,
-#         "--ask-before-artist-update/--auto-update-artist",
-#         help=(
-#             f'Prompt for confirmation to remove bracketed "{solo_instrument}"'
-#             " indications."
-#         ),
-#         show_default=False,
-#     ),
-#     allow_prompt: bool = Option(
-#         None,
-#         "--allow-prompt/--disallow-prompt",
-#         help="Allow prompts for user confirmation to update metadata.",
-#         show_default=False,
-#     ),
-#     is_scheduled_run: bool = Option(False, "--scheduled-run", hidden=True),
-# ):
-#     """Copy new adds from your shared folder to your local library."""
-#     try:
-#         import_new_albums(
-#             albums,
-#             reformat,
-#             ask_before_disc_update,
-#             ask_before_artist_update,
-#             allow_prompt,
-#             is_scheduled_run,
-#         )
-#     except Exception as error:
-#         if isinstance(error, Exit):
-#             return
-#         if is_scheduled_run:
-#             config = get_loaded_config()
-#             email_on = config.notifications.email_on
-#             system_on = config.notifications.system_on
-#             if email_on or system_on:
-#                 subject = "ERROR"
-#                 contents = str(error)
-#                 if email_on:
-#                     send_email(subject, contents)
-#                 if system_on:
-#                     notify(contents, title=APP_NAME)
-#         print_with_theme(str(error), level=StyleLevel.ERROR)
+
+@tsundeoku.command(name="import")
+def import_new(
+    albums: list[str] | None = None,
+    reformat=False,
+    ask_before_disc_update=False,
+    ask_before_artist_update=False,
+    allow_prompt=False,
+    is_scheduled_run=False,
+):
+    """Copy new adds from your shared folder to your local library."""
+    try:
+        if albums is None:
+            albums = []
+        import_new_albums(
+            albums,
+            reformat,
+            ask_before_disc_update,
+            ask_before_artist_update,
+            allow_prompt,
+            is_scheduled_run,
+        )
+    except Exception as error:
+        if repr(error) == "exit":
+            return
+        if is_scheduled_run:
+            config = get_loaded_config()
+            email_on = config.notifications.email_on
+            system_on = config.notifications.system_on
+            if email_on or system_on:
+                subject = "ERROR"
+                contents = str(error)
+                if email_on:
+                    send_email(subject, contents)
+                if system_on:
+                    notify(contents, title=APP_NAME)
+        print_with_theme(str(error), level=StyleLevel.ERROR)
 
 
 # @tsundeoku.command()
@@ -199,36 +211,3 @@ tsundeoku.command(schedule, name="schedule")
 #     reformat_albums(
 #         remove_bracket_years, remove_bracket_instruments, expand_abbreviations
 #     )
-
-
-# off: bool = Option(False, "--off", help="Turn off scheduling of import command."),
-# on: str = Option(
-#     None,
-#     "--on",
-#     help=get_schedule_help_message(),
-#     show_default=False,
-# ),
-# log: bool = Option(False, "--log", "-l", help="Show most recent import log."),
-# all_logs: bool = Option(False, "--all-logs", "-a", help="Show all import logs."),
-
-
-# @tsundeoku.command()
-# def schedule(
-#     off: bool = False, on: str | None = None, log=False, all_logs=False
-# ):
-#     """Schedule import command to run automatically."""
-#     if log:
-#         show_logs()
-#     elif all_logs:
-#         show_logs(all_logs=True)
-#     elif off:
-#         remove_plist()
-#         print("Turned off scheduled import.")
-#     elif on:
-#         try:
-#             message = schedule_import(on)
-#             print(message)
-#         except ValueError:
-#             print("ERROR")
-#     else:
-#         show_currently_scheduled()

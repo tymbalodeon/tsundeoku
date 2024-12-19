@@ -12,7 +12,6 @@ from rich.console import Console
 from rich.markup import escape as rich_escape
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
-from typer import Exit
 
 from tsundeoku.reformat import reformat_albums
 
@@ -674,14 +673,14 @@ def send_notifications(current_errors: list[tuple[ImportError, list[str]]]):
     if email_on or system_on:
         error_album_count = sum(len(errors) for _, errors in current_errors)
         if not error_album_count:
-            raise Exit()
+            raise Exception("exit")
         subject = get_error_album_message(error_album_count)
         if email_on:
             contents = get_email_contents(current_errors)
             send_email(subject, contents)
         if system_on:
             notify(subject, title=APP_NAME)
-        raise Exit()
+        raise Exception("exit")
 
 
 def print_error_table(
@@ -719,7 +718,7 @@ def should_import_anyway(
     multiple_albums = len(importable_error_albums) > 1
     import_anyway = get_import_anyway(multiple_albums)
     if not import_anyway:
-        raise Exit()
+        raise Exception("exit")
     album_identifier = "this album"
     if multiple_albums:
         import_selection = Prompt.ask(
@@ -727,7 +726,7 @@ def should_import_anyway(
             " or the name of\nthe error to import all albums in that category"
         )
         if import_selection in {"", "n"}:
-            raise Exit()
+            raise Exception("exit")
         import_selection = import_selection.lower()
         album_identifier = "all albums"
         if import_selection != "all":
@@ -757,7 +756,7 @@ def should_import_anyway(
                 print_with_theme(
                     "No matching albums.", level=StyleLevel.WARNING
                 )
-                raise Exit()
+                raise Exception("exit")
     albums_display = get_confirm_selected_albums_display(
         importable_error_albums
     )
