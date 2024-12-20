@@ -9,7 +9,6 @@ from tsundeoku.style import stylize_path
 
 from .config import (
     ImportConfig,
-    InvalidConfig,
     ReformatConfig,
     get_config_path,
     get_loaded_config,
@@ -56,18 +55,12 @@ def main(
         run([editor, get_config_path()])
         return
     elif reset_all and confirm_reset("config"):
-        try:
-            write_config_values()
-        except InvalidConfig:
-            return
+        write_config_values()
     elif reset_commands and confirm_reset("command options preferences"):
         config = get_loaded_config()
         config.reformat = ReformatConfig()
         config.import_new = ImportConfig()
-        try:
-            write_config_values(config)
-        except InvalidConfig:
-            return
+        write_config_values(config)
     print_config_values()
 
 
@@ -106,42 +99,6 @@ def no_updates_provided(options: dict) -> bool:
     return all(option is None or option == () for option in options.values())
 
 
-# shared_directories: list[str] = Option(
-#     None,
-#     help="New shared directories to add to or replace the existing value.",
-#     show_default=False,
-# ),
-# pickle_file: str = Option(
-#     None,
-#     help="New path to beets pickle file to replace the existing value.",
-#     show_default=False,
-# ),
-# ignored_directories: list[str] = Option(
-#     None,
-#     help=(
-#         "New ignored directories to add to or replace the existing value."
-#     ),
-#     show_default=False,
-# ),
-# music_player: str = Option(
-#     None,
-#     help="New default music player to replace the existing value.",
-#     show_default=False,
-# ),
-# add: bool = Option(
-#     None,
-#     "--add",
-#     "-a",
-#     help="Add to existing values rather than replace all values.",
-# ),
-# remove: bool = Option(
-#     None,
-#     "--remove",
-#     "-r",
-#     help="Remove from existing values rather than replace all values.",
-# ),
-
-
 @config_app.command()
 def file_system(
     shared_directories: list[str] | None = None,
@@ -151,7 +108,23 @@ def file_system(
     add=False,
     remove=False,
 ):
-    """Show and set values for the file-system."""
+    """Show and set values for the file-system.
+
+    Parameters
+    ----------
+    shared_directories: list[str] | None
+        Directories to check for new albums to import
+    pickle_file: str | None
+        Path to the pickle file used by beets
+    ignored_directories: list[str] | None
+        Sub-directories to skip when checking for new albums
+    music_player: str | None
+        Name of the application for opening music files
+    add: bool
+        (For list[str] values) add to list instead of replacing all values
+    remove: bool
+        (For list[str] values) remove from list instead of replacing all values
+    """
     config = get_loaded_config()
     file_system = config.file_system
     if shared_directories and confirm_update(
@@ -176,59 +149,34 @@ def file_system(
         )
     if music_player is not None and confirm_update(music_player):
         file_system.music_player = music_player
-    try:
-        write_config_values(config)
-    except InvalidConfig:
-        return
+    write_config_values(config)
     print_config_section(file_system)
-
-
-# reformat: bool = Option(
-#     None,
-#     "--reformat/--as-is",
-#     help=(
-#         'Set the default value for automatically calling "reformat" after'
-#         " import"
-#     ),
-#     show_default=False,
-# ),
-# ask_before_disc_update: bool = Option(
-#     None,
-#     "--ask-before-disc-update/--auto-update-disc",
-#     help=(
-#         "Set the default value for asking before adding default disc"
-#         " values"
-#     ),
-#     show_default=False,
-# ),
-# ask_before_artist_update: bool = Option(
-#     None,
-#     "--ask-before-artist-update/--auto-update-artist",
-#     help=(
-#         "Set the default value for asking before removing bracket"
-#         " instruments."
-#     ),
-#     show_default=False,
-# ),
-# allow_prompt: bool = Option(
-#     None,
-#     "--allow-prompt/--disallow-prompt",
-#     help=(
-#         "Set the default for including imports requiring prompt for user"
-#         " input."
-#     ),
-#     show_default=False,
-# ),
 
 
 @config_app.command(name="import")
 def import_new(
-    reformat=False,
-    ask_before_disc_update=False,
-    ask_before_artist_update=False,
-    allow_prompt=False,
+    reformat: Annotated[bool | None, Parameter(negative="")] = False,
+    ask_before_disc_update: Annotated[
+        bool | None, Parameter(negative="")
+    ] = False,
+    ask_before_artist_update: Annotated[
+        bool | None, Parameter(negative="")
+    ] = False,
+    allow_prompt: Annotated[bool | None, Parameter(negative="")] = False,
 ):
-    """Show and set default values for "import" command."""
+    """Show and set default values for "import" command.
+
+    Parameters
+    ----------
+    reformat: bool | None
+        Toggle reformatting
+    ask_before_disc_update: bool | None
+        Toggle confirming disc updates
+    ask_before_artist_update: bool | None
+        Toggle confirming removal of brackets from artist field
+    allow_prompt: bool | None
+        Toggle skipping imports that require user input
+    """
     config = get_loaded_config()
     import_new = config.import_new
     if reformat is not None:
@@ -239,85 +187,71 @@ def import_new(
         import_new.ask_before_artist_update = ask_before_artist_update
     if allow_prompt is not None:
         import_new.allow_prompt = allow_prompt
-    try:
-        write_config_values(config)
-    except InvalidConfig:
-        return
+    write_config_values(config)
     print_config_section(import_new)
-
-
-# remove_bracket_years: bool = Option(
-#     None,
-#     "--remove-bracket-years/--years-as-is",
-#     help="Set default value for removing bracket years.",
-# ),
-# remove_bracket_instruments: bool = Option(
-#     None,
-#     "--remove-bracket-instruments/--instruments-as-is",
-#     help="Set default value for removing bracket instruments.",
-# ),
-# expand_abbreviations: bool = Option(
-#     None,
-#     "--expand-abbreviations/--abbreviations-as-is",
-#     help="Set default value for expanding abbreviations.",
-# ),
 
 
 @config_app.command()
 def reformat(
-    remove_bracket_years=False,
-    remove_bracket_instruments=False,
-    expand_abbreviations=False,
+    *,
+    remove_bracketed_years: Annotated[
+        bool | None, Parameter(negative="--keep-bracketed-years")
+    ] = None,
+    remove_bracketed_instruments: Annotated[
+        bool | None, Parameter(negative="--keep-bracketed-years")
+    ] = None,
+    expand_abbreviations: Annotated[
+        bool | None, Parameter(negative="--keep-abbreviations")
+    ] = None,
 ):
-    """Show and set default values for "reformat" command."""
+    """Show and set default values for "reformat" command.
+
+    Parameters
+    ----------
+    remove_bracketed_years: bool | None
+        Toggle removing bracketed years
+    remove_bracketed_instruments: bool | None
+        Toggle removing bracketed instruments
+    expand_abbreviations: bool | None
+        Toggle expanding abbreviations
+    """
     config = get_loaded_config()
     reformat = config.reformat
-    if remove_bracket_years is not None:
-        reformat.remove_bracket_years = remove_bracket_years
-    if remove_bracket_instruments is not None:
-        reformat.remove_bracket_instruments = remove_bracket_instruments
+    if remove_bracketed_years is not None:
+        reformat.remove_bracket_years = remove_bracketed_years
+    if remove_bracketed_instruments is not None:
+        reformat.remove_bracket_instruments = remove_bracketed_instruments
     if expand_abbreviations is not None:
         reformat.expand_abbreviations = expand_abbreviations
-    try:
-        write_config_values(config)
-    except InvalidConfig:
-        return
+    write_config_values(config)
     print_config_section(reformat)
-
-
-# context: Context,
-# username: str = Option(
-#     None,
-#     "--username",
-#     help="Set email username for sending notifications.",
-#     show_default=False,
-# ),
-# password: str = Option(
-#     None,
-#     "--password",
-#     help="Set email password for sending notifications.",
-#     show_default=False,
-# ),
-# email_on: bool = Option(
-#     None,
-#     "--email-on/--email-off",
-#     help="Turn email notifications from scheduled imports on or off.",
-# ),
-# system_on: bool = Option(
-#     None,
-#     "--system-on/--system-off",
-#     help="Turn system notifications from scheduled imports on or off.",
-# ),
 
 
 @config_app.command()
 def notifications(
     username: str | None = None,
     password: str | None = None,
-    email_on=False,
-    system_on=False,
+    *,
+    email_on: Annotated[
+        bool | None, Parameter(negative="--email-off")
+    ] = False,
+    system_on: Annotated[
+        bool | None, Parameter(negative="--system-off")
+    ] = False,
 ):
-    """Show and set values for notifications from scheduled import command."""
+    """Show and set values for notifications from scheduled import command.
+
+    Parameters
+    ----------
+    username: str | None
+        Set username for sending email notifications
+    password: bool | None
+        Set password for sending email notifications
+    email_on: bool | None
+        Toggle email notifications
+    system_on: bool | None
+        Toggle system notifications
+    """
     config = get_loaded_config()
     notifications = config.notifications
     if username is not None:
@@ -328,8 +262,5 @@ def notifications(
         notifications.email_on = email_on
     if system_on is not None:
         notifications.system_on = system_on
-    try:
-        write_config_values(config)
-    except InvalidConfig:
-        return
+    write_config_values(config)
     print_config_section(notifications)
