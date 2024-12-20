@@ -320,9 +320,6 @@ def notifications(
     """Show and set values for notifications from scheduled import command."""
     config = get_loaded_config()
     notifications = config.notifications
-    # if no_updates_provided(context.params):
-    #     print_config_section(notifications)
-    #     return
     if username is not None:
         notifications.username = username
     if password is not None:
