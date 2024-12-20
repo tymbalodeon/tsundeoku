@@ -14,7 +14,9 @@ from .style import StyleLevel, print_with_theme, stylize
 PLIST_LABEL = f"com.{APP_NAME}.import.plist"
 LAUNCHCTL = "launchctl"
 
-schedule = App(help="Schedule import command to run automatically.")
+schedule_app = App(
+    name="schedule", help="Schedule import command to run automatically."
+)
 
 
 def get_format_reference_link() -> str:
@@ -193,7 +195,7 @@ def print_lines(lines: list[str]):
         print(line)
 
 
-@schedule.command()
+@schedule_app.command()
 def logs(all=False):
     """Show import logs"""
     log_path = get_log_path()
@@ -205,7 +207,7 @@ def logs(all=False):
     print_lines(lines)
 
 
-@schedule.command()
+@schedule_app.command()
 def off(label=PLIST_LABEL):
     """Turn off scheduling of import command"""
     plist_path = get_plist_path(label)
@@ -215,7 +217,7 @@ def off(label=PLIST_LABEL):
     print("Turned off scheduled import.")
 
 
-@schedule.command()
+@schedule_app.command()
 def on(time: str) -> str:
     """Schedule import to run at specified time, using the format %I:%M%p for daily, \\*\\*:%M for hourly. See here for more info"""
     message = "Scheduled import for every"
@@ -237,7 +239,7 @@ def on(time: str) -> str:
     return f"{message} {schedule_type} at {display_time}."
 
 
-@schedule.command()
+@schedule_app.command()
 def show():
     """Show active schedule"""
     plist_path = get_plist_path()

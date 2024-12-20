@@ -1,7 +1,9 @@
 from typing import Annotated, cast
+
 from cyclopts import App, Parameter
 from pync import notify
 
+from tsundeoku import __version__
 from tsundeoku.config.config import (
     APP_NAME,
     STATE,
@@ -9,33 +11,21 @@ from tsundeoku.config.config import (
     get_config,
     get_loaded_config,
 )
+from tsundeoku.config.main import config_app
+from tsundeoku.import_new import import_new_albums
 from tsundeoku.reformat import reformat_albums
-from tsundeoku.style import StyleLevel, print_with_theme, stylize
-from tsundeoku import __version__
-
-from .config.main import config_app
-from .import_new import import_new_albums
-from .schedule import schedule, send_email
-
-
-def get_name_definition() -> str:
-    app_name = '積んでおく("tsundeoku")'
-    app_name = stylize(app_name, styles="bright_green")
-    definition = stylize("to pile up for later", styles="italic")
-    app_name = f'{app_name}: "{definition}"'
-    return stylize(app_name, styles="bold")
-
+from tsundeoku.schedule import schedule_app, send_email
+from tsundeoku.style import StyleLevel, print_with_theme
 
 tsundeoku = App(
-    help=(
-        f"{get_name_definition()}\n\n"
-        "Import audio files from a shared folder to a local library."
-    ),
-    help_format="rich",
+    help="""
+積んでおく \\[tsundeoku] ('to pile up for later')
+
+Import audio files from a shared folder to a local library""",
     version=__version__,
 )
 tsundeoku.command(config_app)
-tsundeoku.command(schedule, name="schedule")
+tsundeoku.command(schedule_app)
 
 
 @tsundeoku.meta.default

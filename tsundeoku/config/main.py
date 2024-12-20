@@ -1,13 +1,12 @@
 from os import environ
-from rich import print
 from pathlib import Path
 from subprocess import run
 from typing import Annotated
 
 from cyclopts import App, Parameter
-from tsundeoku.style import stylize_path
+from rich import print
 
-from .config import (
+from tsundeoku.config import (
     ImportConfig,
     ReformatConfig,
     get_config_path,
@@ -16,6 +15,7 @@ from .config import (
     print_config_values,
     write_config_values,
 )
+from tsundeoku.style import stylize_path
 
 config_app = App(name="config", help="Show (default) and set config values")
 
