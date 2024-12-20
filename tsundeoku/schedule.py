@@ -106,7 +106,7 @@ def get_command_args():
     command_args = [
         "zsh",
         "-lc",
-        f"{command} import --scheduled-run",
+        f"{command} import --is-scheduled-run",
     ]
     strings = ""
     for arg in command_args:

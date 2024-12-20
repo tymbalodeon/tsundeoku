@@ -26,7 +26,7 @@ def confirm_reset(values: str) -> bool:
     ) in {"y", "Y"}
 
 
-@config_app.command
+@config_app.default
 def main(
     *,
     path: Annotated[bool, Parameter(negative="")] = False,

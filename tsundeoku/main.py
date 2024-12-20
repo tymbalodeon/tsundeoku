@@ -1,14 +1,17 @@
-from cyclopts import App
+from typing import Annotated, cast
+from cyclopts import App, Parameter
 from pync import notify
 
 from tsundeoku.config.config import (
     APP_NAME,
     STATE,
+    ReformatConfig,
     get_config,
     get_loaded_config,
 )
 from tsundeoku.reformat import reformat_albums
 from tsundeoku.style import StyleLevel, print_with_theme, stylize
+from tsundeoku import __version__
 
 from .config.main import config_app
 from .import_new import import_new_albums
@@ -29,6 +32,7 @@ tsundeoku = App(
         "Import audio files from a shared folder to a local library."
     ),
     help_format="rich",
+    version=__version__,
 )
 tsundeoku.command(config_app)
 tsundeoku.command(schedule, name="schedule")
@@ -39,52 +43,31 @@ def callback():
     STATE["config"] = get_config()
 
 
-# solo_instrument = escape("[solo <instrument>]")
-
-# albums: list[str] = Argument(None, hidden=True),
-# reformat: bool = Option(
-#     None,
-#     "--reformat/--as-is",
-#     help="Import new albums without altering metadata.",
-#     show_default=False,
-# ),
-# ask_before_disc_update: bool = Option(
-#     None,
-#     "--ask-before-disc-update/--auto-update-disc",
-#     help=(
-#         "Prompt for confirmation to apply default disc and disc total"
-#         ' values of "1 out of 1".'
-#     ),
-#     show_default=False,
-# ),
-# ask_before_artist_update: bool = Option(
-#     None,
-#     "--ask-before-artist-update/--auto-update-artist",
-#     help=(
-#         f'Prompt for confirmation to remove bracketed "{solo_instrument}"'
-#         " indications."
-#     ),
-#     show_default=False,
-# ),
-# allow_prompt: bool = Option(
-#     None,
-#     "--allow-prompt/--disallow-prompt",
-#     help="Allow prompts for user confirmation to update metadata.",
-#     show_default=False,
-# ),
-# is_scheduled_run: bool = Option(False, "--scheduled-run", hidden=True),
-
-
 @tsundeoku.command(name="import")
 def import_new(
-    albums: list[str] | None = None,
-    reformat=False,
-    ask_before_disc_update=False,
-    ask_before_artist_update=False,
-    allow_prompt=False,
-    is_scheduled_run=False,
+    albums: Annotated[list[str] | None, Parameter(show=False)] = None,
+    *,
+    reformat: Annotated[bool, Parameter(negative="")] = False,
+    ask_before_disc_update: Annotated[bool, Parameter(negative="")] = False,
+    ask_before_artist_update: Annotated[bool, Parameter(negative="")] = False,
+    allow_prompt: Annotated[bool, Parameter(negative="")] = False,
+    is_scheduled_run: Annotated[bool, Parameter(show=False)] = False,
 ):
-    """Copy new adds from your shared folder to your local library."""
+    """Copy new adds from your shared folder to your local library.
+
+    Parameters
+    ----------
+    albums: list[str] | None
+    reformat: bool
+        Toggle reformatting
+    ask_before_disc_update: bool
+        Toggle confirming disc updates
+    ask_before_artist_update: bool
+        Toggle confirming removal of brackets from artist field
+    allow_prompt: bool
+        Toggle skipping imports that require user input
+    is_scheduled_run: bool
+    """
     try:
         if albums is None:
             albums = []
@@ -113,56 +96,60 @@ def import_new(
         print_with_theme(str(error), level=StyleLevel.ERROR)
 
 
-# remove_bracket_years: bool = Option(
-#     None,
-#     "--remove-bracket-years/--years-as-is",
-#     help="Remove bracket years from album field.",
-#     show_default=False,
-# ),
-# remove_bracket_instruments: bool = Option(
-#     None,
-#     "--remove-bracket-instruments/--instruments-as-is",
-#     help="Remove bracket instrument indications from artist field.",
-#     show_default=False,
-# ),
-# expand_abbreviations: bool = Option(
-#     None,
-#     "--expand-abbreviations/--abbreviations-as-is",
-#     help="Expand abbreviations.",
-#     show_default=False,
-# ),
-
-
 @tsundeoku.command()
 def reformat(
-    remove_bracket_years=False,
-    remove_bracket_instruments=False,
-    expand_abbreviations=False,
+    *,
+    remove_bracketed_years: Annotated[
+        bool | None, Parameter(negative="")
+    ] = None,
+    remove_bracketed_instruments: Annotated[
+        bool | None, Parameter(negative="")
+    ] = None,
+    expand_abbreviations: Annotated[
+        bool | None, Parameter(negative="")
+    ] = None,
 ):
     """
     Reformat metadata according to the following rules:
 
-    * Remove bracketed years (e.g., "[2022]") from album fields. If the year
-      field is blank, it will be updated with the year in brackets. If the year
-      field contains a year different from the one in brackets, you will be
-      asked whether you want to update the year field to match the bracketed
+    * Remove bracketeded years (e.g., "[2022]") from album fields. If the year
+      field is blank, it will be updated with the year in bracketeds. If the year
+      field contains a year different from the one in bracketeds, you will be
+      asked whether you want to update the year field to match the bracketeded
       year.
 
     * Expand the abbreviations "Rec.," "Rec.s," and "Orig." to "Recording,"
       "Recordings," and "Original," respectively.
 
-    * [Optional] Remove bracketed solo instrument indications (e.g., "[solo
+    * [Optional] Remove bracketeded solo instrument indications (e.g., "[solo
       piano]") from artist fields.
+
+    Parameters
+    ----------
+    remove_bracketed_years: bool | None
+        Remove bracketed years from album field
+    remove_bracketed_instruments: bool | None
+        Remove bracketed instrument indications from artist field
+    expand_abbreviations: bool | None
+        Expand abbreviations
     """
-    reformat_settings = get_loaded_config().reformat
-    if remove_bracket_years is None:
-        remove_bracket_years = reformat_settings.remove_bracket_years
-    if remove_bracket_instruments is None:
-        remove_bracket_instruments = (
-            reformat_settings.remove_bracket_instruments
+    reformat_settings = cast(ReformatConfig, get_loaded_config().reformat)
+    if remove_bracketed_years is None:
+        remove_bracketed_years_value = reformat_settings.remove_bracketed_years
+    else:
+        remove_bracketed_years_value = True
+    if remove_bracketed_instruments is None:
+        remove_bracketed_instruments_value = (
+            reformat_settings.remove_bracketed_instruments
         )
+    else:
+        remove_bracketed_instruments_value = True
     if expand_abbreviations is None:
-        expand_abbreviations = reformat_settings.expand_abbreviations
+        expand_abbreviations_value = reformat_settings.expand_abbreviations
+    else:
+        expand_abbreviations_value = True
     reformat_albums(
-        remove_bracket_years, remove_bracket_instruments, expand_abbreviations
+        remove_bracketed_years_value,
+        remove_bracketed_instruments_value,
+        expand_abbreviations_value,
     )
