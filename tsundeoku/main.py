@@ -10,7 +10,7 @@ from tsundeoku.config.config import (
 from tsundeoku.reformat import reformat_albums
 from tsundeoku.style import StyleLevel, print_with_theme, stylize
 
-from .config.main import config
+from .config.main import config_app
 from .import_new import import_new_albums
 from .schedule import schedule, send_email
 
@@ -30,7 +30,7 @@ tsundeoku = App(
     ),
     help_format="rich",
 )
-tsundeoku.command(config, name="config")
+tsundeoku.command(config_app)
 tsundeoku.command(schedule, name="schedule")
 
 

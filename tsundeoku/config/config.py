@@ -236,14 +236,4 @@ def print_config_values():
         first_item = False
 
 
-def confirm_reset(commands=False) -> bool:
-    if commands:
-        changes = "command options preferences"
-    else:
-        changes = "config"
-    return Confirm.ask(
-        f"Are you sure you want to reset your {changes} to the default values?"
-    )
-
-
 STATE = {"config": get_config()}
