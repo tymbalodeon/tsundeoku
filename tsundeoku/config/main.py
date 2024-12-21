@@ -21,9 +21,30 @@ from tsundeoku.style import stylize_path
 config_app = App(name="config", help="Show (default) and set config values")
 
 
+@config_app.command
+def edit():
+    """Open config file in $EDITOR"""
+    run([environ.get("EDITOR", "vim"), get_config_path()])
+
+
+@config_app.command
+def path():
+    """Show config file path"""
+    print(get_config_path())
+
+
 # TODO
 # display defaults if missing from config file
-def show_config(show_secrets=False):
+@config_app.command
+def show(*, show_secrets=False):
+    """
+    Show config values
+
+    Parameters
+    ----------
+    show_secrets: bool
+        Show secret config values
+    """
     config_path = get_config_path()
     if not config_path.exists():
         return
@@ -35,21 +56,8 @@ def show_config(show_secrets=False):
 
 
 @config_app.command
-def show(*, path=False, show_secrets=False):
-    """
-    Show config values or path
-
-    Parameters
-    ----------
-    path: bool
-        Show config file path
-    show_secrets: bool
-        Show secret config values
-    """
-    if path:
-        print(get_config_path())
-        return
-    show_config(show_secrets)
+def set():
+    pass
 
 
 def confirm_reset(values: str) -> bool:
@@ -59,34 +67,23 @@ def confirm_reset(values: str) -> bool:
 
 
 @config_app.default
-def main(*, edit=False, reset_all=False, reset_commands=False):
+def main(*, reset_all=False, reset_commands=False):
     """Cyclopts uses this short description for help.
 
     Parameters
     ----------
-    path: bool
-        Show config file path
-    edit: bool
-        Open config file in $EDITOR
     reset_all: bool
         Reset all config values to the default
     reset_commands: bool
         Reset 'import' and 'reformat' settings to the default
-    show_secrets: bool
-        Show secret config values
     """
-    if edit:
-        editor = environ.get("EDITOR", "vim")
-        run([editor, get_config_path()])
-        return
-    elif reset_all and confirm_reset("config"):
+    if reset_all and confirm_reset("config"):
         write_config_values()
     elif reset_commands and confirm_reset("command options preferences"):
         config = get_loaded_config()
         config.reformat = ReformatConfig()
         config.import_new = ImportConfig()
         write_config_values(config)
-    show_config()
 
 
 def confirm_update(value: list[str] | str, add=False, remove=False) -> bool:
