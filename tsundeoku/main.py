@@ -19,7 +19,7 @@ from tsundeoku.style import StyleLevel, print_with_theme
 
 tsundeoku = App(
     help="""
-積んでおく \\[tsundeoku] ('to pile up for later')
+積んでおく / tsundeoku –– "to pile up for later"
 
 Import audio files from a shared folder to a local library""",
     version=__version__,

@@ -6,7 +6,7 @@ from typing import Annotated
 from cyclopts import App, Parameter
 from rich import print
 
-from tsundeoku.config import (
+from tsundeoku.config.config import (
     ImportConfig,
     ReformatConfig,
     get_config_path,
