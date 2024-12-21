@@ -21,7 +21,7 @@ dependencies = [
 dev = ["bpython>=0.24", "pytest>=8.3.3"]
 
 [project.scripts]
-tsundeoku = "tsundeoku.main:tsundeoku"
+tsundeoku = "tsundeoku.__main__:main"
 
 [build-system]
 requires = ["hatchling"]
