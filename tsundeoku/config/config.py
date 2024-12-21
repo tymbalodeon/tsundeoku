@@ -12,7 +12,6 @@ from pydantic import (
 )
 from rich import print
 from rich.markup import escape
-from rich.prompt import Confirm
 from tomli import loads
 from tomli_w import dumps
 
@@ -20,6 +19,10 @@ from tsundeoku.style import StyleLevel, print_with_theme
 
 APP_NAME = "tsundeoku"
 CONFIG_PATH = f".config/{APP_NAME}"
+
+
+def get_config_path() -> Path:
+    return Path.home() / ".config/tsundeoku/tsundeoku.toml"
 
 
 def get_default_shared_directories() -> set[Path]:
@@ -99,13 +102,6 @@ def get_config_instance(config_values: dict | None = None) -> Config:
     if config_values:
         return Config(**config_values)
     return Config()
-
-
-def get_config_path() -> Path:
-    config_directory = Path.home() / CONFIG_PATH
-    if not config_directory.exists():
-        Path.mkdir(config_directory, parents=True)
-    return config_directory / f"{APP_NAME}.toml"
 
 
 def get_config_file() -> Path:

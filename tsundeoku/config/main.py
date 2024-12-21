@@ -1,10 +1,12 @@
 from os import environ
+import re
 from pathlib import Path
 from subprocess import run
 from typing import Annotated
 
 from cyclopts import App, Parameter
 from rich import print
+from rich.syntax import Syntax
 
 from tsundeoku.config.config import (
     ImportConfig,
@@ -12,7 +14,6 @@ from tsundeoku.config.config import (
     get_config_path,
     get_loaded_config,
     print_config_section,
-    print_config_values,
     write_config_values,
 )
 from tsundeoku.style import stylize_path
@@ -61,7 +62,11 @@ def main(
         config.reformat = ReformatConfig()
         config.import_new = ImportConfig()
         write_config_values(config)
-    print_config_values()
+    config = get_config_path().read_text()
+    # TODO add option to view secret
+    # TODO use capture groups
+    config = re.sub('password = ".+"', 'password = "********"', config)
+    print(Syntax(config, "toml", theme="ansi_dark"))
 
 
 def confirm_update(value: list[str] | str, add=False, remove=False) -> bool:

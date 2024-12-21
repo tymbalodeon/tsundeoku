@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Annotated, cast
 
 from cyclopts import App, Parameter
@@ -8,6 +7,7 @@ from pync import notify
 from tsundeoku.config.config import (
     APP_NAME,
     ReformatConfig,
+    get_config_path,
     get_loaded_config,
 )
 from tsundeoku.config.main import config_app
@@ -16,8 +16,9 @@ from tsundeoku.reformat import reformat_albums
 from tsundeoku.schedule import schedule_app, send_email
 from tsundeoku.style import StyleLevel, print_with_theme
 
+
 app = App(
-    config=Toml(Path.home() / ".config/tsundeoku/tsundeoku.toml"),
+    config=Toml(get_config_path()),
     help="""
 積んでおく // tsundeoku –– "to pile up for later"
 
