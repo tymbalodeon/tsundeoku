@@ -16,8 +16,8 @@ from tsundeoku.reformat import reformat_albums
 from tsundeoku.schedule import schedule_app, send_email
 from tsundeoku.style import StyleLevel, print_with_theme
 
-
 app = App(
+    default_parameter=Parameter(negative=()),
     config=Toml(get_config_path()),
     help="""
 積んでおく // tsundeoku –– "to pile up for later"
@@ -32,10 +32,10 @@ app.command(schedule_app)
 def import_new(
     albums: Annotated[list[str] | None, Parameter(show=False)] = None,
     *,
-    reformat: Annotated[bool, Parameter(negative="")] = False,
-    ask_before_disc_update: Annotated[bool, Parameter(negative="")] = False,
-    ask_before_artist_update: Annotated[bool, Parameter(negative="")] = False,
-    allow_prompt: Annotated[bool, Parameter(negative="")] = False,
+    reformat=False,
+    ask_before_disc_update=False,
+    ask_before_artist_update=False,
+    allow_prompt=False,
     is_scheduled_run: Annotated[bool, Parameter(show=False)] = False,
 ):
     """Copy new adds from your shared folder to your local library.
@@ -84,15 +84,9 @@ def import_new(
 @app.command()
 def reformat(
     *,
-    remove_bracketed_years: Annotated[
-        bool | None, Parameter(negative="")
-    ] = None,
-    remove_bracketed_instruments: Annotated[
-        bool | None, Parameter(negative="")
-    ] = None,
-    expand_abbreviations: Annotated[
-        bool | None, Parameter(negative="")
-    ] = None,
+    remove_bracketed_years: bool | None = None,
+    remove_bracketed_instruments: bool | None = None,
+    expand_abbreviations: bool | None = None,
 ):
     """
     Reformat metadata according to the following rules:

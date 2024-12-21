@@ -1,5 +1,5 @@
-from os import environ
 import re
+from os import environ
 from pathlib import Path
 from subprocess import run
 from typing import Annotated
@@ -21,6 +21,37 @@ from tsundeoku.style import stylize_path
 config_app = App(name="config", help="Show (default) and set config values")
 
 
+# TODO
+# display defaults if missing from config file
+def show_config(show_secrets=False):
+    config_path = get_config_path()
+    if not config_path.exists():
+        return
+    config = config_path.read_text()
+    if not show_secrets:
+        # TODO use capture groups
+        config = re.sub('password = ".+"', 'password = "********"', config)
+    print(Syntax(config, "toml", theme="ansi_dark"))
+
+
+@config_app.command
+def show(*, path=False, show_secrets=False):
+    """
+    Show config values or path
+
+    Parameters
+    ----------
+    path: bool
+        Show config file path
+    show_secrets: bool
+        Show secret config values
+    """
+    if path:
+        print(get_config_path())
+        return
+    show_config(show_secrets)
+
+
 def confirm_reset(values: str) -> bool:
     return input(
         f"Are you sure you want to reset your {values} to the default values?"
@@ -28,13 +59,7 @@ def confirm_reset(values: str) -> bool:
 
 
 @config_app.default
-def main(
-    *,
-    path: Annotated[bool, Parameter(negative="")] = False,
-    edit: Annotated[bool, Parameter(negative="")] = False,
-    reset_all: Annotated[bool, Parameter(negative="")] = False,
-    reset_commands: Annotated[bool, Parameter(negative="")] = False,
-):
+def main(*, edit=False, reset_all=False, reset_commands=False):
     """Cyclopts uses this short description for help.
 
     Parameters
@@ -47,11 +72,10 @@ def main(
         Reset all config values to the default
     reset_commands: bool
         Reset 'import' and 'reformat' settings to the default
+    show_secrets: bool
+        Show secret config values
     """
-    if path:
-        print(get_config_path())
-        return
-    elif edit:
+    if edit:
         editor = environ.get("EDITOR", "vim")
         run([editor, get_config_path()])
         return
@@ -62,11 +86,7 @@ def main(
         config.reformat = ReformatConfig()
         config.import_new = ImportConfig()
         write_config_values(config)
-    config = get_config_path().read_text()
-    # TODO add option to view secret
-    # TODO use capture groups
-    config = re.sub('password = ".+"', 'password = "********"', config)
-    print(Syntax(config, "toml", theme="ansi_dark"))
+    show_config()
 
 
 def confirm_update(value: list[str] | str, add=False, remove=False) -> bool:
@@ -160,14 +180,10 @@ def file_system(
 
 @config_app.command(name="import")
 def import_new(
-    reformat: Annotated[bool | None, Parameter(negative="")] = False,
-    ask_before_disc_update: Annotated[
-        bool | None, Parameter(negative="")
-    ] = False,
-    ask_before_artist_update: Annotated[
-        bool | None, Parameter(negative="")
-    ] = False,
-    allow_prompt: Annotated[bool | None, Parameter(negative="")] = False,
+    reformat=False,
+    ask_before_disc_update=False,
+    ask_before_artist_update=False,
+    allow_prompt=False,
 ):
     """Show and set default values for "import" command.
 
