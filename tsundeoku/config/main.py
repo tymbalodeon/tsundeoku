@@ -23,25 +23,15 @@ def get_app_name() -> Literal["tsundeoku"]:
     return "tsundeoku"
 
 
-def set_default_config(path: Path):
+def set_default_config(path: Path | None):
+    if path is None:
+        path = get_config_path()
     path.write_text(Config().to_toml())
 
 
 def get_config_path() -> Path:
     app_name = get_app_name()
-    path = Path.home() / f".config/{app_name}/{app_name}.toml"
-    # TODO handle creation of parent directory
-    if not path.exists():
-        set_default_config(path)
-    return path
-
-
-def get_default_pickle_file() -> Path:
-    return Path.home() / ".config/beets/state.pickle"
-
-
-def get_default_music_player() -> Literal["Swinsian"]:
-    return "Swinsian"
+    return Path.home() / f".config/{app_name}/{app_name}.toml"
 
 
 @dataclass
@@ -93,8 +83,10 @@ class Config:
         return {str(path) for path in paths}
 
     @staticmethod
-    def from_toml() -> "Config":
-        config = Toml(get_config_path()).config
+    def from_toml(path: Path | None = None) -> "Config":
+        if path is None:
+            path = get_config_path()
+        config = Toml(path).config
         config["import_config"] = config.pop("import")
         config["files"] = config.pop("file_system")
         config["files"].pop("music_player")
@@ -123,6 +115,9 @@ def path():
     print(get_config_path())
 
 
+global_group = Group("Global", sort_key=0)
+
+
 @config_app.command(name="set")
 def set_config_value(
     *,
@@ -134,9 +129,7 @@ def set_config_value(
         Notifications | None, Parameter(group="Notifications")
     ] = None,
     reformat: Annotated[Reformat | None, Parameter(group="Reformat")] = None,
-    restore_defaults: Annotated[
-        bool, Parameter(group=Group("Global", sort_key=0))
-    ] = False,
+    restore_defaults: Annotated[bool, Parameter(group=global_group)] = False,
 ):
     """Set config values"""
     if restore_defaults:
@@ -145,9 +138,6 @@ def set_config_value(
     print(import_config)
     print(notifications)
     print(reformat)
-
-
-global_group = Group("Global", sort_key=0)
 
 
 # TODO
@@ -163,8 +153,8 @@ def show(
         Notifications | None, Parameter(group="Notifications")
     ] = None,
     reformat: Annotated[Reformat | None, Parameter(group="Reformat")] = None,
-    default: Annotated[bool, Parameter(group="Global")] = False,
-    show_secrets: Annotated[bool, Parameter(group="Global")] = False,
+    default: Annotated[bool, Parameter(group=global_group)] = False,
+    show_secrets: Annotated[bool, Parameter(group=global_group)] = False,
 ):
     """
     Show config values

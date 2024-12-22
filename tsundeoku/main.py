@@ -1,9 +1,9 @@
 from typing import Annotated, cast
-from rich import print
 
 from cyclopts import App, Parameter
 from cyclopts.config import Toml
 from pync import notify
+from rich import print
 
 from tsundeoku.config.main import config_app, get_app_name, get_config_path
 from tsundeoku.import_new import import_new_albums
