@@ -7,6 +7,7 @@ from typing import Annotated, Literal
 
 import toml
 from cyclopts import App, Group, Parameter
+from cyclopts.config import Toml
 from rich import print
 from rich.syntax import Syntax
 
@@ -88,22 +89,26 @@ class Config:
     reformat: Reformat = field(default_factory=lambda: Reformat())
 
     @staticmethod
-    def stringify(paths: set[Path]) -> set[str]:
+    def to_str(paths: set[Path]) -> set[str]:
         return {str(path) for path in paths}
+
+    @staticmethod
+    def from_toml() -> "Config":
+        config = Toml(get_config_path()).config
+        config["import_config"] = config.pop("import")
+        config["files"] = config.pop("file_system")
+        config["files"].pop("music_player")
+        config["files"].pop("pickle_file")
+        return Config(**config)
 
     def to_toml(self) -> str:
         items = asdict(self)
-        items["files"]["shared_directories"] = self.stringify(
-            items["files"]["shared_directories"]
-        )
-        items["files"]["ignored_directories"] = self.stringify(
-            items["files"]["ignored_directories"]
+        files = items["files"]
+        files["shared_directories"] = self.to_str(files["shared_directories"])
+        files["ignored_directories"] = self.to_str(
+            files["ignored_directories"]
         )
         return toml.dumps(items)
-
-
-def get_default_config() -> Config:
-    return Config()
 
 
 @config_app.command
@@ -118,8 +123,8 @@ def path():
     print(get_config_path())
 
 
-@config_app.command
-def set(
+@config_app.command(name="set")
+def set_config_value(
     *,
     files: Annotated[Files | None, Parameter(group="Files")] = None,
     import_config: Annotated[

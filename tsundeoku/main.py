@@ -1,4 +1,5 @@
 from typing import Annotated, cast
+from rich import print
 
 from cyclopts import App, Parameter
 from cyclopts.config import Toml
@@ -12,7 +13,9 @@ from tsundeoku.style import StyleLevel, print_with_theme
 
 app = App(
     default_parameter=Parameter(negative=()),
-    config=Toml(get_config_path()),
+    config=Toml(
+        get_config_path(), use_commands_as_keys=False, allow_unknown=True
+    ),
     help="""
 積んでおく // tsundeoku –– "to pile up for later"
 
@@ -126,4 +129,9 @@ def reformat(
     #     remove_bracketed_instruments_value,
     #     expand_abbreviations_value,
     # )
-    pass
+    print(
+        Toml(
+            get_config_path(), use_commands_as_keys=False, allow_unknown=True
+        ).config
+    )
+    print(remove_bracketed_years)
