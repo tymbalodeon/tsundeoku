@@ -3,11 +3,12 @@ from pathlib import Path
 from shutil import which
 from subprocess import run
 
+import xmltodict
 from cyclopts import App
 from rich import print
-from tsundeoku.config.main import get_app_name
 from yagmail import SMTP
-import xmltodict
+
+from tsundeoku.config.main import get_app_name
 
 from .style import StyleLevel, print_with_theme, stylize
 
