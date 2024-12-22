@@ -16,37 +16,6 @@ config_app = App(
 )
 
 
-@dataclass
-class Files:
-    shared_directories: Annotated[list[Path], Parameter(negative=())]
-    ignored_directories: Annotated[list[Path], Parameter(negative=())]
-
-
-@dataclass
-class Import:
-    allow_prompt: Annotated[bool, Parameter(negative=())] = False
-    ask_before_artist_update: Annotated[bool, Parameter(negative=())] = True
-    ask_before_disc_update: Annotated[bool, Parameter(negative=())] = True
-    reformat: Annotated[bool, Parameter(negative=())] = False
-
-
-@dataclass
-class Notifications:
-    email_on: Annotated[bool, Parameter(negative=())] = False
-    system_on: Annotated[bool, Parameter(negative=())] = False
-    username: str | None = None
-    password: str | None = None
-
-
-@dataclass
-class Reformat:
-    expand_abbreviations: Annotated[bool, Parameter(negative=())] = False
-    remove_bracketed_instruments: Annotated[bool, Parameter(negative=())] = (
-        False
-    )
-    remove_bracketed_years: Annotated[bool, Parameter(negative=())] = False
-
-
 def get_app_name() -> Literal["tsundeoku"]:
     return "tsundeoku"
 
@@ -78,6 +47,37 @@ def edit():
 def path():
     """Show config file path"""
     print(get_config_path())
+
+
+@dataclass
+class Files:
+    shared_directories: Annotated[list[Path], Parameter(negative=())]
+    ignored_directories: Annotated[list[Path], Parameter(negative=())]
+
+
+@dataclass
+class Import:
+    allow_prompt: Annotated[bool, Parameter(negative=())] = False
+    ask_before_artist_update: Annotated[bool, Parameter(negative=())] = True
+    ask_before_disc_update: Annotated[bool, Parameter(negative=())] = True
+    reformat: Annotated[bool, Parameter(negative=())] = False
+
+
+@dataclass
+class Notifications:
+    email_on: Annotated[bool, Parameter(negative=())] = False
+    system_on: Annotated[bool, Parameter(negative=())] = False
+    username: str | None = None
+    password: str | None = None
+
+
+@dataclass
+class Reformat:
+    expand_abbreviations: Annotated[bool, Parameter(negative=())] = False
+    remove_bracketed_instruments: Annotated[bool, Parameter(negative=())] = (
+        False
+    )
+    remove_bracketed_years: Annotated[bool, Parameter(negative=())] = False
 
 
 @config_app.command
