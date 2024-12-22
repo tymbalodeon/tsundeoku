@@ -36,12 +36,26 @@ def get_config_path() -> Path:
 
 @dataclass
 class Files:
-    shared_directories: Annotated[set[Path], Parameter(negative=())] = field(
-        default_factory=lambda: {Path.home() / "Dropbox"}
-    )
-    ignored_directories: Annotated[set[Path], Parameter(negative=())] = field(
-        default_factory=set
-    )
+    shared_directories: Annotated[
+        set[Path], Parameter(negative=(), show_default=False)
+    ] = field(default_factory=lambda: {Path.home() / "Dropbox"})
+    ignored_directories: Annotated[
+        set[Path], Parameter(negative=(), show_default=False)
+    ] = field(default_factory=set)
+
+    @staticmethod
+    def paths_to_str(paths: set[Path]) -> set[str]:
+        return {str(path) for path in paths}
+
+    def to_dict(self) -> dict[str, list[str]]:
+        items = asdict(self)
+        items["shared_directories"] = self.paths_to_str(
+            items["shared_directories"]
+        )
+        items["ignored_directories"] = self.paths_to_str(
+            items["ignored_directories"]
+        )
+        return items
 
 
 @dataclass
@@ -56,8 +70,8 @@ class Import:
 class Notifications:
     email_on: Annotated[bool, Parameter(negative=())] = False
     system_on: Annotated[bool, Parameter(negative=())] = False
-    username: str | None = ""
-    password: str | None = ""
+    username: str | None = None
+    password: str | None = None
 
 
 @dataclass
@@ -79,10 +93,6 @@ class Config:
     reformat: Reformat = field(default_factory=lambda: Reformat())
 
     @staticmethod
-    def to_str(paths: set[Path]) -> set[str]:
-        return {str(path) for path in paths}
-
-    @staticmethod
     def from_toml(path: Path | None = None) -> "Config":
         if path is None:
             path = get_config_path()
@@ -94,13 +104,9 @@ class Config:
         return Config(**config)
 
     def to_toml(self) -> str:
-        items = asdict(self)
-        files = items["files"]
-        files["shared_directories"] = self.to_str(files["shared_directories"])
-        files["ignored_directories"] = self.to_str(
-            files["ignored_directories"]
-        )
-        return toml.dumps(items)
+        config = asdict(self)
+        config["files"] = self.files.to_dict()
+        return toml.dumps(config)
 
 
 @config_app.command
@@ -140,8 +146,6 @@ def set_config_value(
     print(reformat)
 
 
-# TODO
-# display defaults if missing from config file
 @config_app.command
 def show(
     *,
@@ -176,6 +180,4 @@ def show(
         if not show_secrets:
             # TODO use capture groups
             config = re.sub('password = ".+"', 'password = "********"', config)
-    # TODO
-    # implement selectors for specific values
     print(Syntax(config, "toml", theme="ansi_dark"))
