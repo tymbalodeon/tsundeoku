@@ -15,14 +15,7 @@ from rich.table import Table
 
 from tsundeoku.reformat import reformat_albums
 
-from .config.config import (
-    APP_NAME,
-    get_ignored_directories,
-    get_loaded_config,
-    get_music_player,
-    get_pickle_file,
-    get_shared_directories,
-)
+from .config.main import get_app_name
 from .library import get_library_tracks, modify_tracks
 from .regex import (
     BRACKET_DISC_REGEX,
@@ -71,28 +64,30 @@ AUDIO_FILE_TYPES = ("*.mp3", "*.Mp3", "*.m4a", "*.flac", "*.aif*")
 
 
 def get_imported_albums() -> set[str]:
-    pickle_file = get_pickle_file()
-    if not pickle_file:
-        return set()
-    with open(pickle_file, "rb") as pickle_contents:
-        unpickled = load(pickle_contents)["taghistory"]
-    return {album[0].decode() for album in unpickled}
+    return NotImplemented
+    # pickle_file = get_pickle_file()
+    # if not pickle_file:
+    #     return set()
+    # with open(pickle_file, "rb") as pickle_contents:
+    #     unpickled = load(pickle_contents)["taghistory"]
+    # return {album[0].decode() for album in unpickled}
 
 
 def get_albums() -> list[str]:
-    shared_directories = get_shared_directories()
-    albums: list[str] = []
-    if not shared_directories:
-        return albums
-    for directory in shared_directories:
-        albums.extend(
-            [
-                root
-                for root, dirs, files in walk(directory)
-                if files and not dirs and Path(root) not in shared_directories
-            ]
-        )
-    return albums
+    return NotImplemented
+    # shared_directories = get_shared_directories()
+    # albums: list[str] = []
+    # if not shared_directories:
+    #     return albums
+    # for directory in shared_directories:
+    #     albums.extend(
+    #         [
+    #             root
+    #             for root, dirs, files in walk(directory)
+    #             if files and not dirs and Path(root) not in shared_directories
+    #         ]
+    #     )
+    # return albums
 
 
 def get_tracks(album: str) -> Tracks:
@@ -119,18 +114,20 @@ def get_track_total(tracks: Tracks) -> int | ImportError:
 
 
 def is_in_ignored_directory(album: str) -> bool:
-    ignored_directories = get_ignored_directories()
-    matching_directories = (
-        directory
-        for directory in ignored_directories
-        if str(directory) in album
-    )
-    return any(matching_directories)
+    return NotImplemented
+    # ignored_directories = get_ignored_directories()
+    # matching_directories = (
+    #     directory
+    #     for directory in ignored_directories
+    #     if str(directory) in album
+    # )
+    # return any(matching_directories)
 
 
 def is_already_imported(album: str) -> bool:
-    get_loaded_config()
-    return album in get_imported_albums()
+    return NotImplemented
+    # get_loaded_config()
+    # return album in get_imported_albums()
 
 
 def get_escaped_album(album: str) -> str:
@@ -158,8 +155,9 @@ def beet_import(album: str) -> ImportError | None:
 
 
 def import_wav_files(album: str):
-    music_player = get_music_player()
-    system(f"open -a '{music_player}' '{album}'")
+    return NotImplemented
+    # music_player = get_music_player()
+    # system(f"open -a '{music_player}' '{album}'")
 
 
 def get_artist_and_artist_field_name(
@@ -648,39 +646,41 @@ def get_confirm_selected_albums_display(albums: list) -> str:
 def get_email_contents(
     current_errors: list[tuple[ImportError, list[str]]],
 ) -> str:
-    shared_directories = get_shared_directories()
-    email_contents = []
-    for error_name, error_albums in current_errors:
-        for album in error_albums:
-            for shared_directory in shared_directories:
-                album = album.replace(str(shared_directory), "")
-                email_contents.append(
-                    '<tr><td style="padding-right: '
-                    f'1em;">{album}</td><td>{error_name.value}</td></tr>'
-                )
-    contents = "".join(email_contents)
-    return (
-        '<table style="border: 1px solid; padding: 1em;"><tr><th'
-        ' align="left">Album</th><th'
-        f' align="left">Error</th></tr>{contents}</table>'
-    )
+    return NotImplemented
+    # shared_directories = get_shared_directories()
+    # email_contents = []
+    # for error_name, error_albums in current_errors:
+    #     for album in error_albums:
+    #         for shared_directory in shared_directories:
+    #             album = album.replace(str(shared_directory), "")
+    #             email_contents.append(
+    #                 '<tr><td style="padding-right: '
+    #                 f'1em;">{album}</td><td>{error_name.value}</td></tr>'
+    #             )
+    # contents = "".join(email_contents)
+    # return (
+    #     '<table style="border: 1px solid; padding: 1em;"><tr><th'
+    #     ' align="left">Album</th><th'
+    #     f' align="left">Error</th></tr>{contents}</table>'
+    # )
 
 
 def send_notifications(current_errors: list[tuple[ImportError, list[str]]]):
-    config = get_loaded_config()
-    email_on = config.notifications.email_on
-    system_on = config.notifications.system_on
-    if email_on or system_on:
-        error_album_count = sum(len(errors) for _, errors in current_errors)
-        if not error_album_count:
-            raise Exception("exit")
-        subject = get_error_album_message(error_album_count)
-        if email_on:
-            contents = get_email_contents(current_errors)
-            send_email(subject, contents)
-        if system_on:
-            notify(subject, title=APP_NAME)
-        raise Exception("exit")
+    return NotImplemented
+    # config = get_loaded_config()
+    # email_on = config.notifications.email_on
+    # system_on = config.notifications.system_on
+    # if email_on or system_on:
+    #     error_album_count = sum(len(errors) for _, errors in current_errors)
+    #     if not error_album_count:
+    #         raise Exception("exit")
+    #     subject = get_error_album_message(error_album_count)
+    #     if email_on:
+    #         contents = get_email_contents(current_errors)
+    #         send_email(subject, contents)
+    #     if system_on:
+    #         notify(subject, title=APP_NAME)
+    #     raise Exception("exit")
 
 
 def print_error_table(
@@ -692,14 +692,14 @@ def print_error_table(
     index = 0
     last_error = get_first_error(current_errors)
     last_color = FIRST_COLOR
-    shared_directories = get_shared_directories()
+    # shared_directories = get_shared_directories()
     for error_name, error_albums in current_errors:
         end_section = False
         for album in error_albums:
             if album == error_albums[-1]:
                 end_section = True
-            for shared_directory in shared_directories:
-                album = album.replace(str(shared_directory), "")
+            # for shared_directory in shared_directories:
+            #     album = album.replace(str(shared_directory), "")
             index = index + 1
             row_index = str(index)
             album = stylize_album(album)
@@ -772,62 +772,63 @@ def import_new_albums(
     allow_prompt: bool | None,
     is_scheduled_run=False,
 ):
-    print("Importing newly added albums...")
-    if is_scheduled_run:
-        stamp_logs()
-    config = get_loaded_config()
-    import_settings = config.import_new
-    if reformat is None:
-        reformat = import_settings.reformat
-    if ask_before_disc_update is None:
-        ask_before_disc_update = import_settings.ask_before_disc_update
-    if ask_before_artist_update is None:
-        ask_before_artist_update = import_settings.ask_before_artist_update
-    if is_scheduled_run:
-        allow_prompt = False
-    elif allow_prompt is None:
-        allow_prompt = import_settings.allow_prompt
-    import_all = True
-    if not albums:
-        import_all = False
-        albums = get_albums()
-    imports, errors = import_albums(
-        albums,
-        reformat,
-        ask_before_disc_update,
-        ask_before_artist_update,
-        import_all,
-        allow_prompt,
-    )
-    if imports and reformat:
-        reformat_settings = config.reformat
-        remove_bracket_years = reformat_settings.remove_bracket_years
-        remove_bracket_instruments = (
-            reformat_settings.remove_bracket_instruments
-        )
-        expand_abbreviations = reformat_settings.expand_abbreviations
-        reformat_albums(
-            remove_bracket_years,
-            remove_bracket_instruments,
-            expand_abbreviations,
-        )
-    current_errors = [(key, value) for key, value in errors.items() if value]
-    if is_scheduled_run:
-        send_notifications(current_errors)
-    importable_error_albums = [
-        album for _, albums in current_errors for album in albums
-    ]
-    if not importable_error_albums:
-        return
-    print_error_table(len(importable_error_albums), current_errors)
-    if not import_all:
-        should_import = should_import_anyway(importable_error_albums, errors)
-        if not should_import:
-            return
-        import_new_albums(
-            albums=importable_error_albums,
-            reformat=reformat,
-            ask_before_disc_update=ask_before_disc_update,
-            ask_before_artist_update=ask_before_artist_update,
-            allow_prompt=allow_prompt,
-        )
+    return NotImplemented
+    # print("Importing newly added albums...")
+    # if is_scheduled_run:
+    #     stamp_logs()
+    # config = get_loaded_config()
+    # import_settings = config.import_new
+    # if reformat is None:
+    #     reformat = import_settings.reformat
+    # if ask_before_disc_update is None:
+    #     ask_before_disc_update = import_settings.ask_before_disc_update
+    # if ask_before_artist_update is None:
+    #     ask_before_artist_update = import_settings.ask_before_artist_update
+    # if is_scheduled_run:
+    #     allow_prompt = False
+    # elif allow_prompt is None:
+    #     allow_prompt = import_settings.allow_prompt
+    # import_all = True
+    # if not albums:
+    #     import_all = False
+    #     albums = get_albums()
+    # imports, errors = import_albums(
+    #     albums,
+    #     reformat,
+    #     ask_before_disc_update,
+    #     ask_before_artist_update,
+    #     import_all,
+    #     allow_prompt,
+    # )
+    # if imports and reformat:
+    #     reformat_settings = config.reformat
+    #     remove_bracket_years = reformat_settings.remove_bracket_years
+    #     remove_bracket_instruments = (
+    #         reformat_settings.remove_bracket_instruments
+    #     )
+    #     expand_abbreviations = reformat_settings.expand_abbreviations
+    #     reformat_albums(
+    #         remove_bracket_years,
+    #         remove_bracket_instruments,
+    #         expand_abbreviations,
+    #     )
+    # current_errors = [(key, value) for key, value in errors.items() if value]
+    # if is_scheduled_run:
+    #     send_notifications(current_errors)
+    # importable_error_albums = [
+    #     album for _, albums in current_errors for album in albums
+    # ]
+    # if not importable_error_albums:
+    #     return
+    # print_error_table(len(importable_error_albums), current_errors)
+    # if not import_all:
+    #     should_import = should_import_anyway(importable_error_albums, errors)
+    #     if not should_import:
+    #         return
+    #     import_new_albums(
+    #         albums=importable_error_albums,
+    #         reformat=reformat,
+    #         ask_before_disc_update=ask_before_disc_update,
+    #         ask_before_artist_update=ask_before_artist_update,
+    #         allow_prompt=allow_prompt,
+    #     )

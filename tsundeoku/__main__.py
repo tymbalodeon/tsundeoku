@@ -4,13 +4,7 @@ from cyclopts import App, Parameter
 from cyclopts.config import Toml
 from pync import notify
 
-from tsundeoku.config.config import (
-    APP_NAME,
-    ReformatConfig,
-    get_config_path,
-    get_loaded_config,
-)
-from tsundeoku.config.main import config_app
+from tsundeoku.config.main import config_app, get_app_name, get_config_path
 from tsundeoku.import_new import import_new_albums
 from tsundeoku.reformat import reformat_albums
 from tsundeoku.schedule import schedule_app, send_email
@@ -67,17 +61,17 @@ def import_new(
     except Exception as error:
         if repr(error) == "exit":
             return
-        if is_scheduled_run:
-            config = get_loaded_config()
-            email_on = config.notifications.email_on
-            system_on = config.notifications.system_on
-            if email_on or system_on:
-                subject = "ERROR"
-                contents = str(error)
-                if email_on:
-                    send_email(subject, contents)
-                if system_on:
-                    notify(contents, title=APP_NAME)
+        # if is_scheduled_run:
+        #     config = get_loaded_config()
+        #     email_on = config.notifications.email_on
+        #     system_on = config.notifications.system_on
+        #     if email_on or system_on:
+        #         subject = "ERROR"
+        #         contents = str(error)
+        #         if email_on:
+        #             send_email(subject, contents)
+        #         if system_on:
+        #             notify(contents, title=get_app_name())
         print_with_theme(str(error), level=StyleLevel.ERROR)
 
 
@@ -112,26 +106,27 @@ def reformat(
     expand_abbreviations: bool | None
         Expand abbreviations
     """
-    reformat_settings = cast(ReformatConfig, get_loaded_config().reformat)
-    if remove_bracketed_years is None:
-        remove_bracketed_years_value = reformat_settings.remove_bracketed_years
-    else:
-        remove_bracketed_years_value = True
-    if remove_bracketed_instruments is None:
-        remove_bracketed_instruments_value = (
-            reformat_settings.remove_bracketed_instruments
-        )
-    else:
-        remove_bracketed_instruments_value = True
-    if expand_abbreviations is None:
-        expand_abbreviations_value = reformat_settings.expand_abbreviations
-    else:
-        expand_abbreviations_value = True
-    reformat_albums(
-        remove_bracketed_years_value,
-        remove_bracketed_instruments_value,
-        expand_abbreviations_value,
-    )
+    # reformat_settings = cast(ReformatConfig, get_loaded_config().reformat)
+    # if remove_bracketed_years is None:
+    #     remove_bracketed_years_value = reformat_settings.remove_bracketed_years
+    # else:
+    #     remove_bracketed_years_value = True
+    # if remove_bracketed_instruments is None:
+    #     remove_bracketed_instruments_value = (
+    #         reformat_settings.remove_bracketed_instruments
+    #     )
+    # else:
+    #     remove_bracketed_instruments_value = True
+    # if expand_abbreviations is None:
+    #     expand_abbreviations_value = reformat_settings.expand_abbreviations
+    # else:
+    #     expand_abbreviations_value = True
+    # reformat_albums(
+    #     remove_bracketed_years_value,
+    #     remove_bracketed_instruments_value,
+    #     expand_abbreviations_value,
+    # )
+    pass
 
 
 def main():

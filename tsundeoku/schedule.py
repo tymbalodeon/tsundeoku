@@ -5,13 +5,13 @@ from subprocess import run
 
 from cyclopts import App
 from rich import print
-from xmltodict import parse
+from tsundeoku.config.main import get_app_name
 from yagmail import SMTP
+import xmltodict
 
-from .config.config import APP_NAME, get_loaded_config
 from .style import StyleLevel, print_with_theme, stylize
 
-PLIST_LABEL = f"com.{APP_NAME}.import.plist"
+PLIST_LABEL = f"com.{get_app_name()}.import.plist"
 LAUNCHCTL = "launchctl"
 
 schedule_app = App(
@@ -41,7 +41,7 @@ def get_tmp_path() -> Path:
 
 
 def get_log_path() -> Path:
-    log_path = get_tmp_path() / f"{APP_NAME}.log"
+    log_path = get_tmp_path() / f"{get_app_name()}.log"
     if not log_path.exists():
         log_path.touch()
     return log_path
@@ -55,7 +55,7 @@ def launchctl(command: str, path: Path | None = None) -> bytes:
 
 
 def load_rotate_logs_plist():
-    rotate_logs_plist_label = f"com.{APP_NAME}.rotatelogs.plist"
+    rotate_logs_plist_label = f"com.{get_app_name()}.rotatelogs.plist"
     off(rotate_logs_plist_label)
     truncate_command = "truncate -s 0"
     log_path = get_log_path()
@@ -104,7 +104,7 @@ def get_calendar_interval(hour: int | None, minute: int | None) -> str:
 
 
 def get_command_args():
-    command = which(APP_NAME)
+    command = which(get_app_name())
     command_args = [
         "zsh",
         "-lc",
@@ -171,12 +171,13 @@ def stamp_logs() -> str:
 
 
 def send_email(subject: str, contents: str):
-    config = get_loaded_config()
-    username = config.notifications.username
-    password = config.notifications.password
-    email = SMTP(username, password)
-    subject = f"{APP_NAME}: {subject}"
-    email.send(subject=subject, contents=contents)
+    pass
+    # config = get_loaded_config()
+    # username = config.notifications.username
+    # password = config.notifications.password
+    # email = SMTP(username, password)
+    # subject = f"{get_app_name()}: {subject}"
+    # email.send(subject=subject, contents=contents)
 
 
 def get_most_recent_log(text: str) -> list[str]:
@@ -250,7 +251,7 @@ def show():
         print_show_schedule_error()
         return
     try:
-        plist = parse(plist_path.read_bytes())
+        plist = xmltodict.parse(plist_path.read_bytes())
     except Exception:
         plist = None
     if not plist:
