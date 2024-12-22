@@ -7,7 +7,6 @@ requires-python = ">=3.12"
 dependencies = [
   "beets>=2.2.0",
   "cyclopts>=3.1.2",
-  "pydantic>=2.10.3",
   "pync>=2.0.3",
   "rich>=13.9.4",
   "tinytag>=2.0.0",
