@@ -22,9 +22,17 @@ def get_app_name() -> Literal["tsundeoku"]:
     return "tsundeoku"
 
 
+def set_default_config(path: Path):
+    path.write_text(Config().to_toml())
+
+
 def get_config_path() -> Path:
     app_name = get_app_name()
-    return Path.home() / f".config/{app_name}/{app_name}.toml"
+    path = Path.home() / f".config/{app_name}/{app_name}.toml"
+    # TODO handle creation of parent directory
+    if not path.exists():
+        set_default_config(path)
+    return path
 
 
 def get_default_pickle_file() -> Path:
@@ -126,6 +134,9 @@ def set(
     ] = False,
 ):
     """Set config values"""
+    if restore_defaults:
+        set_default_config(get_config_path())
+        return
     print(import_config)
     print(notifications)
     print(reformat)
