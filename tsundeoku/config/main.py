@@ -1,9 +1,10 @@
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field, asdict
 from os import environ
 from pathlib import Path
 from subprocess import run
 from typing import Annotated, Literal
+import toml
 
 from cyclopts import App, Group, Parameter
 from rich import print
@@ -16,6 +17,7 @@ config_app = App(
 )
 
 
+# TODO is there a better place to store this name?
 def get_app_name() -> Literal["tsundeoku"]:
     return "tsundeoku"
 
@@ -23,10 +25,6 @@ def get_app_name() -> Literal["tsundeoku"]:
 def get_config_path() -> Path:
     app_name = get_app_name()
     return Path.home() / f".config/{app_name}/{app_name}.toml"
-
-
-def get_default_shared_directories() -> set[Path]:
-    return {Path.home() / "Dropbox"}
 
 
 def get_default_pickle_file() -> Path:
@@ -37,22 +35,14 @@ def get_default_music_player() -> Literal["Swinsian"]:
     return "Swinsian"
 
 
-@config_app.command
-def edit():
-    """Open config file in $EDITOR"""
-    run([environ.get("EDITOR", "vim"), get_config_path()])
-
-
-@config_app.command
-def path():
-    """Show config file path"""
-    print(get_config_path())
-
-
 @dataclass
 class Files:
-    shared_directories: Annotated[list[Path], Parameter(negative=())]
-    ignored_directories: Annotated[list[Path], Parameter(negative=())]
+    shared_directories: Annotated[set[Path], Parameter(negative=())] = field(
+        default_factory=lambda: {Path.home() / "Dropbox"}
+    )
+    ignored_directories: Annotated[set[Path], Parameter(negative=())] = field(
+        default_factory=set
+    )
 
 
 @dataclass
@@ -67,8 +57,8 @@ class Import:
 class Notifications:
     email_on: Annotated[bool, Parameter(negative=())] = False
     system_on: Annotated[bool, Parameter(negative=())] = False
-    username: str | None = None
-    password: str | None = None
+    username: str | None = ""
+    password: str | None = ""
 
 
 @dataclass
@@ -78,6 +68,32 @@ class Reformat:
         False
     )
     remove_bracketed_years: Annotated[bool, Parameter(negative=())] = False
+
+
+@dataclass
+class Config:
+    files: Files = field(default_factory=lambda: Files())
+    import_config: Import = field(default_factory=lambda: Import())
+    notifications: Notifications = field(
+        default_factory=lambda: Notifications()
+    )
+    reformat: Reformat = field(default_factory=lambda: Reformat())
+
+
+def get_default_config() -> Config:
+    return Config()
+
+
+@config_app.command
+def edit():
+    """Open config file in $EDITOR"""
+    run([environ.get("EDITOR", "vim"), get_config_path()])
+
+
+@config_app.command
+def path():
+    """Show config file path"""
+    print(get_config_path())
 
 
 @config_app.command
@@ -101,6 +117,9 @@ def set(
     print(reformat)
 
 
+global_group = Group("Global", sort_key=0)
+
+
 # TODO
 # display defaults if missing from config file
 @config_app.command
@@ -114,25 +133,29 @@ def show(
         Notifications | None, Parameter(group="Notifications")
     ] = None,
     reformat: Annotated[Reformat | None, Parameter(group="Reformat")] = None,
-    show_secrets: Annotated[
-        bool, Parameter(group=Group("Global", sort_key=0))
-    ] = False,
+    default: Annotated[bool, Parameter(group="Global")] = False,
+    show_secrets: Annotated[bool, Parameter(group="Global")] = False,
 ):
     """
     Show config values
 
     Parameters
     ----------
+    default: bool
+        Show default value(s)
     show_secrets: bool
         Show secret config values
     """
-    config_path = get_config_path()
-    if not config_path.exists():
-        return
-    config = config_path.read_text()
-    if not show_secrets:
-        # TODO use capture groups
-        config = re.sub('password = ".+"', 'password = "********"', config)
+    if default:
+        config = toml.dumps(asdict(Config()))
+    else:
+        config_path = get_config_path()
+        if not config_path.exists():
+            return
+        config = config_path.read_text()
+        if not show_secrets:
+            # TODO use capture groups
+            config = re.sub('password = ".+"', 'password = "********"', config)
     # TODO
     # implement selectors for specific values
     print(Syntax(config, "toml", theme="ansi_dark"))

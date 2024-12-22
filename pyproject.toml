@@ -10,6 +10,7 @@ dependencies = [
   "pync>=2.0.3",
   "rich>=13.9.4",
   "tinytag>=2.0.0",
+  "toml>=0.10.2",
   "tomli-w>=1.1.0",
   "tomli>=2.2.1",
   "xmltodict>=0.14.2",
