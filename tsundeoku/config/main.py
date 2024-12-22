@@ -79,6 +79,20 @@ class Config:
     )
     reformat: Reformat = field(default_factory=lambda: Reformat())
 
+    @staticmethod
+    def stringify(paths: set[Path]) -> set[str]:
+        return {str(path) for path in paths}
+
+    def to_toml(self) -> str:
+        items = asdict(self)
+        items["files"]["shared_directories"] = self.stringify(
+            items["files"]["shared_directories"]
+        )
+        items["files"]["ignored_directories"] = self.stringify(
+            items["files"]["ignored_directories"]
+        )
+        return toml.dumps(items)
+
 
 def get_default_config() -> Config:
     return Config()
@@ -147,7 +161,7 @@ def show(
         Show secret config values
     """
     if default:
-        config = toml.dumps(asdict(Config()))
+        config = Config().to_toml()
     else:
         config_path = get_config_path()
         if not config_path.exists():
