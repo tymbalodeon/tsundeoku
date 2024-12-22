@@ -13,9 +13,7 @@ from tsundeoku.style import StyleLevel, print_with_theme
 
 app = App(
     default_parameter=Parameter(negative=()),
-    config=Toml(
-        get_config_path(), use_commands_as_keys=False, allow_unknown=True
-    ),
+    config=Toml(get_config_path()),
     help="""
 積んでおく // tsundeoku –– "to pile up for later"
 

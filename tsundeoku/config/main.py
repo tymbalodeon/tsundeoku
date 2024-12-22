@@ -146,17 +146,74 @@ def set_config_value(
     print(reformat)
 
 
+@dataclass
+class FilesKeys:
+    # TODO is it possible to generate these classes dynamically? Is that a good idea??
+    shared_directories: Annotated[
+        bool, Parameter(negative=(), show_default=False)
+    ] = False
+    ignored_directories: Annotated[
+        bool, Parameter(negative=(), show_default=False)
+    ] = False
+
+
+@dataclass
+class ImportKeys:
+    # TODO is it possible to generate these classes dynamically? Is that a good idea??
+    allow_prompt: Annotated[
+        bool, Parameter(negative=(), show_default=False)
+    ] = False
+    ask_before_artist_update: Annotated[
+        bool, Parameter(negative=(), show_default=False)
+    ] = False
+    ask_before_disc_update: Annotated[
+        bool, Parameter(negative=(), show_default=False)
+    ] = False
+    reformat: Annotated[bool, Parameter(negative=(), show_default=False)] = (
+        False
+    )
+
+
+@dataclass
+class NotificationsKeys:
+    # TODO is it possible to generate these classes dynamically? Is that a good idea??
+    email: Annotated[bool, Parameter(negative=(), show_default=False)] = False
+    system: Annotated[bool, Parameter(negative=(), show_default=False)] = False
+    username: Annotated[bool, Parameter(negative=(), show_default=False)] = (
+        False
+    )
+    password: Annotated[bool, Parameter(negative=(), show_default=False)] = (
+        False
+    )
+
+
+@dataclass
+class ReformatKeys:
+    # TODO is it possible to generate these classes dynamically? Is that a good idea??
+    expand_abbreviations: Annotated[
+        bool, Parameter(negative=(), show_default=False)
+    ] = False
+    remove_bracketed_instruments: Annotated[
+        bool, Parameter(negative=(), show_default=False)
+    ] = False
+    remove_bracketed_years: Annotated[
+        bool, Parameter(negative=(), show_default=False)
+    ] = False
+
+
 @config_app.command
 def show(
     *,
-    files: Annotated[Files | None, Parameter(group="Files")] = None,
+    files: Annotated[FilesKeys | None, Parameter(group="Files")] = None,
     import_config: Annotated[
-        Import | None, Parameter(name="import", group="Import")
+        ImportKeys | None, Parameter(name="import", group="Import")
     ] = None,
     notifications: Annotated[
-        Notifications | None, Parameter(group="Notifications")
+        NotificationsKeys | None, Parameter(group="Notifications")
     ] = None,
-    reformat: Annotated[Reformat | None, Parameter(group="Reformat")] = None,
+    reformat: Annotated[
+        ReformatKeys | None, Parameter(group="Reformat")
+    ] = None,
     default: Annotated[bool, Parameter(group=global_group)] = False,
     show_secrets: Annotated[bool, Parameter(group=global_group)] = False,
 ):
@@ -170,6 +227,7 @@ def show(
     show_secrets: bool
         Show secret config values
     """
+    print(files)
     if default:
         config = Config().to_toml()
     else:
