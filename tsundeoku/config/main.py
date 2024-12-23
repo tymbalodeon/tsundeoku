@@ -94,7 +94,11 @@ class Config:
         files = config["files"]
         files.pop("music_player")
         files.pop("pickle_file")
-        return Config(**config)
+        files = Files(**config["files"])
+        import_config = Import(**config["import_config"])
+        notifications = Notifications(**config["notifications"])
+        reformat = Reformat(**config["reformat"])
+        return Config(files, import_config, notifications, reformat)
 
     def to_toml(self) -> str:
         config = asdict(self)
@@ -321,13 +325,16 @@ def show(
         requested_values = {
             key: value for key, value in asdict(table).items() if value
         }
-        table_values = getattr(config, table.key_name)
+        table_values = asdict(getattr(config, table.key_name))
         if "all" not in requested_values:
             for key in tuple(table_values.keys()):
                 if key not in requested_values:
                     table_values.pop(key)
         values[table.key_name] = table_values
     if len(values.keys()) == 1:
-        print(next(get_values(values)))
+        value = next(get_values(values))
+        if isinstance(value, set):
+            value = list(Files.paths_to_str(set(Path(path) for path in value)))
+        print(value)
     else:
         print(Syntax(toml.dumps(values), "toml", theme="ansi_dark"))
