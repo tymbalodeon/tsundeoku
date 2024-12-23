@@ -100,6 +100,8 @@ class Config:
 
     def to_toml(self) -> str:
         config = asdict(self)
+        if isinstance(self.files, Files):
+            config["files"] = self.files.to_dict()
         return toml.dumps(config)
 
 
