@@ -192,7 +192,17 @@ def set_config_value(
     restore_defaults: Annotated[bool, Parameter(group=global_group)] = False,
     clear_existing: Annotated[bool, Parameter(group="Files")] = False,
 ):
-    """Set config values"""
+    """Set config values
+
+    Parameters
+    ----------
+    files
+        ...DIRECTORIES
+    notifications.username
+        USERNAME
+    notifications.password
+        PASSWORD
+    """
     if restore_defaults:
         # TODO confirm this
         set_default_config(get_config_path())
@@ -204,6 +214,7 @@ def set_config_value(
 
 
 # TODO is it possible to generate these classes dynamically? Is that a good idea??
+# TODO add table level selectors? Allow combining these? (but not the individual ones?)
 @dataclass
 class ShowFilesKeys:
     shared_directories: KeyParameter = False
@@ -265,9 +276,9 @@ def show(
 
     Parameters
     ----------
-    default: bool
+    default
         Show default value(s)
-    show_secrets: bool
+    show_secrets
         Show secret config values
     """
     if default:
