@@ -16,15 +16,15 @@ config_app = App(
     name="config", help="Show and set config values.", version_flags=()
 )
 
+PathSet = Annotated[set[Path], Parameter(negative=(), show_default=False)]
+
 
 @dataclass
 class Files:
-    shared_directories: Annotated[
-        set[Path], Parameter(negative=(), show_default=False)
-    ] = field(default_factory=lambda: {Path.home() / "Dropbox"})
-    ignored_directories: Annotated[
-        set[Path], Parameter(negative=(), show_default=False)
-    ] = field(default_factory=set)
+    shared_directories: PathSet = field(
+        default_factory=lambda: {Path.home() / "Dropbox"}
+    )
+    ignored_directories: PathSet = field(default_factory=set)
 
     @staticmethod
     def paths_to_str(paths: set[Path]) -> set[str]:
@@ -41,29 +41,30 @@ class Files:
         return items
 
 
+Bool = Annotated[bool, Parameter(negative=())]
+
+
 @dataclass
 class Import:
-    allow_prompt: Annotated[bool, Parameter(negative=())] = False
-    ask_before_artist_update: Annotated[bool, Parameter(negative=())] = True
-    ask_before_disc_update: Annotated[bool, Parameter(negative=())] = True
-    reformat: Annotated[bool, Parameter(negative=())] = False
+    allow_prompt: Bool = False
+    ask_before_artist_update: Bool = True
+    ask_before_disc_update: Bool = True
+    reformat: Bool = False
 
 
 @dataclass
 class Notifications:
-    email_on: Annotated[bool, Parameter(negative=())] = False
-    system_on: Annotated[bool, Parameter(negative=())] = False
+    email_on: Bool = False
+    system_on: Bool = False
     username: str | None = None
     password: str | None = None
 
 
 @dataclass
 class Reformat:
-    expand_abbreviations: Annotated[bool, Parameter(negative=())] = False
-    remove_bracketed_instruments: Annotated[bool, Parameter(negative=())] = (
-        False
-    )
-    remove_bracketed_years: Annotated[bool, Parameter(negative=())] = False
+    expand_abbreviations: Bool = False
+    remove_bracketed_instruments: Bool = False
+    remove_bracketed_years: Bool = False
 
 
 def get_app_name() -> Literal["tsundeoku"]:
