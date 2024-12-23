@@ -3,7 +3,7 @@ from dataclasses import asdict, dataclass, field
 from os import environ
 from pathlib import Path
 from subprocess import run
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 
 import toml
 from cyclopts import App, Group, Parameter
@@ -16,22 +16,6 @@ config_app = App(
     help="Show and set config values",
     version_flags=(),
 )
-
-
-# TODO is there a better place to store this name?
-def get_app_name() -> Literal["tsundeoku"]:
-    return "tsundeoku"
-
-
-def set_default_config(path: Path | None):
-    if path is None:
-        path = get_config_path()
-    path.write_text(Config().to_toml())
-
-
-def get_config_path() -> Path:
-    app_name = get_app_name()
-    return Path.home() / f".config/{app_name}/{app_name}.toml"
 
 
 @dataclass
@@ -83,6 +67,16 @@ class Reformat:
     remove_bracketed_years: Annotated[bool, Parameter(negative=())] = False
 
 
+# TODO is there a better place to store this name?
+def get_app_name() -> Literal["tsundeoku"]:
+    return "tsundeoku"
+
+
+def get_config_path() -> Path:
+    app_name = get_app_name()
+    return Path.home() / f".config/{app_name}/{app_name}.toml"
+
+
 @dataclass
 class Config:
     files: Files = field(default_factory=lambda: Files())
@@ -99,13 +93,13 @@ class Config:
         config = Toml(path).config
         config["import_config"] = config.pop("import")
         config["files"] = config.pop("file_system")
-        config["files"].pop("music_player")
-        config["files"].pop("pickle_file")
+        files = config["files"]
+        files.pop("music_player")
+        files.pop("pickle_file")
         return Config(**config)
 
     def to_toml(self) -> str:
         config = asdict(self)
-        config["files"] = self.files.to_dict()
         return toml.dumps(config)
 
 
@@ -121,6 +115,12 @@ def path():
     print(get_config_path())
 
 
+def set_default_config(path: Path | None):
+    if path is None:
+        path = get_config_path()
+    path.write_text(Config().to_toml())
+
+
 global_group = Group("Global", sort_key=0)
 
 
@@ -129,12 +129,16 @@ def set_config_value(
     *,
     files: Annotated[Files | None, Parameter(group="Files")] = None,
     import_config: Annotated[
-        Import | None, Parameter(name="import", group="Import")
+        Import | None,
+        Parameter(name="import", group="Import", show_default=False),
     ] = None,
     notifications: Annotated[
-        Notifications | None, Parameter(group="Notifications")
+        Notifications | None,
+        Parameter(group="Notifications", show_default=False),
     ] = None,
-    reformat: Annotated[Reformat | None, Parameter(group="Reformat")] = None,
+    reformat: Annotated[
+        Reformat | None, Parameter(group="Reformat", show_default=False)
+    ] = None,
     restore_defaults: Annotated[bool, Parameter(group=global_group)] = False,
 ):
     """Set config values"""
@@ -146,59 +150,45 @@ def set_config_value(
     print(reformat)
 
 
+KeyParameter = Annotated[bool, Parameter(negative=(), show_default=False)]
+
+
+# TODO is it possible to generate these classes dynamically? Is that a good idea??
 @dataclass
 class FilesKeys:
-    # TODO is it possible to generate these classes dynamically? Is that a good idea??
-    shared_directories: Annotated[
-        bool, Parameter(negative=(), show_default=False)
-    ] = False
-    ignored_directories: Annotated[
-        bool, Parameter(negative=(), show_default=False)
-    ] = False
+    shared_directories: KeyParameter = False
+    ignored_directories: KeyParameter = False
 
 
 @dataclass
 class ImportKeys:
-    # TODO is it possible to generate these classes dynamically? Is that a good idea??
-    allow_prompt: Annotated[
-        bool, Parameter(negative=(), show_default=False)
-    ] = False
-    ask_before_artist_update: Annotated[
-        bool, Parameter(negative=(), show_default=False)
-    ] = False
-    ask_before_disc_update: Annotated[
-        bool, Parameter(negative=(), show_default=False)
-    ] = False
-    reformat: Annotated[bool, Parameter(negative=(), show_default=False)] = (
-        False
-    )
+    allow_prompt: KeyParameter = False
+    ask_before_artist_update: KeyParameter = False
+    ask_before_disc_update: KeyParameter = False
+    reformat: KeyParameter = False
 
 
 @dataclass
 class NotificationsKeys:
-    # TODO is it possible to generate these classes dynamically? Is that a good idea??
-    email: Annotated[bool, Parameter(negative=(), show_default=False)] = False
-    system: Annotated[bool, Parameter(negative=(), show_default=False)] = False
-    username: Annotated[bool, Parameter(negative=(), show_default=False)] = (
-        False
-    )
-    password: Annotated[bool, Parameter(negative=(), show_default=False)] = (
-        False
-    )
+    email_on: KeyParameter = False
+    system_on: KeyParameter = False
+    username: KeyParameter = False
+    password: KeyParameter = False
 
 
 @dataclass
 class ReformatKeys:
-    # TODO is it possible to generate these classes dynamically? Is that a good idea??
-    expand_abbreviations: Annotated[
-        bool, Parameter(negative=(), show_default=False)
-    ] = False
-    remove_bracketed_instruments: Annotated[
-        bool, Parameter(negative=(), show_default=False)
-    ] = False
-    remove_bracketed_years: Annotated[
-        bool, Parameter(negative=(), show_default=False)
-    ] = False
+    expand_abbreviations: KeyParameter = False
+    remove_bracketed_instruments: KeyParameter = False
+    remove_bracketed_years: KeyParameter = False
+
+
+def get_value(
+    keys: FilesKeys | ImportKeys | NotificationsKeys | ReformatKeys,
+    values: Files | Import | Notifications | Reformat,
+) -> str | set[str]:
+    key = next(key for key, value in asdict(keys).items() if value)
+    return cast(dict, values)[key]
 
 
 @config_app.command
@@ -227,15 +217,24 @@ def show(
     show_secrets: bool
         Show secret config values
     """
-    print(files)
     if default:
-        config = Config().to_toml()
+        config = Config()
     else:
-        config_path = get_config_path()
-        if not config_path.exists():
-            return
-        config = config_path.read_text()
+        config = Config.from_toml()
+    if not any((files, import_config, notifications, reformat)):
+        config = config.to_toml()
         if not show_secrets:
             # TODO use capture groups
             config = re.sub('password = ".+"', 'password = "********"', config)
-    print(Syntax(config, "toml", theme="ansi_dark"))
+        print(Syntax(config, "toml", theme="ansi_dark"))
+        return
+    value = None
+    if files:
+        value = get_value(files, config.files)
+    elif import_config:
+        value = get_value(import_config, config.import_config)
+    elif notifications:
+        value = get_value(notifications, config.notifications)
+    elif reformat:
+        value = get_value(reformat, config.reformat)
+    print(value)
