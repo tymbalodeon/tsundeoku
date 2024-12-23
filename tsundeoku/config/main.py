@@ -124,45 +124,94 @@ def set_default_config(path: Path | None):
 global_group = Group("Global", sort_key=0)
 
 
+SetKeyParameter = Annotated[
+    set[str] | None,
+    Parameter(negative=(), show_choices=False, show_default=False),
+]
+
+
+@dataclass
+class SetFilesKeys:
+    shared_directories: SetKeyParameter = None
+    ignored_directories: SetKeyParameter = None
+
+
+KeyParameter = Annotated[bool, Parameter(negative=(), show_default=False)]
+
+
+@dataclass
+class SetImportKeys:
+    allow_prompt: KeyParameter = False
+    disallow_prompt: KeyParameter = False
+    ask_before_artist_update: KeyParameter = False
+    update_aritst: KeyParameter = False
+    update_disc: KeyParameter = False
+    reformat: KeyParameter = False
+    no_reformat: KeyParameter = False
+
+
+StrKeyParameter = Annotated[
+    str | Literal[False], Parameter(show_choices=False, show_default=False)
+]
+
+
+@dataclass
+class SetNotificationsKeys:
+    email_on: KeyParameter = False
+    email_off: KeyParameter = False
+    system_on: KeyParameter = False
+    system_off: KeyParameter = False
+    username: StrKeyParameter = False
+    password: StrKeyParameter = False
+
+
+@dataclass
+class SetReformatKeys:
+    expand_abbreviations: KeyParameter = False
+    keep_abbreviations: KeyParameter = False
+    remove_bracketed_instruments: KeyParameter = False
+    keep_bracketed_instruments: KeyParameter = False
+    remove_bracketed_years: KeyParameter = False
+    keep_bracketed_years: KeyParameter = False
+
+
 @config_app.command(name="set")
 def set_config_value(
     *,
-    files: Annotated[Files | None, Parameter(group="Files")] = None,
+    files: Annotated[SetFilesKeys | None, Parameter(group="Files")] = None,
     import_config: Annotated[
-        Import | None,
+        SetImportKeys | None,
         Parameter(name="import", group="Import", show_default=False),
     ] = None,
     notifications: Annotated[
-        Notifications | None,
-        Parameter(group="Notifications", show_default=False),
+        SetNotificationsKeys | None, Parameter(group="Notifications")
     ] = None,
     reformat: Annotated[
-        Reformat | None, Parameter(group="Reformat", show_default=False)
+        SetReformatKeys | None, Parameter(group="Reformat", show_default=False)
     ] = None,
     restore_defaults: Annotated[bool, Parameter(group=global_group)] = False,
+    clear_existing: Annotated[bool, Parameter(group="Files")] = False,
 ):
     """Set config values"""
     if restore_defaults:
         # TODO confirm this
         set_default_config(get_config_path())
         return
+    print(files)
     print(import_config)
     print(notifications)
     print(reformat)
 
 
-KeyParameter = Annotated[bool, Parameter(negative=(), show_default=False)]
-
-
 # TODO is it possible to generate these classes dynamically? Is that a good idea??
 @dataclass
-class FilesKeys:
+class ShowFilesKeys:
     shared_directories: KeyParameter = False
     ignored_directories: KeyParameter = False
 
 
 @dataclass
-class ImportKeys:
+class ShowImportKeys:
     allow_prompt: KeyParameter = False
     ask_before_artist_update: KeyParameter = False
     ask_before_disc_update: KeyParameter = False
@@ -170,7 +219,7 @@ class ImportKeys:
 
 
 @dataclass
-class NotificationsKeys:
+class ShowNotificationsKeys:
     email_on: KeyParameter = False
     system_on: KeyParameter = False
     username: KeyParameter = False
@@ -178,14 +227,17 @@ class NotificationsKeys:
 
 
 @dataclass
-class ReformatKeys:
+class ShowReformatKeys:
     expand_abbreviations: KeyParameter = False
     remove_bracketed_instruments: KeyParameter = False
     remove_bracketed_years: KeyParameter = False
 
 
 def get_value(
-    keys: FilesKeys | ImportKeys | NotificationsKeys | ReformatKeys,
+    keys: ShowFilesKeys
+    | ShowImportKeys
+    | ShowNotificationsKeys
+    | ShowReformatKeys,
     values: Files | Import | Notifications | Reformat,
 ) -> str | set[str]:
     key = next(key for key, value in asdict(keys).items() if value)
@@ -195,15 +247,15 @@ def get_value(
 @config_app.command
 def show(
     *,
-    files: Annotated[FilesKeys | None, Parameter(group="Files")] = None,
+    files: Annotated[ShowFilesKeys | None, Parameter(group="Files")] = None,
     import_config: Annotated[
-        ImportKeys | None, Parameter(name="import", group="Import")
+        ShowImportKeys | None, Parameter(name="import", group="Import")
     ] = None,
     notifications: Annotated[
-        NotificationsKeys | None, Parameter(group="Notifications")
+        ShowNotificationsKeys | None, Parameter(group="Notifications")
     ] = None,
     reformat: Annotated[
-        ReformatKeys | None, Parameter(group="Reformat")
+        ShowReformatKeys | None, Parameter(group="Reformat")
     ] = None,
     default: Annotated[bool, Parameter(group=global_group)] = False,
     show_secrets: Annotated[bool, Parameter(group=global_group)] = False,
