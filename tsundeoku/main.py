@@ -84,7 +84,9 @@ def reformat(
     expand_abbreviations: bool | None = None,
 ):
     """
-    Reformat metadata according to the following rules:
+    Reformat metadata.
+
+    Rules:
 
     * Remove bracketeded years (e.g., "[2022]") from album fields. If the year
       field is blank, it will be updated with the year in bracketeds. If the year

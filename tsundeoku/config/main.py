@@ -13,7 +13,7 @@ from rich.syntax import Syntax
 
 config_app = App(
     name="config",
-    help="Show and set config values",
+    help="Show and set config values.",
     version_flags=(),
 )
 
