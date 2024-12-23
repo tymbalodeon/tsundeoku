@@ -3,7 +3,7 @@ from dataclasses import asdict, dataclass, field
 from os import environ
 from pathlib import Path
 from subprocess import run
-from typing import Annotated, Literal, cast
+from typing import Annotated, Generator, Literal
 
 import toml
 from cyclopts import App, Group, Parameter
@@ -12,9 +12,7 @@ from rich import print
 from rich.syntax import Syntax
 
 config_app = App(
-    name="config",
-    help="Show and set config values.",
-    version_flags=(),
+    name="config", help="Show and set config values.", version_flags=()
 )
 
 
@@ -223,6 +221,10 @@ class ShowFilesKeys:
     shared_directories: KeyParameter = False
     ignored_directories: KeyParameter = False
 
+    @property
+    def key_name(self) -> str:
+        return "files"
+
 
 @dataclass
 class ShowImportKeys:
@@ -231,6 +233,10 @@ class ShowImportKeys:
     ask_before_artist_update: KeyParameter = False
     ask_before_disc_update: KeyParameter = False
     reformat: KeyParameter = False
+
+    @property
+    def key_name(self) -> str:
+        return "import"
 
 
 @dataclass
@@ -241,6 +247,10 @@ class ShowNotificationsKeys:
     username: KeyParameter = False
     password: KeyParameter = False
 
+    @property
+    def key_name(self) -> str:
+        return "notifications"
+
 
 @dataclass
 class ShowReformatKeys:
@@ -249,20 +259,19 @@ class ShowReformatKeys:
     remove_bracketed_instruments: KeyParameter = False
     remove_bracketed_years: KeyParameter = False
 
+    @property
+    def key_name(self) -> str:
+        return "reformat"
 
-def get_value(
-    keys: ShowFilesKeys
-    | ShowImportKeys
-    | ShowNotificationsKeys
-    | ShowReformatKeys,
-    values: Files | Import | Notifications | Reformat,
-) -> str | set[str] | Syntax:
-    if keys.all:
-        return Syntax(
-            toml.dumps(cast(dict, values)), "toml", theme="ansi_dark"
-        )
-    key = next(key for key, value in asdict(keys).items() if value)
-    return cast(dict, values)[key]
+
+def get_values(
+    dictionary: dict[str, str] | dict[str, set[str]],
+) -> Generator[set[str] | str | None, None, None]:
+    for value in dictionary.values():
+        if isinstance(value, dict):
+            yield from get_values(value)
+        else:
+            yield value
 
 
 @config_app.command
@@ -302,14 +311,23 @@ def show(
             config = re.sub('password = ".+"', 'password = "********"', config)
         print(Syntax(config, "toml", theme="ansi_dark"))
         return
-    value = None
-    if files:
-        value = get_value(files, config.files)
-    elif import_config:
-        value = get_value(import_config, config.import_config)
-    elif notifications:
-        # TODO confirm showing of secrets here if key == password
-        value = get_value(notifications, config.notifications)
-    elif reformat:
-        value = get_value(reformat, config.reformat)
-    print(value)
+    tables = tuple(
+        table
+        for table in (files, import_config, notifications, reformat)
+        if table is not None
+    )
+    values = {}
+    for table in tables:
+        requested_values = {
+            key: value for key, value in asdict(table).items() if value
+        }
+        table_values = getattr(config, table.key_name)
+        if "all" not in requested_values:
+            for key in tuple(table_values.keys()):
+                if key not in requested_values:
+                    table_values.pop(key)
+        values[table.key_name] = table_values
+    if len(values.keys()) == 1:
+        print(next(get_values(values)))
+    else:
+        print(Syntax(toml.dumps(values), "toml", theme="ansi_dark"))

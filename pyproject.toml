@@ -18,7 +18,11 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["bpython>=0.24", "pytest>=8.3.3"]
+dev = [
+    "bpython>=0.24",
+    "pytest>=8.3.3",
+    "vulture>=2.14",
+]
 
 [project.scripts]
 tsundeoku = "tsundeoku.__main__:main"
