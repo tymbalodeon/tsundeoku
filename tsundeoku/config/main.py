@@ -9,6 +9,7 @@ import toml
 from cyclopts import App, Group, Parameter
 from cyclopts.config import Toml
 from rich import print
+from rich.prompt import Confirm
 from rich.syntax import Syntax
 
 config_app = App(
@@ -65,7 +66,6 @@ class Reformat:
     remove_bracketed_years: Annotated[bool, Parameter(negative=())] = False
 
 
-# TODO is there a better place to store this name?
 def get_app_name() -> Literal["tsundeoku"]:
     return "tsundeoku"
 
@@ -218,7 +218,6 @@ def set_config_value(
 
 
 # TODO is it possible to generate these classes dynamically? Is that a good idea??
-# TODO add table level selectors? Allow combining these? (but not the individual ones?)
 @dataclass
 class ShowFilesKeys:
     all: KeyParameter = False
@@ -333,6 +332,15 @@ def show(
         values[table.key_name] = table_values
     if len(values.keys()) == 1:
         value = next(get_values(values))
+        if (
+            "notifications" in values.keys()
+            and "password" in values["notifications"].keys()
+        ) and not show_secrets:
+            show_password = Confirm.ask(
+                "Are you sure you want to show the password?"
+            )
+            if not show_password:
+                return
         if isinstance(value, set):
             value = list(Files.paths_to_str(set(Path(path) for path in value)))
         print(value)
