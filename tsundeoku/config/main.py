@@ -219,12 +219,14 @@ def set_config_value(
 # TODO add table level selectors? Allow combining these? (but not the individual ones?)
 @dataclass
 class ShowFilesKeys:
+    all: KeyParameter = False
     shared_directories: KeyParameter = False
     ignored_directories: KeyParameter = False
 
 
 @dataclass
 class ShowImportKeys:
+    all: KeyParameter = False
     allow_prompt: KeyParameter = False
     ask_before_artist_update: KeyParameter = False
     ask_before_disc_update: KeyParameter = False
@@ -233,6 +235,7 @@ class ShowImportKeys:
 
 @dataclass
 class ShowNotificationsKeys:
+    all: KeyParameter = False
     email_on: KeyParameter = False
     system_on: KeyParameter = False
     username: KeyParameter = False
@@ -241,6 +244,7 @@ class ShowNotificationsKeys:
 
 @dataclass
 class ShowReformatKeys:
+    all: KeyParameter = False
     expand_abbreviations: KeyParameter = False
     remove_bracketed_instruments: KeyParameter = False
     remove_bracketed_years: KeyParameter = False
@@ -252,7 +256,11 @@ def get_value(
     | ShowNotificationsKeys
     | ShowReformatKeys,
     values: Files | Import | Notifications | Reformat,
-) -> str | set[str]:
+) -> str | set[str] | Syntax:
+    if keys.all:
+        return Syntax(
+            toml.dumps(cast(dict, values)), "toml", theme="ansi_dark"
+        )
     key = next(key for key, value in asdict(keys).items() if value)
     return cast(dict, values)[key]
 
