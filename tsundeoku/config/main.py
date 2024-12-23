@@ -143,6 +143,7 @@ def set_config_value(
 ):
     """Set config values"""
     if restore_defaults:
+        # TODO confirm this
         set_default_config(get_config_path())
         return
     print(import_config)
@@ -234,6 +235,7 @@ def show(
     elif import_config:
         value = get_value(import_config, config.import_config)
     elif notifications:
+        # TODO confirm showing of secrets here if key == password
         value = get_value(notifications, config.notifications)
     elif reformat:
         value = get_value(reformat, config.reformat)
