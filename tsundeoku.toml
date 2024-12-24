@@ -1,0 +1,18 @@
+[files]
+shared_directories = [ "/Users/benrosen/Dropbox",]
+ignored_directories = []
+
+[import]
+allow_prompt = false
+ask_before_artist_update = true
+ask_before_disc_update = true
+reformat = false
+
+[notifications]
+email_on = false
+system_on = false
+
+[reformat]
+expand_abbreviations = false
+remove_bracketed_instruments = false
+remove_bracketed_years = false

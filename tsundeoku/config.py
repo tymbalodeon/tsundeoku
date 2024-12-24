@@ -179,7 +179,7 @@ class SetReformatKeys:
 
 
 @config_app.command(name="set")
-def set_config_value(
+def set_config_values(
     *,
     files: Annotated[SetFilesKeys | None, Parameter(group="Files")] = None,
     import_config: Annotated[
@@ -192,7 +192,7 @@ def set_config_value(
     reformat: Annotated[
         SetReformatKeys | None, Parameter(group="Reformat", show_default=False)
     ] = None,
-    restore_defaults: Annotated[bool, Parameter(group=global_group)] = False,
+    restore_default: Annotated[bool, Parameter(group=global_group)] = False,
     clear_existing: Annotated[bool, Parameter(group="Files")] = False,
     config_path: Annotated[
         ConfigPath, Parameter(group="Global")
@@ -209,7 +209,7 @@ def set_config_value(
     notifications.password
         PASSWORD
     """
-    if restore_defaults:
+    if restore_default:
         if Confirm.ask("Are you sure you want to reset your config?"):
             set_default_config(config_path)
         return
