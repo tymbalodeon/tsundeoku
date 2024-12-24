@@ -85,6 +85,7 @@ class Config:
     )
     reformat: Reformat = field(default_factory=lambda: Reformat())
 
+    # TODO validate config file
     @staticmethod
     def from_toml(path: Path | None = None) -> "Config":
         if path is None:
@@ -109,9 +110,9 @@ class Config:
 
 
 @config_app.command
-def edit():
+def edit(*, config_path: Path = get_config_path()):
     """Open config file in $EDITOR"""
-    run([environ.get("EDITOR", "vim"), get_config_path()])
+    run([environ.get("EDITOR", "vim"), config_path])
 
 
 @config_app.command
@@ -196,6 +197,9 @@ def set_config_value(
     ] = None,
     restore_defaults: Annotated[bool, Parameter(group=global_group)] = False,
     clear_existing: Annotated[bool, Parameter(group="Files")] = False,
+    config_path: Annotated[
+        Path, Parameter(group="Global")
+    ] = get_config_path(),
 ):
     """Set config values
 
@@ -293,6 +297,9 @@ def show(
     ] = None,
     default: Annotated[bool, Parameter(group=global_group)] = False,
     show_secrets: Annotated[bool, Parameter(group=global_group)] = False,
+    config_path: Annotated[
+        Path, Parameter(group="Global")
+    ] = get_config_path(),
 ):
     """
     Show config values
@@ -307,7 +314,7 @@ def show(
     if default:
         config = Config()
     else:
-        config = Config.from_toml()
+        config = Config.from_toml(config_path)
     if not any((files, import_config, notifications, reformat)):
         config = config.to_toml()
         if not show_secrets:
