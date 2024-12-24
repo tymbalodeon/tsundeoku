@@ -13,7 +13,6 @@ from rich import print
 from rich.prompt import Confirm
 from rich.syntax import Syntax
 
-# TODO show global parameters in main config_app help?
 config_app = App(
     name="config", help="Show and set config values.", version_flags=()
 )
@@ -329,8 +328,11 @@ def show(
     if not any((files, import_config, notifications, reformat)):
         config = config.to_toml()
         if not show_secrets:
-            # TODO use capture groups
-            config = re.sub('password = ".+"', 'password = "********"', config)
+            password = re.compile(r'password = "(?P<password>.+)"').search(
+                config
+            )
+            if password is not None:
+                config = config.replace(password.group("password"), "********")
         print(Syntax(config, "toml", theme="ansi_dark"))
         return
     tables = tuple(
