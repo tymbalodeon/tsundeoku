@@ -210,8 +210,8 @@ def set_config_value(
         PASSWORD
     """
     if restore_defaults:
-        # TODO confirm this
-        set_default_config(get_config_path())
+        if Confirm.ask("Are you sure you want to reset your config?"):
+            set_default_config(config_path)
         return
     print(files)
     print(import_config)
