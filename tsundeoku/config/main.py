@@ -324,7 +324,6 @@ def show(
         config = Config()
     else:
         config = Config.from_toml(config_path)
-    print(config)
     if not any((files, import_config, notifications, reformat)):
         config = config.to_toml()
         if not show_secrets:
