@@ -127,7 +127,7 @@ def set_default_config(path: Path | None) -> None:
 global_group = Group("Global", sort_key=0)
 
 
-SetKeyParameter = Annotated[
+SetPathsParameter = Annotated[
     set[str] | None,
     Parameter(negative=(), show_choices=False, show_default=False),
 ]
@@ -135,47 +135,55 @@ SetKeyParameter = Annotated[
 
 @dataclass
 class SetFilesKeys:
-    shared_directories: SetKeyParameter = None
-    ignored_directories: SetKeyParameter = None
+    shared_directories: SetPathsParameter = None
+    ignored_directories: SetPathsParameter = None
 
 
-KeyParameter = Annotated[bool, Parameter(negative=(), show_default=False)]
+SetBoolParameter = Annotated[bool | None, Parameter(show_default=False)]
 
 
 @dataclass
 class SetImportKeys:
-    allow_prompt: KeyParameter = False
-    disallow_prompt: KeyParameter = False
-    ask_before_artist_update: KeyParameter = False
-    update_aritst: KeyParameter = False
-    update_disc: KeyParameter = False
-    reformat: KeyParameter = False
-    no_reformat: KeyParameter = False
+    allow_prompt: Annotated[
+        SetBoolParameter, Parameter(negative="--import.disallow-prompt")
+    ] = False
+    ask_before_artist_update: Annotated[
+        SetBoolParameter, Parameter(negative="--import.auto-update-artist")
+    ] = False
+    reformat: Annotated[
+        SetBoolParameter, Parameter(negative="--import.auto-update-disc")
+    ] = False
 
 
-StrKeyParameter = Annotated[
+SetStrParameter = Annotated[
     str | Literal[False], Parameter(show_choices=False, show_default=False)
 ]
 
 
 @dataclass
 class SetNotificationsKeys:
-    email_on: KeyParameter = False
-    email_off: KeyParameter = False
-    system_on: KeyParameter = False
-    system_off: KeyParameter = False
-    username: StrKeyParameter = False
-    password: StrKeyParameter = False
+    email_on: Annotated[
+        SetBoolParameter, Parameter(negative="--notifications.email-off")
+    ] = None
+    system_on: Annotated[
+        SetBoolParameter, Parameter(negative="--notifications.system-off")
+    ] = None
+    username: SetStrParameter = False
+    password: SetStrParameter = False
 
 
 @dataclass
 class SetReformatKeys:
-    expand_abbreviations: KeyParameter = False
-    keep_abbreviations: KeyParameter = False
-    remove_bracketed_instruments: KeyParameter = False
-    keep_bracketed_instruments: KeyParameter = False
-    remove_bracketed_years: KeyParameter = False
-    keep_bracketed_years: KeyParameter = False
+    expand_abbreviations: Annotated[
+        SetBoolParameter, Parameter(negative="--reformat.keep-abbreviations")
+    ] = False
+    remove_bracketed_instruments: Annotated[
+        SetBoolParameter,
+        Parameter(negative="--reformat.keep-bracketed-instruments"),
+    ] = False
+    remove_bracketed_years: Annotated[
+        SetBoolParameter, Parameter(negative="--reformat.bracketed-years")
+    ] = False
 
 
 @config_app.command(name="set")
@@ -222,9 +230,9 @@ def set_config_values(
 # TODO is it possible to generate these classes dynamically? Is that a good idea??
 @dataclass
 class ShowFilesKeys:
-    all: KeyParameter = False
-    shared_directories: KeyParameter = False
-    ignored_directories: KeyParameter = False
+    all: SetBoolParameter = False
+    shared_directories: SetBoolParameter = False
+    ignored_directories: SetBoolParameter = False
 
     @property
     def key_name(self) -> str:
@@ -233,11 +241,11 @@ class ShowFilesKeys:
 
 @dataclass
 class ShowImportKeys:
-    all: KeyParameter = False
-    allow_prompt: KeyParameter = False
-    ask_before_artist_update: KeyParameter = False
-    ask_before_disc_update: KeyParameter = False
-    reformat: KeyParameter = False
+    all: SetBoolParameter = False
+    allow_prompt: SetBoolParameter = False
+    ask_before_artist_update: SetBoolParameter = False
+    ask_before_disc_update: SetBoolParameter = False
+    reformat: SetBoolParameter = False
 
     @property
     def key_name(self) -> str:
@@ -246,11 +254,11 @@ class ShowImportKeys:
 
 @dataclass
 class ShowNotificationsKeys:
-    all: KeyParameter = False
-    email_on: KeyParameter = False
-    system_on: KeyParameter = False
-    username: KeyParameter = False
-    password: KeyParameter = False
+    all: SetBoolParameter = False
+    email_on: SetBoolParameter = False
+    system_on: SetBoolParameter = False
+    username: SetBoolParameter = False
+    password: SetBoolParameter = False
 
     @property
     def key_name(self) -> str:
@@ -259,10 +267,10 @@ class ShowNotificationsKeys:
 
 @dataclass
 class ShowReformatKeys:
-    all: KeyParameter = False
-    expand_abbreviations: KeyParameter = False
-    remove_bracketed_instruments: KeyParameter = False
-    remove_bracketed_years: KeyParameter = False
+    all: SetBoolParameter = False
+    expand_abbreviations: SetBoolParameter = False
+    remove_bracketed_instruments: SetBoolParameter = False
+    remove_bracketed_years: SetBoolParameter = False
 
     @property
     def key_name(self) -> str:
