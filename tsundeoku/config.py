@@ -13,6 +13,7 @@ from rich import print
 from rich.prompt import Confirm
 from rich.syntax import Syntax
 
+# TODO show global parameters in main config_app help?
 config_app = App(
     name="config", help="Show and set config values.", version_flags=()
 )
