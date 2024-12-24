@@ -7,7 +7,6 @@ from typing import Annotated, Generator, Literal, Sequence, cast
 
 import toml
 from cyclopts import App, Group, Parameter, Token
-from cyclopts.config import Toml
 from cyclopts.validators import Path as PathValidator
 from pydantic import BaseModel
 from rich import print
@@ -18,16 +17,14 @@ config_app = App(
     name="config", help="Show and set config values.", version_flags=()
 )
 
-# TODO fix display using pydantic
-# TODO fix intake of sets from lists
-Paths = Annotated[list[Path], Parameter(negative=(), show_default=False)]
+Paths = Annotated[set[str], Parameter(negative=(), show_default=False)]
 
 
 class Files(BaseModel):
     shared_directories: Paths = field(
-        default_factory=lambda: [Path.home() / "Dropbox"]
+        default_factory=lambda: {str(Path.home() / "Dropbox")}
     )
-    ignored_directories: Paths = field(default_factory=list)
+    ignored_directories: Paths = field(default_factory=set)
 
     @staticmethod
     def paths_to_str(paths: set[Path]) -> set[str]:
@@ -78,10 +75,13 @@ class Config(BaseModel):
     def from_toml(config_path: Path | None = None) -> "Config":
         if config_path is None:
             config_path = get_config_path()
-        config = Toml(config_path).config
+        config = toml.loads(config_path.read_text())
         config["import_config"] = config.pop("import")
+        files = config.pop("files")
+        Files.model_validate(files)
         Config.model_validate(config)
-        return Config(**config)
+        config = Config(**config, files=files)
+        return config
 
     def to_toml(self) -> str:
         return toml.dumps(self.model_dump())
