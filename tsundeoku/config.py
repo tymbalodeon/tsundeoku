@@ -8,7 +8,7 @@ from typing import Annotated, Generator, Literal, Sequence, cast
 import toml
 from cyclopts import App, Group, Parameter, Token
 from cyclopts.validators import Path as PathValidator
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from rich import print
 from rich.prompt import Confirm
 from rich.syntax import Syntax
@@ -65,7 +65,9 @@ def get_config_path() -> Path:
 
 class Config(BaseModel):
     files: Files = field(default_factory=lambda: Files())
-    import_config: Import = field(default_factory=lambda: Import())
+    import_config: Import = Field(
+        alias="import", default_factory=lambda: Import()
+    )
     notifications: Notifications = field(
         default_factory=lambda: Notifications()
     )
@@ -76,7 +78,6 @@ class Config(BaseModel):
         if config_path is None:
             config_path = get_config_path()
         config = toml.loads(config_path.read_text())
-        config["import_config"] = config.pop("import")
         files = config.pop("files")
         Files.model_validate(files)
         Config.model_validate(config)
@@ -84,6 +85,7 @@ class Config(BaseModel):
         return config
 
     def to_toml(self) -> str:
+        self.model_dump()
         return toml.dumps(self.model_dump())
 
 
