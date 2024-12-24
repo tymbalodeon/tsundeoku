@@ -1,12 +1,12 @@
 import re
 from dataclasses import asdict, dataclass, field
-from os import environ
+from os import environ, getcwd
 from pathlib import Path
 from subprocess import run
-from typing import Annotated, Generator, Literal
+from typing import Annotated, Any, Generator, Literal, Sequence
 
 import toml
-from cyclopts import App, Group, Parameter
+from cyclopts import App, Group, Parameter, Token
 from cyclopts.config import Toml
 from rich import print
 from rich.prompt import Confirm
@@ -109,9 +109,20 @@ class Config:
         return toml.dumps(config)
 
 
+def is_toml(_, config_path: Any) -> None:
+    if Path(config_path).suffix != ".toml":
+        raise ValueError('Must be a ".toml" file')
+
+
+ConfigPath = Annotated[Path, Parameter(validator=is_toml)]
+
+
 @config_app.command
-def edit(*, config_path: Path = get_config_path()):
+def edit(*, config_path: ConfigPath = get_config_path()):
     """Open config file in $EDITOR"""
+    if not config_path.exists():
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        config_path.write_text(Config().to_toml())
     run([environ.get("EDITOR", "vim"), config_path])
 
 
@@ -198,7 +209,7 @@ def set_config_value(
     restore_defaults: Annotated[bool, Parameter(group=global_group)] = False,
     clear_existing: Annotated[bool, Parameter(group="Files")] = False,
     config_path: Annotated[
-        Path, Parameter(group="Global")
+        ConfigPath, Parameter(group="Global")
     ] = get_config_path(),
 ):
     """Set config values
@@ -282,6 +293,14 @@ def get_values(
             yield value
 
 
+def parse_path(_, tokens: Sequence[Token]) -> Path:
+    value = tokens[0].value.lower()
+    if Path(value).exists():
+        return Path(value)
+    else:
+        return Path(getcwd()) / Path(value)
+
+
 @config_app.command
 def show(
     *,
@@ -298,7 +317,7 @@ def show(
     default: Annotated[bool, Parameter(group=global_group)] = False,
     show_secrets: Annotated[bool, Parameter(group=global_group)] = False,
     config_path: Annotated[
-        Path, Parameter(group="Global")
+        ConfigPath, Parameter(converter=parse_path, group="Global")
     ] = get_config_path(),
 ):
     """
