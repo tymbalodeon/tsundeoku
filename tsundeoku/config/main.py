@@ -3,11 +3,12 @@ from dataclasses import asdict, dataclass, field
 from os import environ, getcwd
 from pathlib import Path
 from subprocess import run
-from typing import Annotated, Any, Generator, Literal, Sequence, cast
+from typing import Annotated, Generator, Literal, Sequence, cast
 
 import toml
 from cyclopts import App, Group, Parameter, Token
 from cyclopts.config import Toml
+from cyclopts.validators import Path as PathValidator
 from pydantic import BaseModel
 from rich import print
 from rich.prompt import Confirm
@@ -19,14 +20,14 @@ config_app = App(
 
 # TODO fix display using pydantic
 # TODO fix intake of sets from lists
-PathSet = Annotated[set[Path], Parameter(negative=(), show_default=False)]
+Paths = Annotated[list[Path], Parameter(negative=(), show_default=False)]
 
 
 class Files(BaseModel):
-    shared_directories: PathSet = field(
-        default_factory=lambda: {Path.home() / "Dropbox"}
+    shared_directories: Paths = field(
+        default_factory=lambda: [Path.home() / "Dropbox"]
     )
-    ignored_directories: PathSet = field(default_factory=set)
+    ignored_directories: Paths = field(default_factory=list)
 
     @staticmethod
     def paths_to_str(paths: set[Path]) -> set[str]:
@@ -86,16 +87,23 @@ class Config(BaseModel):
         return toml.dumps(self.model_dump())
 
 
-def is_toml(_, config_path: Any) -> None:
-    if Path(config_path).suffix != ".toml":
-        raise ValueError('Must be a ".toml" file')
+def is_toml(_, config_path: Path) -> None:
+    is_valid = True
+    if config_path.exists():
+        try:
+            if not bool(toml.loads(config_path.read_text())):
+                is_valid = False
+        except Exception:
+            is_valid = False
+    if not is_valid:
+        raise ValueError("Must be a TOML file")
 
 
 ConfigPath = Annotated[Path, Parameter(validator=is_toml)]
 
 
 @config_app.command
-def edit(*, config_path: ConfigPath = get_config_path()):
+def edit(*, config_path: ConfigPath = get_config_path()) -> None:
     """Open config file in $EDITOR"""
     if not config_path.exists():
         config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -104,12 +112,12 @@ def edit(*, config_path: ConfigPath = get_config_path()):
 
 
 @config_app.command
-def path():
+def path() -> None:
     """Show config file path"""
     print(get_config_path())
 
 
-def set_default_config(path: Path | None):
+def set_default_config(path: Path | None) -> None:
     if path is None:
         path = get_config_path()
     path.write_text(Config().to_toml())
@@ -188,7 +196,7 @@ def set_config_value(
     config_path: Annotated[
         ConfigPath, Parameter(group="Global")
     ] = get_config_path(),
-):
+) -> None:
     """Set config values
 
     Parameters
@@ -294,9 +302,14 @@ def show(
     default: Annotated[bool, Parameter(group=global_group)] = False,
     show_secrets: Annotated[bool, Parameter(group=global_group)] = False,
     config_path: Annotated[
-        ConfigPath, Parameter(converter=parse_path, group="Global")
+        Path,
+        Parameter(
+            group="Global",
+            converter=parse_path,
+            validator=(PathValidator(exists=True, dir_okay=False), is_toml),
+        ),
     ] = get_config_path(),
-):
+) -> None:
     """
     Show config values
 
@@ -311,6 +324,7 @@ def show(
         config = Config()
     else:
         config = Config.from_toml(config_path)
+    print(config)
     if not any((files, import_config, notifications, reformat)):
         config = config.to_toml()
         if not show_secrets:
