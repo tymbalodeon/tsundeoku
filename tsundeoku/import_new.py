@@ -15,7 +15,7 @@ from rich.table import Table
 
 from tsundeoku.reformat import reformat_albums
 
-from .config.main import get_app_name
+from .config import get_app_name
 from .library import get_library_tracks, modify_tracks
 from .regex import (
     BRACKET_DISC_REGEX,

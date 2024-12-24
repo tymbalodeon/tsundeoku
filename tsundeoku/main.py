@@ -5,7 +5,7 @@ from cyclopts.config import Toml
 from pync import notify
 from rich import print
 
-from tsundeoku.config.main import config_app, get_app_name, get_config_path
+from tsundeoku.config import config_app, get_app_name, get_config_path
 from tsundeoku.import_new import import_new_albums
 from tsundeoku.reformat import reformat_albums
 from tsundeoku.schedule import schedule_app, send_email

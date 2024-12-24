@@ -8,7 +8,7 @@ from cyclopts import App
 from rich import print
 from yagmail import SMTP
 
-from tsundeoku.config.main import get_app_name
+from tsundeoku.config import get_app_name
 
 from .style import StyleLevel, print_with_theme, stylize
 
