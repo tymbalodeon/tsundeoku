@@ -86,8 +86,7 @@ class Config(BaseModel):
         return config
 
     def to_toml(self) -> str:
-        self.model_dump()
-        return toml.dumps(self.model_dump())
+        return toml.dumps(self.model_dump(by_alias=True))
 
 
 def is_toml(_, config_path: Path) -> None:
