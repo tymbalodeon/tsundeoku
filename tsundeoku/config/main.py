@@ -3,11 +3,12 @@ from dataclasses import asdict, dataclass, field
 from os import environ, getcwd
 from pathlib import Path
 from subprocess import run
-from typing import Annotated, Any, Generator, Literal, Sequence
+from typing import Annotated, Any, Generator, Literal, Sequence, cast
 
 import toml
 from cyclopts import App, Group, Parameter, Token
 from cyclopts.config import Toml
+from pydantic import BaseModel
 from rich import print
 from rich.prompt import Confirm
 from rich.syntax import Syntax
@@ -16,11 +17,12 @@ config_app = App(
     name="config", help="Show and set config values.", version_flags=()
 )
 
+# TODO fix display using pydantic
+# TODO fix intake of sets from lists
 PathSet = Annotated[set[Path], Parameter(negative=(), show_default=False)]
 
 
-@dataclass
-class Files:
+class Files(BaseModel):
     shared_directories: PathSet = field(
         default_factory=lambda: {Path.home() / "Dropbox"}
     )
@@ -30,38 +32,25 @@ class Files:
     def paths_to_str(paths: set[Path]) -> set[str]:
         return {str(path) for path in paths}
 
-    def to_dict(self) -> dict[str, list[str]]:
-        items = asdict(self)
-        items["shared_directories"] = self.paths_to_str(
-            items["shared_directories"]
-        )
-        items["ignored_directories"] = self.paths_to_str(
-            items["ignored_directories"]
-        )
-        return items
-
 
 Bool = Annotated[bool, Parameter(negative=())]
 
 
-@dataclass
-class Import:
+class Import(BaseModel):
     allow_prompt: Bool = False
     ask_before_artist_update: Bool = True
     ask_before_disc_update: Bool = True
     reformat: Bool = False
 
 
-@dataclass
-class Notifications:
+class Notifications(BaseModel):
     email_on: Bool = False
     system_on: Bool = False
     username: str | None = None
     password: str | None = None
 
 
-@dataclass
-class Reformat:
+class Reformat(BaseModel):
     expand_abbreviations: Bool = False
     remove_bracketed_instruments: Bool = False
     remove_bracketed_years: Bool = False
@@ -76,8 +65,7 @@ def get_config_path() -> Path:
     return Path.home() / f".config/{app_name}/{app_name}.toml"
 
 
-@dataclass
-class Config:
+class Config(BaseModel):
     files: Files = field(default_factory=lambda: Files())
     import_config: Import = field(default_factory=lambda: Import())
     notifications: Notifications = field(
@@ -85,28 +73,17 @@ class Config:
     )
     reformat: Reformat = field(default_factory=lambda: Reformat())
 
-    # TODO validate config file
     @staticmethod
-    def from_toml(path: Path | None = None) -> "Config":
-        if path is None:
-            path = get_config_path()
-        config = Toml(path).config
+    def from_toml(config_path: Path | None = None) -> "Config":
+        if config_path is None:
+            config_path = get_config_path()
+        config = Toml(config_path).config
         config["import_config"] = config.pop("import")
-        config["files"] = config.pop("file_system")
-        files = config["files"]
-        files.pop("music_player")
-        files.pop("pickle_file")
-        files = Files(**config["files"])
-        import_config = Import(**config["import_config"])
-        notifications = Notifications(**config["notifications"])
-        reformat = Reformat(**config["reformat"])
-        return Config(files, import_config, notifications, reformat)
+        Config.model_validate(config)
+        return Config(**config)
 
     def to_toml(self) -> str:
-        config = asdict(self)
-        if isinstance(self.files, Files):
-            config["files"] = self.files.to_dict()
-        return toml.dumps(config)
+        return toml.dumps(self.model_dump())
 
 
 def is_toml(_, config_path: Any) -> None:
@@ -351,7 +328,9 @@ def show(
         requested_values = {
             key: value for key, value in asdict(table).items() if value
         }
-        table_values = asdict(getattr(config, table.key_name))
+        table_values = cast(
+            BaseModel, getattr(config, table.key_name)
+        ).model_dump()
         if "all" not in requested_values:
             for key in tuple(table_values.keys()):
                 if key not in requested_values:
