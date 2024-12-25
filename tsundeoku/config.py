@@ -3,12 +3,12 @@ from dataclasses import asdict, dataclass, field
 from os import environ, getcwd
 from pathlib import Path
 from subprocess import run
-from typing import Annotated, Generator, Literal, Sequence, cast
+from typing import Annotated, Any, Generator, Literal, Sequence, cast
 
 import toml
 from cyclopts import App, Group, Parameter, Token
 from cyclopts.validators import Path as PathValidator
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 from rich import print
 from rich.prompt import Confirm
 from rich.syntax import Syntax
@@ -66,26 +66,38 @@ def get_config_path() -> Path:
 class Config(BaseModel):
     files: Files = field(default_factory=lambda: Files())
     import_config: Import = Field(
-        alias="import", default_factory=lambda: Import()
+        alias="import",
+        validation_alias=AliasChoices("import", "import_config"),
+        default_factory=lambda: Import(),
     )
     notifications: Notifications = field(
         default_factory=lambda: Notifications()
     )
     reformat: Reformat = field(default_factory=lambda: Reformat())
+    _config_path: Path = get_config_path()
+
+    @staticmethod
+    def from_dict(config: dict[str, Any]) -> "Config":
+        files = config.pop("files")
+        Files.model_validate(files)
+        Config.model_validate(config)
+        return Config(**config, files=files)
 
     @staticmethod
     def from_toml(config_path: Path | None = None) -> "Config":
         if config_path is None:
             config_path = get_config_path()
         config = toml.loads(config_path.read_text())
-        files = config.pop("files")
-        Files.model_validate(files)
-        Config.model_validate(config)
-        config = Config(**config, files=files)
-        return config
+        config["config_path"] = config_path
+        return Config.from_dict(config)
 
     def to_toml(self) -> str:
         return toml.dumps(self.model_dump(by_alias=True))
+
+    def save(self, config_path: Path | None = None) -> None:
+        if config_path is None:
+            config_path = self._config_path
+        config_path.write_text(self.to_toml())
 
 
 def is_toml(_, config_path: Path) -> None:
@@ -98,6 +110,10 @@ def is_toml(_, config_path: Path) -> None:
             is_valid = False
     if not is_valid:
         raise ValueError("Must be a TOML file")
+
+
+def display_config_toml(config: str) -> None:
+    print(Syntax(config, "toml", theme="ansi_dark"))
 
 
 ConfigPath = Annotated[Path, Parameter(validator=is_toml)]
@@ -134,7 +150,35 @@ SetPathsParameter = Annotated[
 
 
 @dataclass
-class SetFilesKeys:
+class HasFilesName:
+    @property
+    def key_name(self) -> Literal["files"]:
+        return "files"
+
+
+@dataclass
+class HasImportName:
+    @property
+    def key_name(self) -> Literal["import_config"]:
+        return "import_config"
+
+
+@dataclass
+class HasNotificationsName:
+    @property
+    def key_name(self) -> Literal["notifications"]:
+        return "notifications"
+
+
+@dataclass
+class HasReformatName:
+    @property
+    def key_name(self) -> Literal["reformat"]:
+        return "reformat"
+
+
+@dataclass
+class SetFilesKeys(HasFilesName):
     shared_directories: SetPathsParameter = None
     ignored_directories: SetPathsParameter = None
 
@@ -143,16 +187,16 @@ SetBoolParameter = Annotated[bool | None, Parameter(show_default=False)]
 
 
 @dataclass
-class SetImportKeys:
+class SetImportKeys(HasImportName):
     allow_prompt: Annotated[
         SetBoolParameter, Parameter(negative="--import.disallow-prompt")
-    ] = False
+    ] = None
     ask_before_artist_update: Annotated[
         SetBoolParameter, Parameter(negative="--import.auto-update-artist")
-    ] = False
+    ] = None
     reformat: Annotated[
-        SetBoolParameter, Parameter(negative="--import.auto-update-disc")
-    ] = False
+        SetBoolParameter, Parameter(negative="--import.no-reformat")
+    ] = None
 
 
 SetStrParameter = Annotated[
@@ -161,7 +205,7 @@ SetStrParameter = Annotated[
 
 
 @dataclass
-class SetNotificationsKeys:
+class SetNotificationsKeys(HasNotificationsName):
     email_on: Annotated[
         SetBoolParameter, Parameter(negative="--notifications.email-off")
     ] = None
@@ -173,19 +217,56 @@ class SetNotificationsKeys:
 
 
 @dataclass
-class SetReformatKeys:
+class SetReformatKeys(HasReformatName):
     expand_abbreviations: Annotated[
         SetBoolParameter, Parameter(negative="--reformat.keep-abbreviations")
-    ] = False
+    ] = None
     remove_bracketed_instruments: Annotated[
         SetBoolParameter,
         Parameter(negative="--reformat.keep-bracketed-instruments"),
-    ] = False
+    ] = None
     remove_bracketed_years: Annotated[
         SetBoolParameter, Parameter(negative="--reformat.bracketed-years")
-    ] = False
+    ] = None
 
 
+def merge_dicts(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
+    merged = a.copy()
+    for key, value in b.items():
+        if (
+            key in merged
+            and isinstance(merged[key], dict)
+            and isinstance(value, dict)
+        ):
+            merged[key] = merge_dicts(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def get_requested_tables(
+    tables: tuple[
+        HasFilesName
+        | HasImportName
+        | HasNotificationsName
+        | HasReformatName
+        | None,
+        ...,
+    ],
+) -> tuple[
+    HasFilesName | HasImportName | HasNotificationsName | HasReformatName,
+    ...,
+]:
+    return tuple(table for table in tables if table is not None)
+
+
+def get_requested_items(table_items: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: value for key, value in table_items.items() if value is not None
+    }
+
+
+# TODO handle restore defaults, files, clear existing
 @config_app.command(name="set")
 def set_config_values(
     *,
@@ -217,64 +298,56 @@ def set_config_values(
     notifications.password
         PASSWORD
     """
-    if restore_default:
-        if Confirm.ask("Are you sure you want to reset your config?"):
-            set_default_config(config_path)
-        return
-    print(files)
-    print(import_config)
-    print(notifications)
-    print(reformat)
+    config_items = Config.from_toml(config_path).model_dump()
+    requested_tables = get_requested_tables(
+        (files, import_config, notifications, reformat)
+    )
+    items = {key: {} for key in {table.key_name for table in requested_tables}}
+    for table in requested_tables:
+        table_items = asdict(table)
+        if table.key_name == "notifications":
+            for key, value in table_items.items():
+                if key in ("username", "password") and value is False:
+                    table_items[key] = None
+        requested_values = get_requested_items(table_items)
+        for key, value in requested_values.items():
+            items[table.key_name][key] = value
+    config_items = merge_dicts(config_items, items)
+    config = Config.from_dict(config_items)
+    config.save()
 
 
-# TODO is it possible to generate these classes dynamically? Is that a good idea??
 @dataclass
-class ShowFilesKeys:
+class ShowFilesKeys(HasFilesName):
     all: SetBoolParameter = False
     shared_directories: SetBoolParameter = False
     ignored_directories: SetBoolParameter = False
 
-    @property
-    def key_name(self) -> str:
-        return "files"
-
 
 @dataclass
-class ShowImportKeys:
+class ShowImportKeys(HasImportName):
     all: SetBoolParameter = False
     allow_prompt: SetBoolParameter = False
     ask_before_artist_update: SetBoolParameter = False
     ask_before_disc_update: SetBoolParameter = False
     reformat: SetBoolParameter = False
 
-    @property
-    def key_name(self) -> str:
-        return "import"
-
 
 @dataclass
-class ShowNotificationsKeys:
+class ShowNotificationsKeys(HasNotificationsName):
     all: SetBoolParameter = False
     email_on: SetBoolParameter = False
     system_on: SetBoolParameter = False
     username: SetBoolParameter = False
     password: SetBoolParameter = False
 
-    @property
-    def key_name(self) -> str:
-        return "notifications"
-
 
 @dataclass
-class ShowReformatKeys:
+class ShowReformatKeys(HasReformatName):
     all: SetBoolParameter = False
     expand_abbreviations: SetBoolParameter = False
     remove_bracketed_instruments: SetBoolParameter = False
     remove_bracketed_years: SetBoolParameter = False
-
-    @property
-    def key_name(self) -> str:
-        return "reformat"
 
 
 def get_values(
@@ -341,18 +414,14 @@ def show(
             )
             if password is not None:
                 config = config.replace(password.group("password"), "********")
-        print(Syntax(config, "toml", theme="ansi_dark"))
+        display_config_toml(config)
         return
-    tables = tuple(
-        table
-        for table in (files, import_config, notifications, reformat)
-        if table is not None
+    requested_tables = get_requested_tables(
+        (files, import_config, notifications, reformat)
     )
-    values = {}
-    for table in tables:
-        requested_values = {
-            key: value for key, value in asdict(table).items() if value
-        }
+    items = {}
+    for table in requested_tables:
+        requested_values = get_requested_items(asdict(table))
         table_values = cast(
             BaseModel, getattr(config, table.key_name)
         ).model_dump()
@@ -360,12 +429,12 @@ def show(
             for key in tuple(table_values.keys()):
                 if key not in requested_values:
                     table_values.pop(key)
-        values[table.key_name] = table_values
-    if len(values.keys()) == 1:
-        value = next(get_values(values))
+        items[table.key_name] = table_values
+    if len(items.keys()) == 1:
+        value = next(get_values(items))
         if (
-            "notifications" in values.keys()
-            and "password" in values["notifications"].keys()
+            "notifications" in items.keys()
+            and "password" in items["notifications"].keys()
         ) and not show_secrets:
             show_password = Confirm.ask(
                 "Are you sure you want to show the password?"
@@ -376,4 +445,4 @@ def show(
             value = list(Files.paths_to_str(set(Path(path) for path in value)))
         print(value)
     else:
-        print(Syntax(toml.dumps(values), "toml", theme="ansi_dark"))
+        display_config_toml(toml.dumps(items))
