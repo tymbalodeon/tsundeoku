@@ -1,11 +1,19 @@
+from pathlib import Path
 from typing import Annotated, cast
 
 from cyclopts import App, Parameter
 from cyclopts.config import Toml
+from cyclopts.validators import Path as PathValidator
 from pync import notify
 from rich import print
 
-from tsundeoku.config import config_app, get_app_name, get_config_path
+from tsundeoku.config import (
+    config_app,
+    get_app_name,
+    get_config_path,
+    is_toml,
+    parse_path,
+)
 from tsundeoku.import_new import import_new_albums
 from tsundeoku.reformat import reformat_albums
 from tsundeoku.schedule import schedule_app, send_email
@@ -31,13 +39,19 @@ def import_new(
     ask_before_disc_update=False,
     ask_before_artist_update=False,
     allow_prompt=False,
+    config_path: Annotated[
+        Path,
+        Parameter(
+            converter=parse_path,
+            validator=(PathValidator(exists=True, dir_okay=False), is_toml),
+        ),
+    ] = get_config_path(),
     is_scheduled_run: Annotated[bool, Parameter(show=False)] = False,
 ):
     """Copy new adds from your shared folder to your local library.
 
     Parameters
     ----------
-    albums: list[str] | None
     reformat: bool
         Toggle reformatting
     ask_before_disc_update: bool
@@ -46,7 +60,6 @@ def import_new(
         Toggle confirming removal of brackets from artist field
     allow_prompt: bool
         Toggle skipping imports that require user input
-    is_scheduled_run: bool
     """
     try:
         if albums is None:

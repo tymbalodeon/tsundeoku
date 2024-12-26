@@ -774,14 +774,7 @@ def import_new_albums(
     ask_before_artist_update: bool | None,
     allow_prompt: bool | None,
     is_scheduled_run=False,
-    config_path: Annotated[
-        Path,
-        Parameter(
-            group="Global",
-            converter=parse_path,
-            validator=(PathValidator(exists=True, dir_okay=False), is_toml),
-        ),
-    ] = get_config_path(),
+    config_path: Path = get_config_path(),
 ) -> None:
     if is_scheduled_run:
         stamp_logs()
