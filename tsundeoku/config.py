@@ -21,10 +21,10 @@ Paths = Annotated[set[str], Parameter(negative=(), show_default=False)]
 
 
 class Files(BaseModel):
-    shared_directories: Paths = field(
+    shared_directories: Paths = Field(
         default_factory=lambda: {str(Path.home() / "Dropbox")}
     )
-    ignored_directories: Paths = field(default_factory=set)
+    ignored_directories: Paths = Field(default_factory=set)
 
     @staticmethod
     def paths_to_str(paths: set[Path]) -> set[str]:
@@ -63,41 +63,49 @@ def get_config_path() -> Path:
     return Path.home() / f".config/{app_name}/{app_name}.toml"
 
 
-class Config(BaseModel):
-    files: Files = field(default_factory=lambda: Files())
+class ConfigItems(BaseModel):
+    files: Files = Field(default_factory=lambda: Files())
     import_config: Import = Field(
         alias="import",
         validation_alias=AliasChoices("import", "import_config"),
         default_factory=lambda: Import(),
     )
-    notifications: Notifications = field(
+    notifications: Notifications = Field(
         default_factory=lambda: Notifications()
     )
-    reformat: Reformat = field(default_factory=lambda: Reformat())
-    _config_path: Path = get_config_path()
+    reformat: Reformat = Field(default_factory=lambda: Reformat())
+
+
+@dataclass
+class Config:
+    items: ConfigItems = field(default_factory=lambda: ConfigItems())
+    path: Path = get_config_path()
 
     @staticmethod
-    def from_dict(config: dict[str, Any]) -> "Config":
+    def from_dict(
+        config: dict[str, Any], path: Path | None = None
+    ) -> "Config":
+        if path is None:
+            path = get_config_path()
         files = config.pop("files")
         Files.model_validate(files)
-        Config.model_validate(config)
-        return Config(**config, files=files)
+        ConfigItems.model_validate(config)
+        return Config(items=ConfigItems(**config, files=files), path=path)
 
     @staticmethod
-    def from_toml(config_path: Path | None = None) -> "Config":
-        if config_path is None:
-            config_path = get_config_path()
-        config = toml.loads(config_path.read_text())
-        config["config_path"] = config_path
-        return Config.from_dict(config)
+    def from_toml(path: Path | None = None) -> "Config":
+        if path is None:
+            path = get_config_path()
+        config = toml.loads(path.read_text())
+        return Config.from_dict(config, path=path)
 
     def to_toml(self) -> str:
-        return toml.dumps(self.model_dump(by_alias=True))
+        return toml.dumps(self.items.model_dump(by_alias=True))
 
-    def save(self, config_path: Path | None = None) -> None:
-        if config_path is None:
-            config_path = self._config_path
-        config_path.write_text(self.to_toml())
+    def save(self, path: Path | None = None) -> None:
+        if path is None:
+            path = self.path
+        path.write_text(self.to_toml())
 
 
 def is_toml(_, config_path: Path) -> None:
@@ -298,7 +306,7 @@ def set_config_values(
     notifications.password
         PASSWORD
     """
-    config_items = Config.from_toml(config_path).model_dump()
+    config_items = Config.from_toml(config_path).items.model_dump()
     requested_tables = get_requested_tables(
         (files, import_config, notifications, reformat)
     )
@@ -313,7 +321,7 @@ def set_config_values(
         for key, value in requested_values.items():
             items[table.key_name][key] = value
     config_items = merge_dicts(config_items, items)
-    config = Config.from_dict(config_items)
+    config = Config.from_dict(config_items, path=config_path)
     config.save()
 
 
@@ -423,7 +431,7 @@ def show(
     for table in requested_tables:
         requested_values = get_requested_items(asdict(table))
         table_values = cast(
-            BaseModel, getattr(config, table.key_name)
+            BaseModel, getattr(config.items, table.key_name)
         ).model_dump()
         if "all" not in requested_values:
             for key in tuple(table_values.keys()):
