@@ -186,6 +186,9 @@ class HasReformatName:
 class SetFilesKeys(HasFilesName):
     shared_directories: SetPathsParameter = None
     ignored_directories: SetPathsParameter = None
+    local_directory: Annotated[
+        str | None, Parameter(negative=(), show_default=False)
+    ] = None
 
 
 SetBoolParameter = Annotated[bool | None, Parameter(show_default=False)]
