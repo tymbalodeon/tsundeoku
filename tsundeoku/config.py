@@ -238,7 +238,9 @@ class SetReformatKeys(HasReformatName):
     ] = None
 
 
-def merge_dicts(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
+def merge_dicts(
+    a: dict[str, Any], b: dict[str, Any], clear_existing_sets=False
+) -> dict[str, Any]:
     merged = a.copy()
     for key, value in b.items():
         if (
@@ -246,7 +248,15 @@ def merge_dicts(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
             and isinstance(merged[key], dict)
             and isinstance(value, dict)
         ):
-            merged[key] = merge_dicts(merged[key], value)
+            merged[key] = merge_dicts(
+                merged[key], value, clear_existing_sets=clear_existing_sets
+            )
+        elif (
+            key in merged
+            and isinstance(merged[key], set)
+            and not clear_existing_sets
+        ):
+            merged[key].update(value)
         else:
             merged[key] = value
     return merged
@@ -274,7 +284,6 @@ def get_requested_items(table_items: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-# TODO handle restore defaults, files, clear existing
 @config_app.command(name="set")
 def set_config_values(
     *,
@@ -289,7 +298,7 @@ def set_config_values(
     reformat: Annotated[
         SetReformatKeys | None, Parameter(group="Reformat", show_default=False)
     ] = None,
-    restore_default: Annotated[bool, Parameter(group=global_group)] = False,
+    restore_defaults: Annotated[bool, Parameter(group=global_group)] = False,
     clear_existing: Annotated[bool, Parameter(group="Files")] = False,
     config_path: Annotated[
         ConfigPath, Parameter(group="Global")
@@ -306,6 +315,12 @@ def set_config_values(
     notifications.password
         PASSWORD
     """
+    if restore_defaults:
+        if Confirm.ask(
+            "Are you sure you want to reset your config to the default?"
+        ):
+            Config(path=config_path).save()
+        return
     config_items = Config.from_toml(config_path).items.model_dump()
     requested_tables = get_requested_tables(
         (files, import_config, notifications, reformat)
@@ -320,7 +335,9 @@ def set_config_values(
         requested_values = get_requested_items(table_items)
         for key, value in requested_values.items():
             items[table.key_name][key] = value
-    config_items = merge_dicts(config_items, items)
+    config_items = merge_dicts(
+        config_items, items, clear_existing_sets=clear_existing
+    )
     config = Config.from_dict(config_items, path=config_path)
     config.save()
 
