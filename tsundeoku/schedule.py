@@ -163,12 +163,11 @@ def print_show_schedule_error():
     )
 
 
-def stamp_logs() -> str:
-    current_time = datetime.now().strftime("%Y-%m-%d %I:%M %p")
-    log_path = get_log_path()
-    with open(log_path, "a") as log:
-        log.write(f"---- {current_time} ----\n")
-    return current_time
+def stamp_logs() -> None:
+    with open(get_log_path(), "a") as log:
+        log.write(
+            f"---- {datetime.now().strftime("%Y-%m-%d %I:%M %p")} ----\n"
+        )
 
 
 def send_email(subject: str, contents: str):
