@@ -1,4 +1,5 @@
 from enum import Enum
+from glob import glob
 from os import system, walk
 from pathlib import Path
 from pickle import load
@@ -767,60 +768,72 @@ def should_import_anyway(
     return Confirm.ask(f"Are you sure you want to import {album_identifier}?")
 
 
-def import_new_albums(
-    albums: list[str] | None,
-    reformat: bool | None,
-    ask_before_disc_update: bool | None,
-    ask_before_artist_update: bool | None,
-    allow_prompt: bool | None,
+def import_new_files(
+    reformat: bool | None = False,
+    ask_before_disc_update: bool | None = True,
+    ask_before_artist_update: bool | None = True,
+    allow_prompt: bool | None = True,
     is_scheduled_run=False,
     config_path: Path = get_config_path(),
 ) -> None:
-    if is_scheduled_run:
-        stamp_logs()
+    # if is_scheduled_run:
+    #     stamp_logs()
     config = Config.from_toml(config_path)
-    import_config = config.items.import_config
-    import_all = True
-    if not albums:
-        import_all = False
-        albums = get_albums()
-    imports, errors = import_albums(
-        albums,
-        reformat or import_config.reformat,
-        ask_before_disc_update or import_config.ask_before_disc_update,
-        ask_before_artist_update or import_config.ask_before_artist_update,
-        import_all,
-        not is_scheduled_run and allow_prompt or import_config.allow_prompt,
-    )
-    if imports and reformat:
-        reformat_settings = config.items.reformat
-        remove_bracket_years = reformat_settings.remove_bracketed_years
-        remove_bracket_instruments = (
-            reformat_settings.remove_bracketed_instruments
-        )
-        expand_abbreviations = reformat_settings.expand_abbreviations
-        reformat_albums(
-            remove_bracket_years,
-            remove_bracket_instruments,
-            expand_abbreviations,
-        )
-    current_errors = [(key, value) for key, value in errors.items() if value]
-    if is_scheduled_run:
-        send_notifications(current_errors)
-    importable_error_albums = [
-        album for _, albums in current_errors for album in albums
-    ]
-    if not importable_error_albums:
-        return
-    print_error_table(len(importable_error_albums), current_errors)
-    if not import_all:
-        should_import = should_import_anyway(importable_error_albums, errors)
-        if not should_import:
-            return
-        import_new_albums(
-            albums=importable_error_albums,
-            reformat=reformat,
-            ask_before_disc_update=ask_before_disc_update,
-            ask_before_artist_update=ask_before_artist_update,
-            allow_prompt=allow_prompt,
-        )
+    shared_directory = config.items.files.shared_directories
+    files = []
+    for extension in (
+        ".*aac",
+        ".*aiff",
+        ".*flac",
+        ".*m4a",
+        ".*mp3",
+        ".*wav",
+    ):
+        files.extend(glob(extension))
+    print(files)
+
+    # import_config = config.items.import_config
+    # import_all = True
+    # if not albums:
+    #     import_all = False
+    #     albums = get_albums()
+    # imports, errors = import_albums(
+    #     albums,
+    #     reformat or import_config.reformat,
+    #     ask_before_disc_update or import_config.ask_before_disc_update,
+    #     ask_before_artist_update or import_config.ask_before_artist_update,
+    #     import_all,
+    #     not is_scheduled_run and allow_prompt or import_config.allow_prompt,
+    # )
+    # if imports and reformat:
+    #     reformat_settings = config.items.reformat
+    #     remove_bracket_years = reformat_settings.remove_bracketed_years
+    #     remove_bracket_instruments = (
+    #         reformat_settings.remove_bracketed_instruments
+    #     )
+    #     expand_abbreviations = reformat_settings.expand_abbreviations
+    #     reformat_albums(
+    #         remove_bracket_years,
+    #         remove_bracket_instruments,
+    #         expand_abbreviations,
+    #     )
+    # current_errors = [(key, value) for key, value in errors.items() if value]
+    # if is_scheduled_run:
+    #     send_notifications(current_errors)
+    # importable_error_albums = [
+    #     album for _, albums in current_errors for album in albums
+    # ]
+    # if not importable_error_albums:
+    #     return
+    # print_error_table(len(importable_error_albums), current_errors)
+    # if not import_all:
+    #     should_import = should_import_anyway(importable_error_albums, errors)
+    #     if not should_import:
+    #         return
+    #     import_new_albums(
+    #         albums=importable_error_albums,
+    #         reformat=reformat,
+    #         ask_before_disc_update=ask_before_disc_update,
+    #         ask_before_artist_update=ask_before_artist_update,
+    #         allow_prompt=allow_prompt,
+    #     )

@@ -25,10 +25,7 @@ class Files(BaseModel):
         default_factory=lambda: {str(Path.home() / "Dropbox")}
     )
     ignored_directories: Paths = Field(default_factory=set)
-
-    @staticmethod
-    def paths_to_str(paths: set[Path]) -> set[str]:
-        return {str(path) for path in paths}
+    local_directory: str = str(Path.home() / "Music")
 
 
 Bool = Annotated[bool, Parameter(negative=())]
@@ -344,35 +341,36 @@ def set_config_values(
 
 @dataclass
 class ShowFilesKeys(HasFilesName):
-    all: SetBoolParameter = False
-    shared_directories: SetBoolParameter = False
-    ignored_directories: SetBoolParameter = False
+    all: SetBoolParameter = None
+    shared_directories: SetBoolParameter = None
+    ignored_directories: SetBoolParameter = None
+    local_directory: SetBoolParameter = None
 
 
 @dataclass
 class ShowImportKeys(HasImportName):
-    all: SetBoolParameter = False
-    allow_prompt: SetBoolParameter = False
-    ask_before_artist_update: SetBoolParameter = False
-    ask_before_disc_update: SetBoolParameter = False
-    reformat: SetBoolParameter = False
+    all: SetBoolParameter = None
+    allow_prompt: SetBoolParameter = None
+    ask_before_artist_update: SetBoolParameter = None
+    ask_before_disc_update: SetBoolParameter = None
+    reformat: SetBoolParameter = None
 
 
 @dataclass
 class ShowNotificationsKeys(HasNotificationsName):
-    all: SetBoolParameter = False
-    email_on: SetBoolParameter = False
-    system_on: SetBoolParameter = False
-    username: SetBoolParameter = False
-    password: SetBoolParameter = False
+    all: SetBoolParameter = None
+    email_on: SetBoolParameter = None
+    system_on: SetBoolParameter = None
+    username: SetBoolParameter = None
+    password: SetBoolParameter = None
 
 
 @dataclass
 class ShowReformatKeys(HasReformatName):
-    all: SetBoolParameter = False
-    expand_abbreviations: SetBoolParameter = False
-    remove_bracketed_instruments: SetBoolParameter = False
-    remove_bracketed_years: SetBoolParameter = False
+    all: SetBoolParameter = None
+    expand_abbreviations: SetBoolParameter = None
+    remove_bracketed_instruments: SetBoolParameter = None
+    remove_bracketed_years: SetBoolParameter = None
 
 
 def get_values(
@@ -455,7 +453,13 @@ def show(
                 if key not in requested_values:
                     table_values.pop(key)
         items[table.key_name] = table_values
-    if len(items.keys()) == 1:
+    if any(
+        (
+            value
+            for value in items.values()
+            if isinstance(value, dict) and len(value.keys()) == 1
+        )
+    ):
         value = next(get_values(items))
         if (
             "notifications" in items.keys()
@@ -467,7 +471,8 @@ def show(
             if not show_password:
                 return
         if isinstance(value, set):
-            value = list(Files.paths_to_str(set(Path(path) for path in value)))
+            value = list(value)
         print(value)
     else:
+        items["import"] = items.pop("import_config")
         display_config_toml(toml.dumps(items))
