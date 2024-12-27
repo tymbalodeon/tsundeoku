@@ -1,7 +1,9 @@
 import fnmatch
 import re
 from glob import glob
+from os import listdir
 from pathlib import Path
+from shutil import copy
 from typing import Annotated, Literal, cast
 
 import mutagen
@@ -59,13 +61,13 @@ def import_new(
     reformat=False,
     ask_before_disc_update: Annotated[
         bool, Parameter(negative="--auto-update-disc")
-    ] = False,
+    ] = True,
     ask_before_artist_update: Annotated[
         bool, Parameter(negative="--auto-update-artist")
-    ] = False,
+    ] = True,
     allow_prompt: Annotated[
         bool, Parameter(negative="--disallow-prompt")
-    ] = False,
+    ] = True,
     config_path: Annotated[
         Path,
         Parameter(
@@ -73,6 +75,7 @@ def import_new(
             validator=(PathValidator(exists=True, dir_okay=False), is_toml),
         ),
     ] = get_config_path(),
+    force: Annotated[bool, Parameter(negative=())] = False,
     is_scheduled_run: Annotated[bool, Parameter(show=False)] = False,
 ):
     """Copy new adds from your shared folder to your local library.
@@ -104,24 +107,40 @@ def import_new(
             imported_files = []
         for file in imported_files:
             if file not in shared_directory_files:
-                pass
-                # remove from imported_files
+                imported_files.remove(file)
+            imported_files_file.write_text(f"{'\n'.join(imported_files)}\n")
         for file in shared_directory_files:
-            if file in imported_files:
+            if Path(file).is_dir() or not force and file in imported_files:
                 continue
             try:
-                if Path(file).is_dir():
-                    continue
                 tags = TinyTag.get(file)
                 artist = tags.albumartist or tags.artist or "Unknown Artist"
                 album = tags.album or "Unknown Album"
                 track = Path(artist) / album / Path(file).name
                 display_message("Importing", str(track))
+                local_path = Path(config.items.files.local_directory) / track
+                local_path.parent.mkdir(parents=True, exist_ok=True)
+                if local_path.exists():
+                    existing_track = next(
+                        (
+                            file
+                            for file in listdir(local_path.parent)
+                            if re.compile(r"__\d+").search(file)
+                            and (tags.title or Path(file).stem) in file
+                        ),
+                        None,
+                    )
+                    if existing_track:
+                        count = int(
+                            existing_track.split("__")[1].split(".")[0]
+                        )
+                        local_path = (
+                            local_path.parent
+                            / f"{local_path.stem}__{count + 1}{local_path.suffix}"
+                        )
+                copy(file, local_path)
                 with open(imported_files_file, "a") as log_file:
                     log_file.write(f"{file}\n")
-                # album_directory = (
-                #     Path(config.items.files.local_directory) / track
-                # )
             except Exception as exception:
                 display_message("Error", f"{exception}: {Path(file).name}")
 
