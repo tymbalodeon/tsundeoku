@@ -2,7 +2,7 @@ import fnmatch
 import re
 from glob import glob
 from pathlib import Path
-from typing import Annotated, cast
+from typing import Annotated, Literal, cast
 
 import mutagen
 from cyclopts import App, Parameter
@@ -35,6 +35,22 @@ Import audio files from a shared folder to a local library""",
 )
 app.command(config_app)
 app.command(schedule_app)
+
+
+def display_message(
+    action: Literal["Error"] | Literal["Importing"], message: str
+):
+    if action == "Error":
+        action_color = "red"
+        message_color = action_color
+        indent = "    "
+    else:
+        action_color = "green"
+        message_color = "white"
+        indent = ""
+    print(
+        f"  {indent}[{action_color} bold]{action}[/] [{message_color}]{message}[/]"
+    )
 
 
 @app.command(name="import")
@@ -74,53 +90,40 @@ def import_new(
     """
     config = Config.from_toml(config_path)
     for directory in config.items.files.shared_directories:
-        for extension in (
-            "*.aac",
-            "*.aiff",
-            "*.flac",
-            "*.m4a",
-            "*.mp3",
-            "*.wav",
-        ):
-            for file in glob(f"{directory}/**/{extension}", recursive=True):
-                if reformat:
-                    tags = TinyTag.get(file)
-                    print(tags.artist, tags.album, tags.disc)
-                print(file)
-            # metadata = mutagen.File(file, easy=True)
-            # if metadata is not None:
-            #     print(vars(metadata.tags))
-            #     for key, value in metadata.tags.items():
-            #         if isinstance(value, list):
-            #             for v in value:
-            #                 if isinstance(v, str):
-            #                     print({key: value})
-            #         else:
-            #             print({key: value})
-    # try:
-    #     import_new_files(
-    #         reformat=reformat,
-    #         ask_before_disc_update=ask_before_disc_update,
-    #         ask_before_artist_update=ask_before_artist_update,
-    #         allow_prompt=allow_prompt,
-    #         is_scheduled_run=is_scheduled_run,
-    #         config_path=config_path,
-    #     )
-    # except Exception as error:
-    #     if repr(error) == "exit":
-    #         return
-    # if is_scheduled_run:
-    #     config = get_loaded_config()
-    #     email_on = config.notifications.email_on
-    #     system_on = config.notifications.system_on
-    #     if email_on or system_on:
-    #         subject = "ERROR"
-    #         contents = str(error)
-    #         if email_on:
-    #             send_email(subject, contents)
-    #         if system_on:
-    #             notify(contents, title=get_app_name())
-    # print_with_theme(str(error), level=StyleLevel.ERROR)
+        shared_directory_files = tuple(
+            file for file in sorted(glob(f"{directory}/**/*", recursive=True))
+        )
+        imported_files_file = (
+            Path.home() / f".local/share/{get_app_name()}/imported_files"
+        )
+        if imported_files_file.exists():
+            imported_files = imported_files_file.read_text().splitlines()
+        else:
+            imported_files_file.parent.mkdir(parents=True, exist_ok=True)
+            imported_files_file.touch()
+            imported_files = []
+        for file in imported_files:
+            if file not in shared_directory_files:
+                pass
+                # remove from imported_files
+        for file in shared_directory_files:
+            if file in imported_files:
+                continue
+            try:
+                if Path(file).is_dir():
+                    continue
+                tags = TinyTag.get(file)
+                artist = tags.albumartist or tags.artist or "Unknown Artist"
+                album = tags.album or "Unknown Album"
+                track = Path(artist) / album / Path(file).name
+                display_message("Importing", str(track))
+                with open(imported_files_file, "a") as log_file:
+                    log_file.write(f"{file}\n")
+                # album_directory = (
+                #     Path(config.items.files.local_directory) / track
+                # )
+            except Exception as exception:
+                display_message("Error", f"{exception}: {Path(file).name}")
 
 
 @app.command()

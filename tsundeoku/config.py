@@ -24,7 +24,6 @@ class Files(BaseModel):
     shared_directories: Paths = Field(
         default_factory=lambda: {str(Path.home() / "Dropbox")}
     )
-    ignored_directories: Paths = Field(default_factory=set)
     local_directory: str = str(Path.home() / "Music")
 
 
@@ -185,7 +184,6 @@ class HasReformatName:
 @dataclass
 class SetFilesKeys(HasFilesName):
     shared_directories: SetPathsParameter = None
-    ignored_directories: SetPathsParameter = None
     local_directory: Annotated[
         str | None, Parameter(negative=(), show_default=False)
     ] = None
@@ -346,7 +344,6 @@ def set_config_values(
 class ShowFilesKeys(HasFilesName):
     all: SetBoolParameter = None
     shared_directories: SetBoolParameter = None
-    ignored_directories: SetBoolParameter = None
     local_directory: SetBoolParameter = None
 
 
