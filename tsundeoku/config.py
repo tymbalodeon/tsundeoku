@@ -18,37 +18,29 @@ config_app = App(
 )
 
 Paths = Annotated[tuple[str, ...], Parameter(negative=(), show_default=False)]
+Bool = Annotated[bool, Parameter(negative=())]
 
 
-class Files(BaseModel):
+class Import(BaseModel):
     shared_directories: Paths = Field(
         default_factory=lambda: (str(Path.home() / "Dropbox"),)
     )
     ignored_paths: Paths = ()
     local_directory: str = str(Path.home() / "Music")
-
-
-Bool = Annotated[bool, Parameter(negative=())]
-
-
-class Import(BaseModel):
+    reformat: Bool = False
     allow_prompt: Bool = False
     ask_before_artist_update: Bool = True
     ask_before_disc_update: Bool = True
-    reformat: Bool = False
+    expand_abbreviations: Bool = False
+    remove_bracketed_instruments: Bool = False
+    remove_bracketed_years: Bool = False
 
 
-class Notifications(BaseModel):
+class Schedule(BaseModel):
     email_on: Bool = False
     system_on: Bool = False
     username: str | None = None
     password: str | None = None
-
-
-class Reformat(BaseModel):
-    expand_abbreviations: Bool = False
-    remove_bracketed_instruments: Bool = False
-    remove_bracketed_years: Bool = False
 
 
 def get_app_name() -> Literal["tsundeoku"]:
@@ -61,16 +53,12 @@ def get_config_path() -> Path:
 
 
 class ConfigItems(BaseModel):
-    files: Files = Field(default_factory=lambda: Files())
     import_config: Import = Field(
         alias="import",
         validation_alias=AliasChoices("import", "import_config"),
         default_factory=lambda: Import(),
     )
-    notifications: Notifications = Field(
-        default_factory=lambda: Notifications()
-    )
-    reformat: Reformat = Field(default_factory=lambda: Reformat())
+    notifications: Schedule = Field(default_factory=lambda: Schedule())
 
 
 @dataclass
@@ -78,16 +66,18 @@ class Config:
     items: ConfigItems = field(default_factory=lambda: ConfigItems())
     path: Path = get_config_path()
 
+    @property
+    def shared_directories(self):
+        pass
+
     @staticmethod
     def from_dict(
         config: dict[str, Any], path: Path | None = None
     ) -> "Config":
         if path is None:
             path = get_config_path()
-        files = config.pop("files")
-        Files.model_validate(files)
         ConfigItems.model_validate(config)
-        return Config(items=ConfigItems(**config, files=files), path=path)
+        return Config(items=ConfigItems(**config), path=path)
 
     @staticmethod
     def from_toml(path: Path | None = None) -> "Config":
@@ -95,59 +85,6 @@ class Config:
             path = get_config_path()
         config = toml.loads(path.read_text())
         return Config.from_dict(config, path=path)
-
-    @staticmethod
-    def get_config_or_default_shared_directories() -> tuple[str, ...]:
-        try:
-            return Config.from_toml().items.files.shared_directories
-        except Exception:
-            return Config().items.files.shared_directories
-
-    @staticmethod
-    def get_config_or_default_ignored_paths() -> tuple[str, ...]:
-        try:
-            return Config.from_toml().items.files.ignored_paths
-        except Exception:
-            return Config().items.files.ignored_paths
-
-    @staticmethod
-    def get_config_or_default_local_directory() -> str:
-        try:
-            return Config.from_toml().items.files.local_directory
-        except Exception:
-            return Config().items.files.local_directory
-
-    @staticmethod
-    def get_config_or_default_reformat() -> bool:
-        try:
-            return Config.from_toml().items.import_config.reformat
-        except Exception:
-            return Config().items.import_config.reformat
-
-    @staticmethod
-    def get_config_or_default_ask_before_update_artist() -> bool:
-        try:
-            return (
-                Config.from_toml().items.import_config.ask_before_artist_update
-            )
-        except Exception:
-            return Config().items.import_config.ask_before_artist_update
-
-    @staticmethod
-    def get_config_or_default_ask_before_update_disc() -> bool:
-        try:
-            return (
-                Config.from_toml().items.import_config.ask_before_disc_update
-            )
-        except Exception:
-            return Config().items.import_config.ask_before_disc_update
-
-    @staticmethod
-    def get_config_or_default_allow_prompt() -> bool:
-        try:
-            return Config.from_toml().items.import_config.allow_prompt
-        except Exception:
-            return Config().items.import_config.allow_prompt
 
     def to_toml(self) -> str:
         return toml.dumps(self.items.model_dump(by_alias=True))

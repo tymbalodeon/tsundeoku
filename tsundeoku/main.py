@@ -62,26 +62,25 @@ def reformat_field(field: str, regex: str) -> str:
 def import_command(
     *,
     shared_directories: Annotated[
-        tuple[str, ...], Parameter(group="Files", negative=())
-    ] = Config.get_config_or_default_shared_directories(),
+        tuple[str, ...], Parameter(negative=())
+    ] = Config().items.import_config.shared_directories,
     ignored_paths: Annotated[
-        tuple[str, ...], Parameter(group="Files", negative=())
-    ] = Config.get_config_or_default_ignored_paths(),
+        tuple[str, ...], Parameter(negative=())
+    ] = Config().items.import_config.ignored_paths,
     local_directory: Annotated[
-        str, Parameter(group="Files", negative=())
-    ] = Config.get_config_or_default_local_directory(),
-    reformat: Annotated[
-        bool, Parameter(group="Reformat")
-    ] = Config.get_config_or_default_reformat(),
+        str, Parameter(negative=())
+    ] = Config().items.import_config.local_directory,
+    reformat: bool = Config().items.import_config.reformat,
     ask_before_artist_update: Annotated[
-        bool, Parameter(group="Reformat", negative="--auto-update-artist")
-    ] = Config.get_config_or_default_ask_before_update_artist(),
+        bool, Parameter(negative="--auto-update-artist")
+    ] = Config().items.import_config.ask_before_artist_update,
     ask_before_disc_update: Annotated[
-        bool, Parameter(group="Reformat", negative="--auto-update-disc")
-    ] = Config.get_config_or_default_ask_before_update_disc(),
+        bool,
+        Parameter(negative="--auto-update-disc"),
+    ] = Config().items.import_config.ask_before_disc_update,
     allow_prompt: Annotated[
-        bool, Parameter(group="Reformat", negative="--disallow-prompt")
-    ] = Config.get_config_or_default_allow_prompt(),
+        bool, Parameter(negative="--disallow-prompt")
+    ] = Config().items.import_config.allow_prompt,
     config_path: Annotated[
         Path,
         Parameter(
@@ -106,8 +105,20 @@ def import_command(
     allow_prompt: bool
         Toggle skipping imports that require user input.
     """
-    config = Config.from_toml(config_path)
-    for directory in config.items.files.shared_directories:
+    if config_path != get_config_path():
+        config = Config.from_toml(config_path)
+        shared_directories = config.items.import_config.shared_directories
+        ignored_paths = config.items.import_config.ignored_paths
+        local_directory = config.items.import_config.local_directory
+        reformat = config.items.import_config.reformat
+        ask_before_artist_update = (
+            config.items.import_config.ask_before_artist_update
+        )
+        ask_before_disc_update = (
+            config.items.import_config.ask_before_disc_update
+        )
+        allow_prompt = config.items.import_config.allow_prompt
+    for directory in shared_directories:
         shared_directory_files = tuple(
             file for file in sorted(glob(f"{directory}/**/*", recursive=True))
         )
@@ -128,7 +139,7 @@ def import_command(
             file = file.strip()
             if (
                 Path(file).is_dir()
-                or file in config.items.files.ignored_paths
+                or file in ignored_paths
                 or not force
                 and file in imported_files
             ):
@@ -158,7 +169,7 @@ def import_command(
                 album = tags.album or "Unknown Album"
                 track = Path(artist) / album / Path(file).name
                 display_message("Importing", str(track))
-                local_path = Path(config.items.files.local_directory) / track
+                local_path = Path(local_directory) / track
                 local_path.parent.mkdir(parents=True, exist_ok=True)
                 if local_path.exists():
                     existing_track = next(
