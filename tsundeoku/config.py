@@ -17,13 +17,14 @@ config_app = App(
     name="config", help="Show and set config values.", version_flags=()
 )
 
-Paths = Annotated[set[str], Parameter(negative=(), show_default=False)]
+Paths = Annotated[tuple[str, ...], Parameter(negative=(), show_default=False)]
 
 
 class Files(BaseModel):
     shared_directories: Paths = Field(
-        default_factory=lambda: {str(Path.home() / "Dropbox")}
+        default_factory=lambda: tuple(str(Path.home() / "Dropbox"))
     )
+    ignored_paths: Paths = ()
     local_directory: str = str(Path.home() / "Music")
 
 
@@ -148,7 +149,7 @@ global_group = Group("Global", sort_key=0)
 
 
 SetPathsParameter = Annotated[
-    set[str] | None,
+    tuple[str, ...] | None,
     Parameter(negative=(), show_choices=False, show_default=False),
 ]
 
@@ -184,6 +185,7 @@ class HasReformatName:
 @dataclass
 class SetFilesKeys(HasFilesName):
     shared_directories: SetPathsParameter = None
+    ignored_paths: SetPathsParameter = None
     local_directory: Annotated[
         str | None, Parameter(negative=(), show_default=False)
     ] = None

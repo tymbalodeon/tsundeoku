@@ -1,16 +1,13 @@
-import fnmatch
 import re
 from glob import glob
 from os import listdir
 from pathlib import Path
 from shutil import copy
-from typing import Annotated, Literal, cast
+from typing import Annotated, Literal
 
-import mutagen
 from cyclopts import App, Parameter
 from cyclopts.config import Toml
 from cyclopts.validators import Path as PathValidator
-from pync import notify
 from rich import print
 from tinytag import TinyTag
 
@@ -22,13 +19,9 @@ from tsundeoku.config import (
     is_toml,
     parse_path,
 )
-from tsundeoku.import_new import import_new_files
-from tsundeoku.reformat import reformat_albums
-from tsundeoku.schedule import schedule_app, send_email
-from tsundeoku.style import StyleLevel, print_with_theme
+from tsundeoku.schedule import schedule_app
 
 app = App(
-    # default_parameter=Parameter(negative=()),
     config=Toml(get_config_path()),
     help="""
 積んでおく // tsundeoku –– "to pile up for later"
@@ -56,7 +49,7 @@ def display_message(
 
 
 @app.command(name="import")
-def import_new(
+def import_command(
     *,
     reformat=False,
     ask_before_disc_update: Annotated[
@@ -110,11 +103,22 @@ def import_new(
                 imported_files.remove(file)
             imported_files_file.write_text(f"{'\n'.join(imported_files)}\n")
         for file in shared_directory_files:
-            if Path(file).is_dir() or not force and file in imported_files:
+            file = file.strip()
+            if (
+                Path(file).is_dir()
+                or file in config.items.files.ignored_paths
+                or not force
+                and file in imported_files
+            ):
                 continue
             try:
                 tags = TinyTag.get(file)
+                # Check for bracketed instruments here, maybe only if albumartist is None?
                 artist = tags.albumartist or tags.artist or "Unknown Artist"
+                # check if reformat and remove bracketed years
+                # if so, replace by regex the bracketed year here to make the path
+                # then store the fact that the album field and year field needs to be updated
+                # after the copy -- be sure to update tags on the copied version, not the original!
                 album = tags.album or "Unknown Album"
                 track = Path(artist) / album / Path(file).name
                 display_message("Importing", str(track))
@@ -138,69 +142,10 @@ def import_new(
                             local_path.parent
                             / f"{local_path.stem}__{count + 1}{local_path.suffix}"
                         )
+                print(local_path)
                 copy(file, local_path)
                 with open(imported_files_file, "a") as log_file:
                     log_file.write(f"{file}\n")
+                # If reformatting, check and do that here, on the copied version (local_path)
             except Exception as exception:
                 display_message("Error", f"{exception}: {Path(file).name}")
-
-
-@app.command()
-def reformat(
-    *,
-    remove_bracketed_years: bool | None = None,
-    remove_bracketed_instruments: bool | None = None,
-    expand_abbreviations: bool | None = None,
-):
-    """
-    Reformat metadata.
-
-    Rules:
-
-    * Remove bracketeded years (e.g., "[2022]") from album fields. If the year
-      field is blank, it will be updated with the year in bracketeds. If the year
-      field contains a year different from the one in bracketeds, you will be
-      asked whether you want to update the year field to match the bracketeded
-      year.
-
-    * Expand the abbreviations "Rec.," "Rec.s," and "Orig." to "Recording,"
-      "Recordings," and "Original," respectively.
-
-    * [Optional] Remove bracketeded solo instrument indications (e.g., "[solo
-      piano]") from artist fields.
-
-    Parameters
-    ----------
-    remove_bracketed_years: bool | None
-        Remove bracketed years from album field
-    remove_bracketed_instruments: bool | None
-        Remove bracketed instrument indications from artist field
-    expand_abbreviations: bool | None
-        Expand abbreviations
-    """
-    # reformat_settings = cast(ReformatConfig, get_loaded_config().reformat)
-    # if remove_bracketed_years is None:
-    #     remove_bracketed_years_value = reformat_settings.remove_bracketed_years
-    # else:
-    #     remove_bracketed_years_value = True
-    # if remove_bracketed_instruments is None:
-    #     remove_bracketed_instruments_value = (
-    #         reformat_settings.remove_bracketed_instruments
-    #     )
-    # else:
-    #     remove_bracketed_instruments_value = True
-    # if expand_abbreviations is None:
-    #     expand_abbreviations_value = reformat_settings.expand_abbreviations
-    # else:
-    #     expand_abbreviations_value = True
-    # reformat_albums(
-    #     remove_bracketed_years_value,
-    #     remove_bracketed_instruments_value,
-    #     expand_abbreviations_value,
-    # )
-    print(
-        Toml(
-            get_config_path(), use_commands_as_keys=False, allow_unknown=True
-        ).config
-    )
-    print(remove_bracketed_years)
