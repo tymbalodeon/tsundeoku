@@ -22,7 +22,7 @@ Paths = Annotated[tuple[str, ...], Parameter(negative=(), show_default=False)]
 
 class Files(BaseModel):
     shared_directories: Paths = Field(
-        default_factory=lambda: tuple(str(Path.home() / "Dropbox"))
+        default_factory=lambda: (str(Path.home() / "Dropbox"),)
     )
     ignored_paths: Paths = ()
     local_directory: str = str(Path.home() / "Music")
@@ -95,6 +95,59 @@ class Config:
             path = get_config_path()
         config = toml.loads(path.read_text())
         return Config.from_dict(config, path=path)
+
+    @staticmethod
+    def get_config_or_default_shared_directories() -> tuple[str, ...]:
+        try:
+            return Config.from_toml().items.files.shared_directories
+        except Exception:
+            return Config().items.files.shared_directories
+
+    @staticmethod
+    def get_config_or_default_ignored_paths() -> tuple[str, ...]:
+        try:
+            return Config.from_toml().items.files.ignored_paths
+        except Exception:
+            return Config().items.files.ignored_paths
+
+    @staticmethod
+    def get_config_or_default_local_directory() -> str:
+        try:
+            return Config.from_toml().items.files.local_directory
+        except Exception:
+            return Config().items.files.local_directory
+
+    @staticmethod
+    def get_config_or_default_reformat() -> bool:
+        try:
+            return Config.from_toml().items.import_config.reformat
+        except Exception:
+            return Config().items.import_config.reformat
+
+    @staticmethod
+    def get_config_or_default_ask_before_update_artist() -> bool:
+        try:
+            return (
+                Config.from_toml().items.import_config.ask_before_artist_update
+            )
+        except Exception:
+            return Config().items.import_config.ask_before_artist_update
+
+    @staticmethod
+    def get_config_or_default_ask_before_update_disc() -> bool:
+        try:
+            return (
+                Config.from_toml().items.import_config.ask_before_disc_update
+            )
+        except Exception:
+            return Config().items.import_config.ask_before_disc_update
+
+    @staticmethod
+    def get_config_or_default_allow_prompt() -> bool:
+        try:
+            return Config.from_toml().items.import_config.allow_prompt
+        except Exception:
+            return Config().items.import_config.allow_prompt
 
     def to_toml(self) -> str:
         return toml.dumps(self.items.model_dump(by_alias=True))

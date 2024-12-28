@@ -5,7 +5,7 @@ from pathlib import Path
 from shutil import copy
 from typing import Annotated, Literal
 
-from cyclopts import App, Parameter
+from cyclopts import App, Group, Parameter
 from cyclopts.config import Toml
 from cyclopts.validators import Path as PathValidator
 from rich import print
@@ -24,7 +24,7 @@ from tsundeoku.schedule import schedule_app
 app = App(
     config=Toml(get_config_path()),
     help="""
-積んでおく // tsundeoku –– "to pile up for later"
+積んでおく (tsundeoku) –– "to pile up for later"
 
 Import audio files from a shared folder to a local library""",
 )
@@ -48,27 +48,49 @@ def display_message(
     )
 
 
+global_group = Group("Global", sort_key=0)
+
+
+def reformat_field(field: str, regex: str) -> str:
+    match = re.search(regex, field)
+    if match is None:
+        return field
+    return field.replace(match.group(), "")
+
+
 @app.command(name="import")
 def import_command(
     *,
-    reformat=False,
-    ask_before_disc_update: Annotated[
-        bool, Parameter(negative="--auto-update-disc")
-    ] = True,
+    shared_directories: Annotated[
+        tuple[str, ...], Parameter(group="Files", negative=())
+    ] = Config.get_config_or_default_shared_directories(),
+    ignored_paths: Annotated[
+        tuple[str, ...], Parameter(group="Files", negative=())
+    ] = Config.get_config_or_default_ignored_paths(),
+    local_directory: Annotated[
+        str, Parameter(group="Files", negative=())
+    ] = Config.get_config_or_default_local_directory(),
+    reformat: Annotated[
+        bool, Parameter(group="Reformat")
+    ] = Config.get_config_or_default_reformat(),
     ask_before_artist_update: Annotated[
-        bool, Parameter(negative="--auto-update-artist")
-    ] = True,
+        bool, Parameter(group="Reformat", negative="--auto-update-artist")
+    ] = Config.get_config_or_default_ask_before_update_artist(),
+    ask_before_disc_update: Annotated[
+        bool, Parameter(group="Reformat", negative="--auto-update-disc")
+    ] = Config.get_config_or_default_ask_before_update_disc(),
     allow_prompt: Annotated[
-        bool, Parameter(negative="--disallow-prompt")
-    ] = True,
+        bool, Parameter(group="Reformat", negative="--disallow-prompt")
+    ] = Config.get_config_or_default_allow_prompt(),
     config_path: Annotated[
         Path,
         Parameter(
             converter=parse_path,
+            group=global_group,
             validator=(PathValidator(exists=True, dir_okay=False), is_toml),
         ),
     ] = get_config_path(),
-    force: Annotated[bool, Parameter(negative=())] = False,
+    force: Annotated[bool, Parameter(group=global_group, negative=())] = False,
     is_scheduled_run: Annotated[bool, Parameter(show=False)] = False,
 ):
     """Copy new adds from your shared folder to your local library.
@@ -113,12 +135,26 @@ def import_command(
                 continue
             try:
                 tags = TinyTag.get(file)
-                # Check for bracketed instruments here, maybe only if albumartist is None?
-                artist = tags.albumartist or tags.artist or "Unknown Artist"
-                # check if reformat and remove bracketed years
-                # if so, replace by regex the bracketed year here to make the path
-                # then store the fact that the album field and year field needs to be updated
-                # after the copy -- be sure to update tags on the copied version, not the original!
+                if tags.albumartist:
+                    artist = tags.albumartist
+                elif tags.artist:
+                    # check conditions for artist reformat from config, params, etc.
+                    if reformat:
+                        artist = reformat_field(tags.artist, r"\s\[solo.+\]")
+                    else:
+                        artist = tags.artist
+                else:
+                    artist = "Unknown Artist"
+                if tags.album:
+                    # check conditions for album reformat from config, params, etc.
+                    if reformat:
+                        album = reformat_field(
+                            tags.album, r"\s\[\d{4}(\s(.*EP|.*single))?\]"
+                        )
+                    else:
+                        album = tags.album
+                else:
+                    album = "Unknown Album"
                 album = tags.album or "Unknown Album"
                 track = Path(artist) / album / Path(file).name
                 display_message("Importing", str(track))
@@ -142,7 +178,6 @@ def import_command(
                             local_path.parent
                             / f"{local_path.stem}__{count + 1}{local_path.suffix}"
                         )
-                print(local_path)
                 copy(file, local_path)
                 with open(imported_files_file, "a") as log_file:
                     log_file.write(f"{file}\n")
