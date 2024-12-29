@@ -9,6 +9,7 @@ from cyclopts import App, Group, Parameter
 from cyclopts.config import Toml
 from cyclopts.validators import Path as PathValidator
 from rich import print
+from rich.prompt import Confirm
 from tinytag import TinyTag
 
 from tsundeoku.config import (
@@ -51,10 +52,24 @@ def display_message(
 global_group = Group("Global", sort_key=0)
 
 
-def reformat_field(field: str, regex: str) -> str:
+def format_field(
+    *,
+    field: str,
+    regex: str,
+    reformat: bool,
+    confirm_message: str | None,
+    allow_prompt: bool,
+) -> str | None:
+    if not reformat:
+        return field
     match = re.search(regex, field)
     if match is None:
         return field
+    if not allow_prompt:
+        return None
+    if confirm_message:
+        if not Confirm.ask(confirm_message):
+            return field
     return field.replace(match.group(), "")
 
 
@@ -78,9 +93,6 @@ def import_command(
         bool,
         Parameter(negative="--auto-update-disc"),
     ] = Config().items.import_config.ask_before_disc_update,
-    allow_prompt: Annotated[
-        bool, Parameter(negative="--disallow-prompt")
-    ] = Config().items.import_config.allow_prompt,
     config_path: Annotated[
         Path,
         Parameter(
@@ -90,20 +102,24 @@ def import_command(
         ),
     ] = get_config_path(),
     force: Annotated[bool, Parameter(group=global_group, negative=())] = False,
-    is_scheduled_run: Annotated[bool, Parameter(show=False)] = False,
+    allow_prompt: Annotated[bool, Parameter(show=False)] = False,
 ):
     """Copy new adds from your shared folder to your local library.
 
     Parameters
     ----------
-    reformat: bool
+    shared_directories
+        Directories to scan for new audio files.
+    ignored_paths
+        Paths to skip when scanning for new audio files.
+    local_directory
+        Directory to copy new audio files into.
+    reformat
         Toggle reformatting.
-    ask_before_disc_update: bool
+    ask_before_disc_update
         Toggle confirming disc updates.
-    ask_before_artist_update: bool
+    ask_before_artist_update
         Toggle confirming removal of brackets from artist field.
-    allow_prompt: bool
-        Toggle skipping imports that require user input.
     """
     if config_path != get_config_path():
         config = Config.from_toml(config_path)
@@ -117,7 +133,6 @@ def import_command(
         ask_before_disc_update = (
             config.items.import_config.ask_before_disc_update
         )
-        allow_prompt = config.items.import_config.allow_prompt
     for directory in shared_directories:
         shared_directory_files = tuple(
             file for file in sorted(glob(f"{directory}/**/*", recursive=True))
@@ -149,21 +164,37 @@ def import_command(
                 if tags.albumartist:
                     artist = tags.albumartist
                 elif tags.artist:
-                    # check conditions for artist reformat from config, params, etc.
-                    if reformat:
-                        artist = reformat_field(tags.artist, r"\s\[solo.+\]")
+                    if ask_before_artist_update:
+                        confirm_message = f"Would you like to remove the bracketed instrument from {tags.artist}?"
                     else:
-                        artist = tags.artist
+                        confirm_message = None
+                    artist = format_field(
+                        field=tags.artist,
+                        regex=r"\s\[solo.+\]",
+                        reformat=reformat,
+                        confirm_message=confirm_message,
+                        allow_prompt=allow_prompt,
+                    )
+                    if artist is None:
+                        # send notification
+                        continue
                 else:
                     artist = "Unknown Artist"
                 if tags.album:
-                    # check conditions for album reformat from config, params, etc.
-                    if reformat:
-                        album = reformat_field(
-                            tags.album, r"\s\[\d{4}(\s(.*EP|.*single))?\]"
-                        )
+                    if ask_before_disc_update:
+                        confirm_message = f"Would you like to remove the bracketed year from {tags.album}?"
                     else:
-                        album = tags.album
+                        confirm_message = None
+                    album = format_field(
+                        field=tags.album,
+                        regex=r"\s\[\d{4}(\s(.*EP|.*single))?\]",
+                        reformat=reformat,
+                        confirm_message=confirm_message,
+                        allow_prompt=allow_prompt,
+                    )
+                    if album is None:
+                        # send notification
+                        continue
                 else:
                     album = "Unknown Album"
                 album = tags.album or "Unknown Album"

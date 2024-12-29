@@ -28,7 +28,6 @@ class Import(BaseModel):
     ignored_paths: Paths = ()
     local_directory: str = str(Path.home() / "Music")
     reformat: Bool = False
-    allow_prompt: Bool = False
     ask_before_artist_update: Bool = True
     ask_before_disc_update: Bool = True
     expand_abbreviations: Bool = False
@@ -58,7 +57,7 @@ class ConfigItems(BaseModel):
         validation_alias=AliasChoices("import", "import_config"),
         default_factory=lambda: Import(),
     )
-    notifications: Schedule = Field(default_factory=lambda: Schedule())
+    schedule: Schedule = Field(default_factory=lambda: Schedule())
 
 
 @dataclass
@@ -145,13 +144,6 @@ SetPathsParameter = Annotated[
 
 
 @dataclass
-class HasFilesName:
-    @property
-    def key_name(self) -> Literal["files"]:
-        return "files"
-
-
-@dataclass
 class HasImportName:
     @property
     def key_name(self) -> Literal["import_config"]:
@@ -159,26 +151,10 @@ class HasImportName:
 
 
 @dataclass
-class HasNotificationsName:
+class HasScheduleName:
     @property
-    def key_name(self) -> Literal["notifications"]:
-        return "notifications"
-
-
-@dataclass
-class HasReformatName:
-    @property
-    def key_name(self) -> Literal["reformat"]:
-        return "reformat"
-
-
-@dataclass
-class SetFilesKeys(HasFilesName):
-    shared_directories: SetPathsParameter = None
-    ignored_paths: SetPathsParameter = None
-    local_directory: Annotated[
-        str | None, Parameter(negative=(), show_default=False)
-    ] = None
+    def key_name(self) -> Literal["schedule"]:
+        return "schedule"
 
 
 SetBoolParameter = Annotated[bool | None, Parameter(show_default=False)]
@@ -186,36 +162,20 @@ SetBoolParameter = Annotated[bool | None, Parameter(show_default=False)]
 
 @dataclass
 class SetImportKeys(HasImportName):
-    allow_prompt: Annotated[
-        SetBoolParameter, Parameter(negative="--import.disallow-prompt")
-    ] = None
-    ask_before_artist_update: Annotated[
-        SetBoolParameter, Parameter(negative="--import.auto-update-artist")
+    shared_directories: SetPathsParameter = None
+    ignored_paths: SetPathsParameter = None
+    local_directory: Annotated[
+        str | None, Parameter(negative=(), show_default=False)
     ] = None
     reformat: Annotated[
         SetBoolParameter, Parameter(negative="--import.no-reformat")
     ] = None
-
-
-SetStrParameter = Annotated[
-    str | Literal[False], Parameter(show_choices=False, show_default=False)
-]
-
-
-@dataclass
-class SetNotificationsKeys(HasNotificationsName):
-    email_on: Annotated[
-        SetBoolParameter, Parameter(negative="--notifications.email-off")
+    ask_before_artist_update: Annotated[
+        SetBoolParameter, Parameter(negative="--import.auto-update-artist")
     ] = None
-    system_on: Annotated[
-        SetBoolParameter, Parameter(negative="--notifications.system-off")
+    ask_before_disc_update: Annotated[
+        SetBoolParameter, Parameter(negative="--import.auto-update-disc")
     ] = None
-    username: SetStrParameter = False
-    password: SetStrParameter = False
-
-
-@dataclass
-class SetReformatKeys(HasReformatName):
     expand_abbreviations: Annotated[
         SetBoolParameter, Parameter(negative="--reformat.keep-abbreviations")
     ] = None
@@ -226,6 +186,23 @@ class SetReformatKeys(HasReformatName):
     remove_bracketed_years: Annotated[
         SetBoolParameter, Parameter(negative="--reformat.bracketed-years")
     ] = None
+
+
+SetStrParameter = Annotated[
+    str | Literal[False], Parameter(show_choices=False, show_default=False)
+]
+
+
+@dataclass
+class SetScheduleKeys(HasScheduleName):
+    email_on: Annotated[
+        SetBoolParameter, Parameter(negative="--schedule.email-off")
+    ] = None
+    system_on: Annotated[
+        SetBoolParameter, Parameter(negative="--schedule.system-off")
+    ] = None
+    username: SetStrParameter = False
+    password: SetStrParameter = False
 
 
 def merge_dicts(
@@ -253,18 +230,8 @@ def merge_dicts(
 
 
 def get_requested_tables(
-    tables: tuple[
-        HasFilesName
-        | HasImportName
-        | HasNotificationsName
-        | HasReformatName
-        | None,
-        ...,
-    ],
-) -> tuple[
-    HasFilesName | HasImportName | HasNotificationsName | HasReformatName,
-    ...,
-]:
+    tables: tuple[HasImportName | HasScheduleName | None, ...],
+) -> tuple[HasImportName | HasScheduleName, ...]:
     return tuple(table for table in tables if table is not None)
 
 
@@ -277,16 +244,12 @@ def get_requested_items(table_items: dict[str, Any]) -> dict[str, Any]:
 @config_app.command(name="set")
 def set_config_values(
     *,
-    files: Annotated[SetFilesKeys | None, Parameter(group="Files")] = None,
     import_config: Annotated[
         SetImportKeys | None,
         Parameter(name="import", group="Import", show_default=False),
     ] = None,
-    notifications: Annotated[
-        SetNotificationsKeys | None, Parameter(group="Notifications")
-    ] = None,
-    reformat: Annotated[
-        SetReformatKeys | None, Parameter(group="Reformat", show_default=False)
+    schedule: Annotated[
+        SetScheduleKeys | None, Parameter(group="Schedule")
     ] = None,
     restore_defaults: Annotated[bool, Parameter(group=global_group)] = False,
     clear_existing: Annotated[bool, Parameter(group="Files")] = False,
@@ -300,9 +263,9 @@ def set_config_values(
     ----------
     files
         ...DIRECTORIES
-    notifications.username
+    schedule.username
         USERNAME
-    notifications.password
+    schedule.password
         PASSWORD
     """
     if restore_defaults:
@@ -312,13 +275,11 @@ def set_config_values(
             Config(path=config_path).save()
         return
     config_items = Config.from_toml(config_path).items.model_dump()
-    requested_tables = get_requested_tables(
-        (files, import_config, notifications, reformat)
-    )
+    requested_tables = get_requested_tables((import_config, schedule))
     items = {key: {} for key in {table.key_name for table in requested_tables}}
     for table in requested_tables:
         table_items = asdict(table)
-        if table.key_name == "notifications":
+        if table.key_name == "schedule":
             for key, value in table_items.items():
                 if key in ("username", "password") and value is False:
                     table_items[key] = None
@@ -333,36 +294,26 @@ def set_config_values(
 
 
 @dataclass
-class ShowFilesKeys(HasFilesName):
-    all: SetBoolParameter = None
-    shared_directories: SetBoolParameter = None
-    local_directory: SetBoolParameter = None
-
-
-@dataclass
 class ShowImportKeys(HasImportName):
     all: SetBoolParameter = None
-    allow_prompt: SetBoolParameter = None
+    shared_directories: SetBoolParameter = None
+    ignored_paths: SetBoolParameter = None
+    local_directory: SetBoolParameter = None
+    reformat: SetBoolParameter = None
     ask_before_artist_update: SetBoolParameter = None
     ask_before_disc_update: SetBoolParameter = None
-    reformat: SetBoolParameter = None
+    expand_abbreviations: SetBoolParameter = None
+    remove_bracketed_instruments: SetBoolParameter = None
+    remove_bracketed_years: SetBoolParameter = None
 
 
 @dataclass
-class ShowNotificationsKeys(HasNotificationsName):
+class ShowScheduleKeys(HasScheduleName):
     all: SetBoolParameter = None
     email_on: SetBoolParameter = None
     system_on: SetBoolParameter = None
     username: SetBoolParameter = None
     password: SetBoolParameter = None
-
-
-@dataclass
-class ShowReformatKeys(HasReformatName):
-    all: SetBoolParameter = None
-    expand_abbreviations: SetBoolParameter = None
-    remove_bracketed_instruments: SetBoolParameter = None
-    remove_bracketed_years: SetBoolParameter = None
 
 
 def get_values(
@@ -386,15 +337,11 @@ def parse_path(_, tokens: Sequence[Token]) -> Path:
 @config_app.command
 def show(
     *,
-    files: Annotated[ShowFilesKeys | None, Parameter(group="Files")] = None,
     import_config: Annotated[
         ShowImportKeys | None, Parameter(name="import", group="Import")
     ] = None,
     notifications: Annotated[
-        ShowNotificationsKeys | None, Parameter(group="Notifications")
-    ] = None,
-    reformat: Annotated[
-        ShowReformatKeys | None, Parameter(group="Reformat")
+        ShowScheduleKeys | None, Parameter(group="Notifications")
     ] = None,
     default: Annotated[bool, Parameter(group=global_group)] = False,
     show_secrets: Annotated[bool, Parameter(group=global_group)] = False,
@@ -421,7 +368,7 @@ def show(
         config = Config()
     else:
         config = Config.from_toml(config_path)
-    if not any((files, import_config, notifications, reformat)):
+    if not any((import_config, notifications)):
         config = config.to_toml()
         if not show_secrets:
             password = re.compile(r'password = "(?P<password>.+)"').search(
@@ -431,9 +378,7 @@ def show(
                 config = config.replace(password.group("password"), "********")
         display_config_toml(config)
         return
-    requested_tables = get_requested_tables(
-        (files, import_config, notifications, reformat)
-    )
+    requested_tables = get_requested_tables((import_config, notifications))
     items = {}
     for table in requested_tables:
         requested_values = get_requested_items(asdict(table))
