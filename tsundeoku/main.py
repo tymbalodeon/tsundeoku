@@ -15,7 +15,7 @@ from tsundeoku.config import (
     parse_path,
 )
 from tsundeoku.import_command import import_file
-from tsundeoku.schedule import schedule_app
+from tsundeoku.schedule import schedule_app, send_email
 
 app = App(
     config=Toml(get_config_path()),
@@ -124,19 +124,21 @@ def import_command(
                     force=force,
                 )
                 is False
-                and allow_prompt
             ):
                 files_requiring_prompt.append(file)
-        for file in shared_directory_files:
-            import_file(
-                file=file,
-                imported_files_file=imported_files_file,
-                imported_files=imported_files,
-                local_directory=local_directory,
-                ignored_paths=ignored_paths,
-                reformat=reformat,
-                ask_before_artist_update=ask_before_artist_update,
-                ask_before_disc_update=ask_before_disc_update,
-                allow_prompt=True,
-                force=force,
-            )
+        if allow_prompt:
+            for file in shared_directory_files:
+                import_file(
+                    file=file,
+                    imported_files_file=imported_files_file,
+                    imported_files=imported_files,
+                    local_directory=local_directory,
+                    ignored_paths=ignored_paths,
+                    reformat=reformat,
+                    ask_before_artist_update=ask_before_artist_update,
+                    ask_before_disc_update=ask_before_disc_update,
+                    allow_prompt=True,
+                    force=force,
+                )
+        else:
+            send_email(get_app_name(), "\n".join(files_requiring_prompt))

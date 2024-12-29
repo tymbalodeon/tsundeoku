@@ -8,7 +8,7 @@ from cyclopts import App
 from rich import print
 from yagmail import SMTP
 
-from tsundeoku.config import get_app_name
+from tsundeoku.config import Config, get_app_name
 
 from .style import StyleLevel, print_with_theme, stylize
 
@@ -171,13 +171,12 @@ def stamp_logs() -> None:
 
 
 def send_email(subject: str, contents: str):
-    pass
-    # config = get_loaded_config()
-    # username = config.notifications.username
-    # password = config.notifications.password
-    # email = SMTP(username, password)
-    # subject = f"{get_app_name()}: {subject}"
-    # email.send(subject=subject, contents=contents)
+    config = Config.from_toml()
+    email = SMTP(
+        config.items.schedule.username, config.items.schedule.password
+    )
+    subject = f"{get_app_name()}: {subject}"
+    email.send(subject=subject, contents=contents)
 
 
 def get_most_recent_log(text: str) -> list[str]:
