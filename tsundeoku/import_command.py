@@ -57,7 +57,7 @@ def display_message(
 def import_file(
     *,
     file: str,
-    imported_files_file: str,
+    imported_files_file: Path,
     imported_files: list[str],
     local_directory: str,
     ignored_paths: Paths,
