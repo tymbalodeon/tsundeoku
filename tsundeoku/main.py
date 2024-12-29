@@ -18,7 +18,7 @@ from tsundeoku.import_command import import_file
 from tsundeoku.schedule import schedule_app, send_email
 
 app = App(
-    config=Toml(get_config_path()),
+    config=Toml(get_config_path(), allow_unknown=True),
     help="""
 積んでおく (tsundeoku) –– "to pile up for later"
 
