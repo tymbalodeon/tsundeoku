@@ -148,7 +148,10 @@ def import_command(
                     force=force,
                 )
         else:
-            try:
-                send_email(get_app_name(), "\n".join(files_requiring_prompt))
-            except SMTPAuthenticationError:
-                print("[red bold]Invalid email credentials.[/]")
+            if files_requiring_prompt:
+                try:
+                    send_email(
+                        get_app_name(), "\n".join(files_requiring_prompt)
+                    )
+                except SMTPAuthenticationError:
+                    print("[red bold]Invalid email credentials.[/]")
