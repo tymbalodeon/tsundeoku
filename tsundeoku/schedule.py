@@ -11,7 +11,7 @@ from yagmail import SMTP
 
 from tsundeoku.config import Config, get_app_name
 
-from .style import StyleLevel, print_with_theme, stylize
+from .style import stylize
 
 
 def get_format_reference_link() -> str:
@@ -30,9 +30,7 @@ def get_schedule_help_message():
     )
 
 
-schedule_app = App(
-    name="schedule", help=get_schedule_help_message(), help_format="rich"
-)
+schedule_app = App(name="schedule", help=get_schedule_help_message())
 
 
 def launchctl(command: str, path: Path | None = None) -> bytes:
@@ -179,7 +177,7 @@ def print_lines(lines: list[str]):
 
 
 @schedule_app.command()
-def logs(*, all: Annotated[bool, Parameter(negative=())] = False):
+def logs():
     """Show import logs."""
     with open(get_log_path()) as log_file:
         print("".join(log_file.readlines()[-30:]))
@@ -194,12 +192,17 @@ def off(label: Annotated[str | None, Parameter(show=False)] = None):
     launchctl("unload", plist_path)
     if plist_path.is_file():
         plist_path.unlink()
-    print("Turned off scheduled import.")
 
 
 @schedule_app.command()
-def on(time: str) -> str:
-    """Enable scheduled imports, using the format: %I:%M%p for daily, \\*\\*:%M for hourly."""
+def on(time: str = "**:00", /) -> str:
+    """Enable scheduled imports
+
+    Parameters
+    ----------
+    time
+        [cyan]%I:%M%p[/] for daily, [cyan]**:%M[/] for hourly.
+    """
     message = "Scheduled import for every"
     hour = None
     if "*" in time:
@@ -228,7 +231,7 @@ def show():
     """Show active schedule."""
     plist_path = get_plist_path(get_app_plist_label())
     if not is_currently_scheduled() or not plist_path.exists():
-        print("Import is not currently scheduled.")
+        print("[yellow]Import is not currently scheduled.[/]")
         return
     plist = xmltodict.parse(plist_path.read_bytes())
     hour_and_minute = plist["plist"]["dict"]["dict"]["integer"]
@@ -242,5 +245,5 @@ def show():
         minute = int(hour_and_minute)
         minute = time(minute=minute).strftime("%M")
         scheduled_time = f"**:{minute}"
-        message = f"{message} hour at {scheduled_time} minutes."
+        message = f"{message} hour at [cyan]{scheduled_time}[/] minutes."
     print(message)

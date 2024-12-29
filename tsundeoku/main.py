@@ -1,10 +1,12 @@
 from glob import glob
 from pathlib import Path
+from smtplib import SMTPAuthenticationError
 from typing import Annotated
 
 from cyclopts import App, Group, Parameter
 from cyclopts.config import Toml
 from cyclopts.validators import Path as PathValidator
+from rich import print
 
 from tsundeoku.config import (
     Config,
@@ -23,6 +25,7 @@ app = App(
 積んでおく (tsundeoku) –– "to pile up for later"
 
 Import audio files from a shared folder to a local library""",
+    help_format="rich",
 )
 app.command(config_app)
 app.command(schedule_app)
@@ -60,7 +63,9 @@ def import_command(
         ),
     ] = get_config_path(),
     force: Annotated[bool, Parameter(group=global_group, negative=())] = False,
-    allow_prompt: Annotated[bool, Parameter(show=False)] = True,
+    allow_prompt: Annotated[
+        bool, Parameter(show=False, negative="--disallow-prompt")
+    ] = True,
 ) -> None:
     """Copy new adds from your shared folder to your local library.
 
@@ -143,4 +148,7 @@ def import_command(
                     force=force,
                 )
         else:
-            send_email(get_app_name(), "\n".join(files_requiring_prompt))
+            try:
+                send_email(get_app_name(), "\n".join(files_requiring_prompt))
+            except SMTPAuthenticationError:
+                print("[red bold]Invalid email credentials.[/]")
