@@ -60,34 +60,32 @@ alias src := view-source
 
 mod python "just/python.just"
 
-# alias for `python _help`
-@_help *args:
-    just python _help {{ args }}
-
 # alias for `python add`
 @add *args:
     just python add {{ args }}
-
-# alias for `python build`
-@build *args:
-    just python build {{ args }}
 
 # alias for `python profile`
 @profile *args:
     just python profile {{ args }}
 
-# alias for `python remove`
-@remove *args:
-    just python remove {{ args }}
-
-# alias for `python run`
-@run *args:
-    just python run {{ args }}
-
 # alias for `python shell`
 @shell *args:
     just python shell {{ args }}
 
-# alias for `python update`
-@update *args:
-    just python update {{ args }}
+mod rust "just/rust.just"
+
+# alias for `rust clean`
+@clean *args:
+    just rust clean {{ args }}
+
+# alias for `rust clippy`
+@clippy *args:
+    just rust clippy {{ args }}
+
+# alias for `rust dev`
+@dev *args:
+    just rust dev {{ args }}
+
+# alias for `rust install`
+@install *args:
+    just rust install {{ args }}
