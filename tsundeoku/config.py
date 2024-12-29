@@ -139,7 +139,7 @@ global_group = Group("Global", sort_key=0)
 
 SetPathsParameter = Annotated[
     tuple[str, ...] | None,
-    Parameter(negative=(), show_choices=False, show_default=False),
+    Parameter(negative=(), show_default=False),
 ]
 
 
@@ -177,14 +177,14 @@ class SetImportKeys(HasImportName):
         SetBoolParameter, Parameter(negative="--import.auto-update-disc")
     ] = None
     expand_abbreviations: Annotated[
-        SetBoolParameter, Parameter(negative="--reformat.keep-abbreviations")
+        SetBoolParameter, Parameter(negative="--import.keep-abbreviations")
     ] = None
     remove_bracketed_instruments: Annotated[
         SetBoolParameter,
-        Parameter(negative="--reformat.keep-bracketed-instruments"),
+        Parameter(negative="--import.keep-bracketed-instruments"),
     ] = None
     remove_bracketed_years: Annotated[
-        SetBoolParameter, Parameter(negative="--reformat.bracketed-years")
+        SetBoolParameter, Parameter(negative="--import.bracketed-years")
     ] = None
 
 
@@ -251,18 +251,20 @@ def set_config_values(
     schedule: Annotated[
         SetScheduleKeys | None, Parameter(group="Schedule")
     ] = None,
-    restore_defaults: Annotated[bool, Parameter(group=global_group)] = False,
-    clear_existing: Annotated[bool, Parameter(group="Files")] = False,
+    restore_defaults: Annotated[
+        bool, Parameter(group=global_group, negative=())
+    ] = False,
+    clear_existing: Annotated[
+        bool, Parameter(group=global_group, negative=())
+    ] = False,
     config_path: Annotated[
-        ConfigPath, Parameter(group="Global")
+        ConfigPath, Parameter(group=global_group)
     ] = get_config_path(),
 ) -> None:
     """Set config values
 
     Parameters
     ----------
-    files
-        ...DIRECTORIES
     schedule.username
         USERNAME
     schedule.password
