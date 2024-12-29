@@ -15,7 +15,7 @@ from tsundeoku.config import (
     parse_path,
 )
 from tsundeoku.import_command import import_file
-from tsundeoku.schedule import schedule_app, send_email
+from tsundeoku.schedule import schedule_app, send_email, stamp_logs
 
 app = App(
     config=Toml(get_config_path(), allow_unknown=True),
@@ -79,6 +79,8 @@ def import_command(
     ask_before_artist_update
         Toggle confirming removal of brackets from artist field.
     """
+    if not allow_prompt:
+        stamp_logs()
     if config_path != get_config_path():
         config = Config.from_toml(config_path)
         shared_directories = config.items.import_config.shared_directories
