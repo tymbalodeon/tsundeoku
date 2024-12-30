@@ -1,6 +1,8 @@
+use std::fs;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
+use serde::Deserialize;
 
 #[derive(Subcommand, Debug)]
 #[command(arg_required_else_help = true)]
@@ -107,6 +109,13 @@ fn get_config_path(override_path: Option<&PathBuf>) -> String {
     })
 }
 
+#[derive(Debug, Deserialize)]
+struct ConfigFile {
+    shared_directories: Vec<String>,
+    ignored_paths: Vec<String>,
+    local_directory: String,
+}
+
 fn main() {
     let cli = Cli::parse();
 
@@ -119,7 +128,22 @@ fn main() {
             }
 
             Config::Show => {
-                println!("{}", get_config_path(cli.config_file.as_ref()));
+                if let Ok(contents) = fs::read_to_string(get_config_path(
+                    cli.config_file.as_ref(),
+                )) {
+                    let contents =
+                        toml::from_str::<ConfigFile>(&contents).unwrap();
+
+                    println!(
+                        "shared_directories = {:?}",
+                        contents.shared_directories
+                    );
+                    println!("ignored_paths = {:?}", contents.ignored_paths);
+                    println!(
+                        "local_directory = {:?}",
+                        contents.local_directory
+                    );
+                }
             }
             _ => println!("{command:?} is not yet implemented."),
         },
