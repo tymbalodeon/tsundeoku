@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+bat = "0.24.0"
 clap = { version = "4.5.23", features = ["derive"] }
 home = "0.5.11"
 serde = { version = "1.0.217", features = ["derive"] }
