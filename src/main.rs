@@ -23,7 +23,8 @@ enum Config {
 enum Schedule {
     /// Enabled scheduled imports
     Enable {
-        #[arg(long, value_name = "TIME")]
+        #[arg(long)]
+        #[arg(value_name = "TIME")]
         time: Option<String>,
     },
 
@@ -44,19 +45,25 @@ enum Commands {
 
     /// Import newly added audio files from shared folders to a local folder
     Import {
-        #[arg(long, value_name = "DIR")]
+        #[arg(default_value = "~/Dropbox")]
+        #[arg(long)]
+        #[arg(value_name = "DIR")]
         shared_dirs: Option<Vec<PathBuf>>,
 
-        #[arg(long, value_name = "PATH")]
+        #[arg(long)]
+        #[arg(value_name = "PATH")]
         ignored_paths: Option<Vec<PathBuf>>,
 
-        #[arg(long, value_name = "DIR")]
+        #[arg(default_value = "~/Music")]
+        #[arg(long)]
+        #[arg(value_name = "DIR")]
         local_dir: Option<PathBuf>,
 
         #[arg(long)]
         no_reformat: bool,
 
-        #[arg(short, long)]
+        #[arg(long)]
+        #[arg(short)]
         force: bool,
     },
 
@@ -78,7 +85,8 @@ struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
 
-    #[arg(long, value_name = "FILE")]
+    #[arg(long)]
+    #[arg(value_name = "FILE")]
     config_file: Option<PathBuf>,
 }
 
