@@ -44,14 +44,17 @@ enum Commands {
 
     /// Import newly added audio files from shared folders to a local folder
     Import {
-        #[arg(long, value_name = "FILE")]
-        shared_dirs: Option<PathBuf>,
+        #[arg(long, value_name = "DIR")]
+        shared_dirs: Option<Vec<PathBuf>>,
 
-        #[arg(long, value_name = "FILE")]
-        ignored_paths: Option<PathBuf>,
+        #[arg(long, value_name = "PATH")]
+        ignored_paths: Option<Vec<PathBuf>>,
 
-        #[arg(long, value_name = "FILE")]
+        #[arg(long, value_name = "DIR")]
         local_dir: Option<PathBuf>,
+
+        #[arg(long)]
+        no_reformat: bool,
 
         #[arg(short, long)]
         force: bool,
@@ -90,17 +93,18 @@ fn main() {
                 if let Some(home) = home::home_dir()
                     .filter(|path| !path.as_os_str().is_empty())
                 {
-                    let config_path = match cli.config_file {
-                        Some(path) => path.display().to_string(),
-
-                        None => Path::new(&home)
-                            .join(".config")
-                            .join("tsundeoku")
-                            .join("tsundeoku.toml")
-                            .into_os_string()
-                            .into_string()
-                            .expect("Unable to determine $HOME path"),
-                    };
+                    let config_path = cli.config_file.map_or_else(
+                        || {
+                            Path::new(&home)
+                                .join(".config")
+                                .join("tsundeoku")
+                                .join("tsundeoku.toml")
+                                .into_os_string()
+                                .into_string()
+                                .expect("Unable to determine $HOME path")
+                        },
+                        |path| path.display().to_string(),
+                    );
 
                     println!("{config_path}");
                 };
@@ -113,10 +117,11 @@ fn main() {
             shared_dirs,
             ignored_paths,
             local_dir,
+            no_reformat,
             force,
         }) => {
             println!(
-                "{shared_dirs:?}, {ignored_paths:?}, {local_dir:?}, {force:?}"
+                "{shared_dirs:?}, {ignored_paths:?}, {local_dir:?}, {no_reformat:?}, {force:?}"
             );
         }
 
