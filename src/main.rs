@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
@@ -90,6 +90,17 @@ struct Cli {
     config_file: Option<PathBuf>,
 }
 
+fn get_default_config_path() -> String {
+    home::home_dir()
+        .expect("Unable to determine $HOME path")
+        .join(".config")
+        .join("tsundeoku")
+        .join("tsundeoku.toml")
+        .into_os_string()
+        .into_string()
+        .expect("Unable to get default config path")
+}
+
 fn main() {
     let cli = Cli::parse();
 
@@ -98,24 +109,12 @@ fn main() {
             command: Some(command),
         }) => match command {
             Config::Path => {
-                if let Some(home) = home::home_dir()
-                    .filter(|path| !path.as_os_str().is_empty())
-                {
-                    let config_path = cli.config_file.map_or_else(
-                        || {
-                            Path::new(&home)
-                                .join(".config")
-                                .join("tsundeoku")
-                                .join("tsundeoku.toml")
-                                .into_os_string()
-                                .into_string()
-                                .expect("Unable to determine $HOME path")
-                        },
-                        |path| path.display().to_string(),
-                    );
+                let config_path = cli.config_file.map_or_else(
+                    get_default_config_path,
+                    |path| path.display().to_string(),
+                );
 
-                    println!("{config_path}");
-                };
+                println!("{config_path}");
             }
 
             _ => println!("{command:?} is not yet implemented."),
