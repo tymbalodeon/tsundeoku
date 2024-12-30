@@ -82,29 +82,28 @@ struct Cli {
 fn main() {
     let cli = Cli::parse();
 
-    if let Some(config_path) = cli.config_file.as_deref() {
-        println!("Value for config: {}", config_path.display());
-    }
-
     match &cli.command {
         Some(Commands::Config {
             command: Some(command),
         }) => match command {
-            Config::Show => {
+            Config::Path => {
                 if let Some(home) = home::home_dir()
                     .filter(|path| !path.as_os_str().is_empty())
                 {
-                    println!(
-                        "{}",
-                        Path::new(&home)
+                    let config_path = match cli.config_file {
+                        Some(path) => path.display().to_string(),
+
+                        None => Path::new(&home)
                             .join(".config")
                             .join("tsundeoku")
                             .join("tsundeoku.toml")
                             .into_os_string()
                             .into_string()
-                            .expect("Unable to determine $HOME path")
-                    );
-                }
+                            .expect("Unable to determine $HOME path"),
+                    };
+
+                    println!("{config_path}");
+                };
             }
 
             _ => println!("{command:?} is not yet implemented."),
