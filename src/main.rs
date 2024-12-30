@@ -101,6 +101,12 @@ fn get_default_config_path() -> String {
         .expect("Unable to get default config path")
 }
 
+fn get_config_path(override_path: Option<&PathBuf>) -> String {
+    override_path.map_or_else(get_default_config_path, |path| {
+        path.display().to_string()
+    })
+}
+
 fn main() {
     let cli = Cli::parse();
 
@@ -109,12 +115,7 @@ fn main() {
             command: Some(command),
         }) => match command {
             Config::Path => {
-                let config_path = cli.config_file.map_or_else(
-                    get_default_config_path,
-                    |path| path.display().to_string(),
-                );
-
-                println!("{config_path}");
+                println!("{}", get_config_path(cli.config_file.as_ref()));
             }
 
             _ => println!("{command:?} is not yet implemented."),
