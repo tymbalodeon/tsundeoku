@@ -87,30 +87,28 @@ fn main() {
     }
 
     match &cli.command {
-        Some(Commands::Config { command }) => {
-            if let Some(command) = command {
-                match command {
-                    Config::Show => {
-                        if let Some(home) =
-                            home::home_dir().filter(|path| !path.as_os_str().is_empty())
-                        {
-                            println!(
-                                "{}",
-                                Path::new(&home)
-                                    .join(".config")
-                                    .join("tsundeoku")
-                                    .join("tsundeoku.toml")
-                                    .into_os_string()
-                                    .into_string()
-                                    .unwrap()
-                            );
-                        }
-                    }
-
-                    _ => println!("{command:?} is not yet implemented."),
+        Some(Commands::Config {
+            command: Some(command),
+        }) => match command {
+            Config::Show => {
+                if let Some(home) = home::home_dir()
+                    .filter(|path| !path.as_os_str().is_empty())
+                {
+                    println!(
+                        "{}",
+                        Path::new(&home)
+                            .join(".config")
+                            .join("tsundeoku")
+                            .join("tsundeoku.toml")
+                            .into_os_string()
+                            .into_string()
+                            .expect("Unable to determine $HOME path")
+                    );
                 }
             }
-        }
+
+            _ => println!("{command:?} is not yet implemented."),
+        },
 
         Some(Commands::Import {
             shared_dirs,
@@ -127,12 +125,12 @@ fn main() {
             println!("Logs is not yet implemented.");
         }
 
-        Some(Commands::Schedule { command }) => {
-            if let Some(command) = command {
-                println!("{command:?} is not yet implemented.");
-            }
+        Some(Commands::Schedule {
+            command: Some(command),
+        }) => {
+            println!("{command:?} is not yet implemented.");
         }
 
-        None => {}
+        _ => {}
     }
 }
