@@ -91,12 +91,16 @@ struct Cli {
     config_file: Option<PathBuf>,
 }
 
+const fn get_app_name() -> &'static str {
+    "tsundeoku"
+}
+
 fn get_default_config_path() -> String {
     home::home_dir()
         .expect("Unable to determine $HOME path")
         .join(".config")
-        .join("tsundeoku")
-        .join("tsundeoku.toml")
+        .join(get_app_name())
+        .join(format!("{}.toml", get_app_name()))
         .into_os_string()
         .into_string()
         .expect("Unable to get default config path")
