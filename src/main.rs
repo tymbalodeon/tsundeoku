@@ -118,6 +118,9 @@ fn main() {
                 println!("{}", get_config_path(cli.config_file.as_ref()));
             }
 
+            Config::Show => {
+                println!("{}", get_config_path(cli.config_file.as_ref()));
+            }
             _ => println!("{command:?} is not yet implemented."),
         },
 
