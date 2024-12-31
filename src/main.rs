@@ -192,17 +192,14 @@ fn main() {
                 get_config_value(local_dir.as_ref(), &config_values.local_dir);
 
             for dir in shared_dirs {
-                // Convert to realpath
+                let dir = dir.as_path().to_string_lossy();
 
                 for entry in
-                    WalkDir::new(dir).into_iter().filter_map(Result::ok)
+                    WalkDir::new(&*dir).into_iter().filter_map(Result::ok)
                 {
                     println!(
                         "{}",
-                        entry.path().to_string_lossy().replace(
-                            &[&*dir.as_path().to_string_lossy(), "/"].join(""),
-                            ""
-                        )
+                        entry.path().to_string_lossy().replace(&*dir, "")
                     );
                 }
                 // println!("Importing files from {dir:?}, ignoring {ignored_paths:?} to {local_dir:?}");
