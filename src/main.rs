@@ -111,16 +111,16 @@ fn get_default_config_path() -> String {
 #[derive(Deserialize)]
 struct ConfigFile {
     shared_dirs: Vec<PathBuf>,
-    // ignored_paths: Vec<PathBuf>,
-    // local_dir: PathBuf,
+    ignored_paths: Vec<PathBuf>,
+    local_dir: PathBuf,
 }
 
 impl Default for ConfigFile {
     fn default() -> Self {
         Self {
             shared_dirs: get_default_shared_dirs(),
-            // ignored_paths: vec![],
-            // local_dir: get_default_local_dir(),
+            ignored_paths: vec![],
+            local_dir: get_default_local_dir(),
         }
     }
 }
@@ -129,9 +129,13 @@ fn get_default_shared_dirs() -> Vec<PathBuf> {
     vec!["~/Dropbox".into()]
 }
 
-// fn get_default_local_dir() -> PathBuf {
-//     "~/Music".into()
-// }
+fn get_default_local_dir() -> PathBuf {
+    "~/Music".into()
+}
+
+fn get_config_value<T>(override_value: Option<T>, config_value: T) -> T {
+    override_value.map_or(config_value, |value| value)
+}
 
 fn main() {
     let cli = Cli::parse();
@@ -145,7 +149,8 @@ fn main() {
 
     let config_values = toml::from_str::<ConfigFile>(
         &fs::read_to_string(&config_path).expect("Failed to read config file"),
-    ).unwrap_or_default();
+    )
+    .unwrap_or_default();
 
     match &cli.command {
         Some(Commands::Config {
@@ -167,17 +172,27 @@ fn main() {
 
         Some(Commands::Import {
             shared_dirs,
-            ignored_paths: _,
-            local_dir: _,
+            ignored_paths,
+            local_dir,
             no_reformat: _,
             force: _,
         }) => {
-            let shared_dirs = match shared_dirs {
-                Some(path) => path,
-                None => &config_values.shared_dirs,
-            };
+            let shared_dirs = get_config_value(
+                shared_dirs.as_ref(),
+                &config_values.shared_dirs,
+            );
 
-            println!("{:#?}", &shared_dirs);
+            let ignored_paths = get_config_value(
+                ignored_paths.as_ref(),
+                &config_values.ignored_paths,
+            );
+
+            let local_dir =
+                get_config_value(local_dir.as_ref(), &config_values.local_dir);
+
+            for dir in shared_dirs {
+                println!("Importing files from {dir:?}, ignoring {ignored_paths:?} to {local_dir:?}");
+            }
         }
 
         Some(Commands::Logs) => {
