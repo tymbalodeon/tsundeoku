@@ -1,5 +1,7 @@
+use std::env::var;
 use std::fs;
 use std::path::PathBuf;
+use std::process::Command;
 
 use bat::PrettyPrinter;
 use clap::{Parser, Subcommand};
@@ -158,6 +160,15 @@ fn main() {
         Some(Commands::Config {
             command: Some(command),
         }) => match command {
+            Config::Edit => {
+                if let Ok(editor) = var("EDITOR") {
+                    Command::new(editor)
+                        .arg(&config_path)
+                        .status()
+                        .expect("Failed to open config file in editor.");
+                }
+            }
+
             Config::Path => {
                 println!("{}", &config_path);
             }
@@ -169,7 +180,8 @@ fn main() {
                     .print()
                     .expect("Failed to parse config file");
             }
-            _ => println!("{command:?} is not yet implemented."),
+
+            Config::Set => println!("{command:?} is not yet implemented."),
         },
 
         Some(Commands::Import {
