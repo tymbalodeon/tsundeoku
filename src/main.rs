@@ -192,6 +192,8 @@ fn main() {
             let local_dir =
                 get_config_value(local_dir.as_ref(), &config_values.local_dir);
 
+            println!("Importing files from {shared_dirs:?}, ignoring {ignored_paths:?} to {local_dir:?}");
+
             for dir in shared_dirs {
                 let dir = dir.as_path().to_string_lossy();
 
@@ -204,7 +206,6 @@ fn main() {
                         entry.path().to_string_lossy().replace(&*dir, "")
                     );
                 }
-                // println!("Importing files from {dir:?}, ignoring {ignored_paths:?} to {local_dir:?}");
             }
         }
 
