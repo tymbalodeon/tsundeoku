@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 use bat::PrettyPrinter;
 use clap::{Parser, Subcommand};
+use colored::Colorize;
 use serde::Deserialize;
 use walkdir::WalkDir;
 
@@ -198,7 +199,8 @@ fn main() {
                     WalkDir::new(&*dir).into_iter().filter_map(Result::ok)
                 {
                     println!(
-                        "{}",
+                        "  {} {}",
+                        "Importing".green().bold(),
                         entry.path().to_string_lossy().replace(&*dir, "")
                     );
                 }
