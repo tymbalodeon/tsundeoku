@@ -1,7 +1,9 @@
+use std::fs;
 use std::path::PathBuf;
 
 use bat::PrettyPrinter;
 use clap::{Parser, Subcommand};
+use serde::Deserialize;
 
 #[derive(Subcommand, Debug)]
 #[command(arg_required_else_help = true)]
@@ -46,7 +48,7 @@ enum Commands {
 
     /// Import newly added audio files from shared folders to a local folder
     Import {
-        #[arg(default_value = "~/Dropbox")]
+        // #[arg(default_value = "~/Dropbox")]
         #[arg(long)]
         #[arg(value_name = "DIR")]
         shared_dirs: Option<Vec<PathBuf>>,
@@ -55,7 +57,7 @@ enum Commands {
         #[arg(value_name = "PATH")]
         ignored_paths: Option<Vec<PathBuf>>,
 
-        #[arg(default_value = "~/Music")]
+        // #[arg(default_value = "~/Music")]
         #[arg(long)]
         #[arg(value_name = "DIR")]
         local_dir: Option<PathBuf>,
@@ -106,33 +108,56 @@ fn get_default_config_path() -> String {
         .expect("Unable to get default config path")
 }
 
-fn get_config_path(override_path: Option<&PathBuf>) -> String {
-    override_path.map_or_else(get_default_config_path, |path| {
-        path.display().to_string()
-    })
+#[derive(Deserialize)]
+struct ConfigFile {
+    shared_dirs: Vec<PathBuf>,
+    // ignored_paths: Vec<PathBuf>,
+    // local_dir: PathBuf,
 }
 
-// #[derive(Debug, Deserialize)]
-// struct ConfigFile {
-//     shared_directories: Vec<String>,
-//     ignored_paths: Vec<String>,
-//     local_directory: String,
+impl Default for ConfigFile {
+    fn default() -> Self {
+        Self {
+            shared_dirs: get_default_shared_dirs(),
+            // ignored_paths: vec![],
+            // local_dir: get_default_local_dir(),
+        }
+    }
+}
+
+fn get_default_shared_dirs() -> Vec<PathBuf> {
+    vec!["~/Dropbox".into()]
+}
+
+// fn get_default_local_dir() -> PathBuf {
+//     "~/Music".into()
 // }
 
 fn main() {
     let cli = Cli::parse();
+
+    let config_path = cli
+        .config_file
+        .as_ref()
+        .map_or_else(get_default_config_path, |path| {
+            path.display().to_string()
+        });
+
+    let config_values = toml::from_str::<ConfigFile>(
+        &fs::read_to_string(&config_path).expect("Failed to read config file"),
+    ).unwrap_or_default();
 
     match &cli.command {
         Some(Commands::Config {
             command: Some(command),
         }) => match command {
             Config::Path => {
-                println!("{}", get_config_path(cli.config_file.as_ref()));
+                println!("{}", &config_path);
             }
 
             Config::Show => {
                 PrettyPrinter::new()
-                    .input_file(get_config_path(cli.config_file.as_ref()))
+                    .input_file(&config_path)
                     .theme("ansi")
                     .print()
                     .expect("Failed to parse config file");
@@ -142,14 +167,17 @@ fn main() {
 
         Some(Commands::Import {
             shared_dirs,
-            ignored_paths,
-            local_dir,
-            no_reformat,
-            force,
+            ignored_paths: _,
+            local_dir: _,
+            no_reformat: _,
+            force: _,
         }) => {
-            println!(
-                "{shared_dirs:?}, {ignored_paths:?}, {local_dir:?}, {no_reformat:?}, {force:?}"
-            );
+            let shared_dirs = match shared_dirs {
+                Some(path) => path,
+                None => &config_values.shared_dirs,
+            };
+
+            println!("{:#?}", &shared_dirs);
         }
 
         Some(Commands::Logs) => {

@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 bat = "0.24.0"
-clap = { version = "4.5.23", features = ["derive"] }
+clap = { version = "4.5.23", features = ["derive", "string"] }
 home = "0.5.11"
 serde = { version = "1.0.217", features = ["derive"] }
 toml = "0.8.19"
