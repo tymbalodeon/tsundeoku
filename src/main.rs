@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use bat::PrettyPrinter;
 use clap::{Parser, Subcommand};
 use serde::Deserialize;
+use walkdir::WalkDir;
 
 #[derive(Subcommand, Debug)]
 #[command(arg_required_else_help = true)]
@@ -191,7 +192,20 @@ fn main() {
                 get_config_value(local_dir.as_ref(), &config_values.local_dir);
 
             for dir in shared_dirs {
-                println!("Importing files from {dir:?}, ignoring {ignored_paths:?} to {local_dir:?}");
+                // Convert to realpath
+
+                for entry in
+                    WalkDir::new(dir).into_iter().filter_map(Result::ok)
+                {
+                    println!(
+                        "{}",
+                        entry.path().to_string_lossy().replace(
+                            &[&*dir.as_path().to_string_lossy(), "/"].join(""),
+                            ""
+                        )
+                    );
+                }
+                // println!("Importing files from {dir:?}, ignoring {ignored_paths:?} to {local_dir:?}");
             }
         }
 
