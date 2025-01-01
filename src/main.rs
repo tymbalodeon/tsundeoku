@@ -5,8 +5,13 @@ use std::process::Command;
 
 use bat::PrettyPrinter;
 use clap::{Parser, Subcommand};
-use colored::Colorize;
 use serde::Deserialize;
+// use symphonia::core::codecs::{DecoderOptions, CODEC_TYPE_NULL};
+// use symphonia::core::errors::Error;
+use symphonia::core::formats::FormatOptions;
+use symphonia::core::io::MediaSourceStream;
+use symphonia::core::meta::MetadataOptions;
+use symphonia::core::probe::Hint;
 use walkdir::WalkDir;
 
 #[derive(Subcommand, Debug)]
@@ -212,11 +217,51 @@ fn main() {
                 for entry in
                     WalkDir::new(&*dir).into_iter().filter_map(Result::ok)
                 {
-                    println!(
-                        "  {} {}",
-                        "Importing".green().bold(),
-                        entry.path().to_string_lossy().replace(&*dir, "")
+                    if let Some(extension) = entry.path().extension() {
+                        if extension != "mp3" {
+                            continue;
+                        }
+                    }
+
+                    let src = std::fs::File::open(entry.path())
+                        .expect("failed to open media");
+
+                    let stream = MediaSourceStream::new(
+                        Box::new(src),
+                        Default::default(),
                     );
+
+                    let hint = Hint::new();
+
+                    let meta_opts: MetadataOptions = Default::default();
+                    let fmt_opts: FormatOptions = Default::default();
+
+                    if let Ok(mut probed) = symphonia::default::get_probe()
+                        .format(&hint, stream, &fmt_opts, &meta_opts)
+                    {
+                        if let Some(metadata) = probed.metadata.get() {
+                            let tags = metadata.current().unwrap().tags();
+
+                            for tag in tags {
+                                if let Some(key) = tag.std_key {
+                                    println!("{key:?}: {}", tag.value);
+                                }
+                            }
+
+                            println!();
+                        }
+                    } else {
+                        println!(
+                            "failed to read tags for file {}",
+                            entry.file_name().to_str().unwrap()
+                        );
+                    }
+
+                    // println!(
+                    //     "  {} {}",
+                    //     "Importing".green().bold(),
+                    //     entry.path().to_string_lossy().replace(&*dir, "")
+                    // );
                 }
             }
         }

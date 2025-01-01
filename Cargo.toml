@@ -9,5 +9,6 @@ clap = { version = "4.5.23", features = ["derive", "string"] }
 colored = "2.2.0"
 home = "0.5.11"
 serde = { version = "1.0.217", features = ["derive"] }
+symphonia = { version = "0.5.4", features = ["all-codecs"] }
 toml = "0.8.19"
 walkdir = "2.5.0"
