@@ -259,6 +259,8 @@ fn main() {
                             } else {
                                 println!("No metadata");
                             }
+                        } else {
+                            println!("No metadata");
                         }
                     } else {
                         println!(
