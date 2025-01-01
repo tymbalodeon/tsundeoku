@@ -217,11 +217,8 @@ fn main() {
                     .filter_map(Result::ok)
                     .filter(|dir_entry| Path::is_file(dir_entry.path()))
                 {
-                    if let Some(extension) = entry.path().extension() {
-                        if extension != "mp3" {
-                            println!("{extension:?} is not mp3");
-                            continue;
-                        }
+                    if ignored_paths.contains(&entry.path().to_path_buf()) {
+                        continue;
                     }
 
                     let src = std::fs::File::open(entry.path())
@@ -232,7 +229,18 @@ fn main() {
                         MediaSourceStreamOptions::default(),
                     );
 
-                    let hint = Hint::new();
+                    let mut hint = Hint::new();
+
+                    if let Some(extension) = entry.path().extension() {
+                        if let Some(extension) = extension.to_str() {
+                            if extension == "mp3" {
+                                continue;
+                            }
+
+                            hint.with_extension(extension);
+                        }
+                    }
+
                     let meta_opts = MetadataOptions::default();
                     let fmt_opts = FormatOptions::default();
 
@@ -244,11 +252,13 @@ fn main() {
                                 for tag in metadata.tags() {
                                     if let Some(key) = tag.std_key {
                                         println!("{key:?}: {}", tag.value);
+                                    } else {
+                                        println!("no tag");
                                     }
                                 }
+                            } else {
+                                println!("No metadata");
                             }
-
-                            println!();
                         }
                     } else {
                         println!(
