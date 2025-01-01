@@ -1,15 +1,13 @@
 use std::env::var;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use bat::PrettyPrinter;
 use clap::{Parser, Subcommand};
 use serde::Deserialize;
-// use symphonia::core::codecs::{DecoderOptions, CODEC_TYPE_NULL};
-// use symphonia::core::errors::Error;
 use symphonia::core::formats::FormatOptions;
-use symphonia::core::io::MediaSourceStream;
+use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 use walkdir::WalkDir;
@@ -214,11 +212,14 @@ fn main() {
             for dir in shared_dirs {
                 let dir = dir.as_path().to_string_lossy();
 
-                for entry in
-                    WalkDir::new(&*dir).into_iter().filter_map(Result::ok)
+                for entry in WalkDir::new(&*dir)
+                    .into_iter()
+                    .filter_map(Result::ok)
+                    .filter(|dir_entry| Path::is_file(dir_entry.path()))
                 {
                     if let Some(extension) = entry.path().extension() {
                         if extension != "mp3" {
+                            println!("{extension:?} is not mp3");
                             continue;
                         }
                     }
@@ -228,23 +229,22 @@ fn main() {
 
                     let stream = MediaSourceStream::new(
                         Box::new(src),
-                        Default::default(),
+                        MediaSourceStreamOptions::default(),
                     );
 
                     let hint = Hint::new();
-
-                    let meta_opts: MetadataOptions = Default::default();
-                    let fmt_opts: FormatOptions = Default::default();
+                    let meta_opts = MetadataOptions::default();
+                    let fmt_opts = FormatOptions::default();
 
                     if let Ok(mut probed) = symphonia::default::get_probe()
                         .format(&hint, stream, &fmt_opts, &meta_opts)
                     {
                         if let Some(metadata) = probed.metadata.get() {
-                            let tags = metadata.current().unwrap().tags();
-
-                            for tag in tags {
-                                if let Some(key) = tag.std_key {
-                                    println!("{key:?}: {}", tag.value);
+                            if let Some(metadata) = metadata.current() {
+                                for tag in metadata.tags() {
+                                    if let Some(key) = tag.std_key {
+                                        println!("{key:?}: {}", tag.value);
+                                    }
                                 }
                             }
 
@@ -253,7 +253,7 @@ fn main() {
                     } else {
                         println!(
                             "failed to read tags for file {}",
-                            entry.file_name().to_str().unwrap()
+                            entry.file_name().to_string_lossy()
                         );
                     }
 
