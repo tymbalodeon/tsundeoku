@@ -216,11 +216,11 @@ fn main() {
                     .into_iter()
                     .filter_map(Result::ok)
                     .filter(|dir_entry| Path::is_file(dir_entry.path()))
+                    .filter(|dir_entry| {
+                        !ignored_paths
+                            .contains(&dir_entry.path().to_path_buf())
+                    })
                 {
-                    if ignored_paths.contains(&entry.path().to_path_buf()) {
-                        continue;
-                    }
-
                     let src = std::fs::File::open(entry.path())
                         .expect("failed to open media");
 
