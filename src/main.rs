@@ -238,10 +238,6 @@ fn main() {
 
                     if let Some(extension) = entry.path().extension() {
                         if let Some(extension) = extension.to_str() {
-                            if extension == "mp3" {
-                                continue;
-                            }
-
                             hint.with_extension(extension);
                         }
                     }
@@ -264,8 +260,16 @@ fn main() {
                             } else {
                                 println!("No metadata");
                             }
-                        } else {
-                            println!("No metadata");
+                        } else if let Some(metadata) =
+                            probed.format.metadata().current()
+                        {
+                            for tag in metadata.tags() {
+                                if let Some(key) = tag.std_key {
+                                    println!("{key:?}: {}", tag.value);
+                                } else {
+                                    println!("no tag");
+                                }
+                            }
                         }
                     } else {
                         println!(
