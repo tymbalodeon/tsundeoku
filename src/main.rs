@@ -8,7 +8,7 @@ use clap::{Parser, Subcommand};
 use serde::Deserialize;
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
-use symphonia::core::meta::MetadataOptions;
+use symphonia::core::meta::{MetadataOptions, StandardTagKey, Tag};
 use symphonia::core::probe::Hint;
 use walkdir::WalkDir;
 
@@ -144,6 +144,14 @@ fn get_config_value<T>(override_value: Option<T>, config_value: T) -> T {
     override_value.map_or(config_value, |value| value)
 }
 
+fn get_tag(tags: &[Tag], tag_name: StandardTagKey) -> Option<&Tag> {
+    tags.iter()
+        .filter(|tag| tag.std_key.is_some_and(|key| key == tag_name))
+        .collect::<Vec<&Tag>>()
+        .first()
+        .map(|tag| &**tag)
+}
+
 fn main() {
     let cli = Cli::parse();
 
@@ -226,11 +234,11 @@ fn main() {
                             .contains(&dir_entry.path().to_path_buf())
                     })
                 {
-                    let src = std::fs::File::open(entry.path())
-                        .expect("failed to open media");
-
                     let stream = MediaSourceStream::new(
-                        Box::new(src),
+                        Box::new(
+                            std::fs::File::open(entry.path())
+                                .expect("failed to open media"),
+                        ),
                         MediaSourceStreamOptions::default(),
                     );
 
@@ -248,28 +256,37 @@ fn main() {
                     if let Ok(mut probed) = symphonia::default::get_probe()
                         .format(&hint, stream, &fmt_opts, &meta_opts)
                     {
-                        if let Some(metadata) = probed.metadata.get() {
-                            if let Some(metadata) = metadata.current() {
-                                for tag in metadata.tags() {
-                                    if let Some(key) = tag.std_key {
-                                        println!("{key:?}: {}", tag.value);
-                                    } else {
-                                        println!("no tag");
-                                    }
-                                }
+                        let metadata =
+                            if let Some(metadata) = probed.metadata.get() {
+                                metadata
                             } else {
-                                println!("No metadata");
+                                probed.format.metadata()
+                            };
+
+                        if let Some(metadata) = metadata.current() {
+                            let tags = metadata.tags();
+
+                            let artist =
+                                get_tag(tags, StandardTagKey::AlbumArtist);
+
+                            if let Some(artist) = artist {
+                                print!("{}", artist.value);
                             }
-                        } else if let Some(metadata) =
-                            probed.format.metadata().current()
-                        {
-                            for tag in metadata.tags() {
-                                if let Some(key) = tag.std_key {
-                                    println!("{key:?}: {}", tag.value);
-                                } else {
-                                    println!("no tag");
-                                }
+
+                            let album = get_tag(tags, StandardTagKey::Album);
+
+                            if let Some(album) = album {
+                                print!(" – {}", album.value);
                             }
+
+                            let title =
+                                get_tag(tags, StandardTagKey::TrackTitle);
+
+                            if let Some(title) = title {
+                                print!(" – {}", title.value);
+                            }
+
+                            println!();
                         }
                     } else {
                         println!(
@@ -277,12 +294,6 @@ fn main() {
                             entry.file_name().to_string_lossy()
                         );
                     }
-
-                    // println!(
-                    //     "  {} {}",
-                    //     "Importing".green().bold(),
-                    //     entry.path().to_string_lossy().replace(&*dir, "")
-                    // );
                 }
             }
         }
