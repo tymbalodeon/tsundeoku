@@ -5,14 +5,13 @@
 .pdm-python
 .venv
 
+# Added by cargo
+
+/target
+
 # python
 *.pyc
 .coverage
 __pycache__/
 build/
 dist/
-
-
-# Added by cargo
-
-/target
