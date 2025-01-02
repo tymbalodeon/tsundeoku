@@ -154,10 +154,15 @@ fn main() {
             path.display().to_string()
         });
 
-    let config_values = toml::from_str::<ConfigFile>(
-        &fs::read_to_string(&config_path).expect("Failed to read config file"),
-    )
-    .unwrap_or_default();
+    let config_values = if Path::new(&config_path).exists() {
+        toml::from_str::<ConfigFile>(
+            &fs::read_to_string(&config_path)
+                .expect("Failed to read config file"),
+        )
+        .unwrap_or_default()
+    } else {
+        ConfigFile::default()
+    };
 
     match &cli.command {
         Some(Commands::Config {
