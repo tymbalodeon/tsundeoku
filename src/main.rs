@@ -5,6 +5,7 @@ use std::process::Command;
 
 use bat::PrettyPrinter;
 use clap::{Parser, Subcommand};
+use colored::Colorize;
 use serde::Deserialize;
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
@@ -266,27 +267,36 @@ fn main() {
                         if let Some(metadata) = metadata.current() {
                             let tags = metadata.tags();
 
+                            let mut track_display = String::new();
+
                             let artist =
                                 get_tag(tags, StandardTagKey::AlbumArtist);
 
                             if let Some(artist) = artist {
-                                print!("{}", artist.value);
+                                track_display
+                                    .push_str(&format!("{}", artist.value));
                             }
 
                             let album = get_tag(tags, StandardTagKey::Album);
 
                             if let Some(album) = album {
-                                print!(" – {}", album.value);
+                                track_display
+                                    .push_str(&format!(" – {}", album.value));
                             }
 
                             let title =
                                 get_tag(tags, StandardTagKey::TrackTitle);
 
                             if let Some(title) = title {
-                                print!(" – {}", title.value);
+                                track_display
+                                    .push_str(&format!(" – {}", title.value));
                             }
 
-                            println!();
+                            println!(
+                                "  {} {}",
+                                "Importing".green().bold(),
+                                track_display
+                            );
                         }
                     } else {
                         println!(
