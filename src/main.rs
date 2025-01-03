@@ -133,12 +133,16 @@ impl Default for ConfigFile {
     }
 }
 
+fn expand_path(path: &str) -> PathBuf {
+    Path::new(&shellexpand::tilde(path).into_owned()).to_path_buf()
+}
+
 fn get_default_shared_directories() -> Vec<PathBuf> {
-    vec!["~/Dropbox".into()]
+    vec![expand_path("~/Dropbox")]
 }
 
 fn get_default_local_directory() -> PathBuf {
-    "~/Music".into()
+    expand_path("~/Music")
 }
 
 fn get_config_value<'a, T>(
@@ -166,18 +170,16 @@ fn main() {
             path.display().to_string()
         });
 
-    let config_values = match toml::from_str::<ConfigFile>(
-        &fs::read_to_string(&config_path).expect("Failed to read config file"),
-    ) {
-        Ok(values) => values,
-        Err(error) => {
-            // TODO Allow for incomplete config files
-            eprintln!(
-                "{}",
-                format!("{}: {}", "config error".red(), error.message())
-            );
-            return;
-        }
+    let config_path = Path::new(&config_path);
+
+    let config_values = if config_path.exists() {
+        toml::from_str::<ConfigFile>(
+            &fs::read_to_string(config_path)
+                .expect("Failed to read config file"),
+        )
+        .unwrap_or_default()
+    } else {
+        ConfigFile::default()
     };
 
     match &cli.command {
@@ -187,22 +189,26 @@ fn main() {
             Config::Edit => {
                 if let Ok(editor) = var("EDITOR") {
                     Command::new(editor)
-                        .arg(&config_path)
+                        .arg(config_path)
                         .status()
                         .expect("Failed to open config file in editor.");
                 }
             }
 
             Config::Path => {
-                println!("{}", &config_path);
+                if let Some(path) = config_path.to_str() {
+                    println!("{path}");
+                }
             }
 
             Config::Show => {
-                PrettyPrinter::new()
-                    .input_file(&config_path)
-                    .theme("ansi")
-                    .print()
-                    .expect("Failed to parse config file");
+                if config_path.exists() {
+                    PrettyPrinter::new()
+                        .input_file(config_path)
+                        .theme("ansi")
+                        .print()
+                        .expect("Failed to parse config file");
+                }
             }
 
             Config::Set => println!("{command:?} is not yet implemented."),
@@ -231,6 +237,10 @@ fn main() {
             );
 
             println!("Importing files from {shared_directories:?}, ignoring {ignored_paths:?} to {local_directory:?}");
+
+            for dir in shared_directories {
+                println!("{dir:?}");
+            }
 
             let files = shared_directories.iter().flat_map(|directory| {
                 WalkDir::new(directory)
