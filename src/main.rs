@@ -1,4 +1,4 @@
-use std::env::var;
+use std::env::{current_dir, var};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -102,7 +102,7 @@ struct Cli {
 
     #[arg(long)]
     #[arg(value_name = "FILE")]
-    config_file: Option<PathBuf>,
+    config_file: Option<String>,
 }
 
 const fn get_app_name() -> &'static str {
@@ -167,12 +167,28 @@ fn get_tag(tags: &[Tag], tag_name: StandardTagKey) -> Option<&Tag> {
 fn main() {
     let cli = Cli::parse();
 
-    let config_path = cli
-        .config_file
-        .as_ref()
-        .map_or_else(get_default_config_path, |path| {
-            path.display().to_string()
-        });
+    let config_path = cli.config_file.as_ref().map_or_else(
+        get_default_config_path,
+        |config_path| {
+            let path = Path::new(config_path);
+
+            if path.is_relative() {
+                current_dir().map_or_else(
+                    |_| get_default_config_path(),
+                    |current_dir| {
+                        current_dir
+                            .join(path)
+                            .to_str()
+                            .map_or_else(get_default_config_path, |path| {
+                                path.to_string()
+                            })
+                    },
+                )
+            } else {
+                shellexpand::tilde(config_path).to_string()
+            }
+        },
+    );
 
     let config_path = Path::new(&config_path);
 

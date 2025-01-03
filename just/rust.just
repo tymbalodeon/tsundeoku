@@ -35,8 +35,9 @@
     ../scripts/rust/remove.nu {{ dependencies }}
 
 # Run the application, with any provided <args>.
+[no-cd]
 @run *args:
-    ../scripts/rust/run.nu {{ args }}
+    ./scripts/rust/run.nu {{ args }}
 
 # Run the tests
 @test *package:
