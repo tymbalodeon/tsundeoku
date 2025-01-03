@@ -26,7 +26,11 @@ enum Config {
     Set,
 
     /// Show config values
-    Show,
+    Show {
+        /// Show the default config
+        #[arg(long)]
+        default: bool,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -201,8 +205,11 @@ fn main() {
                 }
             }
 
-            Config::Show => {
-                if config_path.exists() {
+            Config::Show { default } => {
+                if *default {
+                    // TODO Convert to toml and show display with bat
+                    println!("{:#?}", ConfigFile::default());
+                } else if config_path.exists() {
                     PrettyPrinter::new()
                         .input_file(config_path)
                         .theme("ansi")
