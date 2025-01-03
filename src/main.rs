@@ -59,7 +59,7 @@ enum Commands {
         // #[arg(default_value = "~/Dropbox")]
         #[arg(long)]
         #[arg(value_name = "DIR")]
-        shared_dirs: Option<Vec<PathBuf>>,
+        shared_directories: Option<Vec<PathBuf>>,
 
         #[arg(long)]
         #[arg(value_name = "PATH")]
@@ -68,7 +68,7 @@ enum Commands {
         // #[arg(default_value = "~/Music")]
         #[arg(long)]
         #[arg(value_name = "DIR")]
-        local_dir: Option<PathBuf>,
+        local_directory: Option<PathBuf>,
 
         #[arg(long)]
         no_reformat: bool,
@@ -116,32 +116,35 @@ fn get_default_config_path() -> String {
         .expect("Unable to get default config path")
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 struct ConfigFile {
-    shared_dirs: Vec<PathBuf>,
+    shared_directories: Vec<PathBuf>,
     ignored_paths: Vec<PathBuf>,
-    local_dir: PathBuf,
+    local_directory: PathBuf,
 }
 
 impl Default for ConfigFile {
     fn default() -> Self {
         Self {
-            shared_dirs: get_default_shared_dirs(),
+            shared_directories: get_default_shared_directories(),
             ignored_paths: vec![],
-            local_dir: get_default_local_dir(),
+            local_directory: get_default_local_directory(),
         }
     }
 }
 
-fn get_default_shared_dirs() -> Vec<PathBuf> {
+fn get_default_shared_directories() -> Vec<PathBuf> {
     vec!["~/Dropbox".into()]
 }
 
-fn get_default_local_dir() -> PathBuf {
+fn get_default_local_directory() -> PathBuf {
     "~/Music".into()
 }
 
-fn get_config_value<T>(override_value: Option<T>, config_value: T) -> T {
+fn get_config_value<'a, T>(
+    override_value: Option<&'a T>,
+    config_value: &'a T,
+) -> &'a T {
     override_value.map_or(config_value, |value| value)
 }
 
@@ -163,14 +166,18 @@ fn main() {
             path.display().to_string()
         });
 
-    let config_values = if Path::new(&config_path).exists() {
-        toml::from_str::<ConfigFile>(
-            &fs::read_to_string(&config_path)
-                .expect("Failed to read config file"),
-        )
-        .unwrap_or_default()
-    } else {
-        ConfigFile::default()
+    let config_values = match toml::from_str::<ConfigFile>(
+        &fs::read_to_string(&config_path).expect("Failed to read config file"),
+    ) {
+        Ok(values) => values,
+        Err(error) => {
+            // TODO Allow for incomplete config files
+            eprintln!(
+                "{}",
+                format!("{}: {}", "config error".red(), error.message())
+            );
+            return;
+        }
     };
 
     match &cli.command {
@@ -202,15 +209,15 @@ fn main() {
         },
 
         Some(Commands::Import {
-            shared_dirs,
+            shared_directories,
             ignored_paths,
-            local_dir,
+            local_directory,
             no_reformat: _,
             force: _,
         }) => {
-            let shared_dirs = get_config_value(
-                shared_dirs.as_ref(),
-                &config_values.shared_dirs,
+            let shared_directories = get_config_value(
+                shared_directories.as_ref(),
+                &config_values.shared_directories,
             );
 
             let ignored_paths = get_config_value(
@@ -218,92 +225,92 @@ fn main() {
                 &config_values.ignored_paths,
             );
 
-            let local_dir =
-                get_config_value(local_dir.as_ref(), &config_values.local_dir);
+            let local_directory = get_config_value(
+                local_directory.as_ref(),
+                &config_values.local_directory,
+            );
 
-            println!("Importing files from {shared_dirs:?}, ignoring {ignored_paths:?} to {local_dir:?}");
+            println!("Importing files from {shared_directories:?}, ignoring {ignored_paths:?} to {local_directory:?}");
 
-            for dir in shared_dirs {
-                let dir = dir.as_path().to_string_lossy();
-
-                for entry in WalkDir::new(&*dir)
+            let files = shared_directories.iter().flat_map(|directory| {
+                WalkDir::new(directory)
                     .into_iter()
                     .filter_map(Result::ok)
-                    .filter(|dir_entry| Path::is_file(dir_entry.path()))
                     .filter(|dir_entry| {
-                        !ignored_paths
-                            .contains(&dir_entry.path().to_path_buf())
+                        Path::is_file(dir_entry.path())
+                            && !ignored_paths
+                                .contains(&dir_entry.path().to_path_buf())
                     })
+            });
+
+            for file in files {
+                let mut hint = Hint::new();
+
+                if let Some(extension) = file
+                    .path()
+                    .extension()
+                    .and_then(|extension| extension.to_str())
                 {
-                    let stream = MediaSourceStream::new(
+                    hint.with_extension(extension);
+                }
+
+                if let Ok(mut probed) = symphonia::default::get_probe().format(
+                    &hint,
+                    MediaSourceStream::new(
                         Box::new(
-                            std::fs::File::open(entry.path())
+                            std::fs::File::open(file.path())
                                 .expect("failed to open media"),
                         ),
                         MediaSourceStreamOptions::default(),
-                    );
+                    ),
+                    &FormatOptions::default(),
+                    &MetadataOptions::default(),
+                ) {
+                    let metadata =
+                        if let Some(metadata) = probed.metadata.get() {
+                            metadata
+                        } else {
+                            probed.format.metadata()
+                        };
 
-                    let mut hint = Hint::new();
+                    if let Some(metadata) = metadata.current() {
+                        let tags = metadata.tags();
 
-                    if let Some(extension) = entry.path().extension() {
-                        if let Some(extension) = extension.to_str() {
-                            hint.with_extension(extension);
+                        let mut track_display = String::new();
+
+                        let artist =
+                            get_tag(tags, StandardTagKey::AlbumArtist);
+
+                        if let Some(artist) = artist {
+                            track_display
+                                .push_str(&format!("{}", artist.value));
                         }
-                    }
 
-                    let meta_opts = MetadataOptions::default();
-                    let fmt_opts = FormatOptions::default();
+                        let album = get_tag(tags, StandardTagKey::Album);
 
-                    if let Ok(mut probed) = symphonia::default::get_probe()
-                        .format(&hint, stream, &fmt_opts, &meta_opts)
-                    {
-                        let metadata =
-                            if let Some(metadata) = probed.metadata.get() {
-                                metadata
-                            } else {
-                                probed.format.metadata()
-                            };
-
-                        if let Some(metadata) = metadata.current() {
-                            let tags = metadata.tags();
-
-                            let mut track_display = String::new();
-
-                            let artist =
-                                get_tag(tags, StandardTagKey::AlbumArtist);
-
-                            if let Some(artist) = artist {
-                                track_display
-                                    .push_str(&format!("{}", artist.value));
-                            }
-
-                            let album = get_tag(tags, StandardTagKey::Album);
-
-                            if let Some(album) = album {
-                                track_display
-                                    .push_str(&format!(" – {}", album.value));
-                            }
-
-                            let title =
-                                get_tag(tags, StandardTagKey::TrackTitle);
-
-                            if let Some(title) = title {
-                                track_display
-                                    .push_str(&format!(" – {}", title.value));
-                            }
-
-                            println!(
-                                "  {} {}",
-                                "Importing".green().bold(),
-                                track_display
-                            );
+                        if let Some(album) = album {
+                            track_display
+                                .push_str(&format!(" – {}", album.value));
                         }
-                    } else {
+
+                        let title = get_tag(tags, StandardTagKey::TrackTitle);
+
+                        if let Some(title) = title {
+                            track_display
+                                .push_str(&format!(" – {}", title.value));
+                        }
+
                         println!(
-                            "failed to read tags for file {}",
-                            entry.file_name().to_string_lossy()
+                            "  {} {}",
+                            "Importing".green().bold(),
+                            track_display
                         );
                     }
+                } else {
+                    println!(
+                        "failed to read tags for file {}",
+                        file.file_name().to_string_lossy()
+                    );
                 }
             }
         }
