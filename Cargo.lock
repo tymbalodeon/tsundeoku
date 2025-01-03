@@ -1372,6 +1372,7 @@ dependencies = [
  "home",
  "serde",
  "symphonia",
+ "symphonia-core",
  "toml",
  "walkdir",
 ]

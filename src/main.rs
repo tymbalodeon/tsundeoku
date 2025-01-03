@@ -266,16 +266,20 @@ fn main() {
                     &FormatOptions::default(),
                     &MetadataOptions::default(),
                 ) {
-                    let metadata =
-                        if let Some(metadata) = probed.metadata.get() {
-                            metadata
-                        } else {
-                            probed.format.metadata()
-                        };
+                    let probed_metadata = probed.metadata.get();
 
-                    if let Some(metadata) = metadata.current() {
-                        let tags = metadata.tags();
-
+                    // TODO fix clippy
+                    if let Some(tags) =
+                        probed.format.metadata().current().map_or_else(
+                            || {
+                                probed_metadata
+                                    .as_ref()
+                                    .and_then(|metadata| metadata.current())
+                                    .map(|metadata| metadata.tags())
+                            },
+                            |metadata| Some(metadata.tags()),
+                        )
+                    {
                         let mut track_display = String::new();
 
                         let artist =
@@ -305,10 +309,17 @@ fn main() {
                             "Importing".green().bold(),
                             track_display
                         );
+                    } else {
+                        println!(
+                            "{} failed to detect tags for {}",
+                            "warning:".yellow().bold(),
+                            file.file_name().to_string_lossy()
+                        );
                     }
                 } else {
                     println!(
-                        "failed to read tags for file {}",
+                        "{} failed to detect {} as audio file.",
+                        "error:".red().bold(),
                         file.file_name().to_string_lossy()
                     );
                 }
