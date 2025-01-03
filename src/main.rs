@@ -6,7 +6,7 @@ use std::process::Command;
 use bat::PrettyPrinter;
 use clap::{Parser, Subcommand};
 use colored::Colorize;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
 use symphonia::core::meta::{MetadataOptions, StandardTagKey, Tag};
@@ -120,7 +120,7 @@ fn get_default_config_path() -> String {
         .expect("Unable to get default config path")
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct ConfigFile {
     shared_directories: Vec<PathBuf>,
     ignored_paths: Vec<PathBuf>,
@@ -135,6 +135,14 @@ impl Default for ConfigFile {
             local_directory: get_default_local_directory(),
         }
     }
+}
+
+fn print_config(pretty_printer: &mut PrettyPrinter) {
+    pretty_printer
+        .theme("ansi")
+        .language("toml")
+        .print()
+        .expect("Failed to print config");
 }
 
 fn expand_path(path: &str) -> PathBuf {
@@ -223,14 +231,16 @@ fn main() {
 
             Config::Show { default } => {
                 if *default {
-                    // TODO Convert to toml and show display with bat
-                    println!("{:#?}", ConfigFile::default());
+                    let default_config =
+                        toml::to_string(&ConfigFile::default())
+                            .unwrap()
+                            .into_bytes();
+
+                    print_config(
+                        PrettyPrinter::new().input_from_bytes(&default_config),
+                    );
                 } else if config_path.exists() {
-                    PrettyPrinter::new()
-                        .input_file(config_path)
-                        .theme("ansi")
-                        .print()
-                        .expect("Failed to parse config file");
+                    print_config(PrettyPrinter::new().input_file(config_path));
                 }
             }
 
