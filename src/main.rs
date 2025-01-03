@@ -238,10 +238,6 @@ fn main() {
 
             println!("Importing files from {shared_directories:?}, ignoring {ignored_paths:?} to {local_directory:?}");
 
-            for dir in shared_directories {
-                println!("{dir:?}");
-            }
-
             let files = shared_directories.iter().flat_map(|directory| {
                 WalkDir::new(directory)
                     .into_iter()
