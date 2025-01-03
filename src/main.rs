@@ -231,14 +231,15 @@ fn main() {
 
             Config::Show { default } => {
                 if *default {
-                    let default_config =
+                    if let Ok(default_config) =
                         toml::to_string(&ConfigFile::default())
-                            .unwrap()
-                            .into_bytes();
-
-                    print_config(
-                        PrettyPrinter::new().input_from_bytes(&default_config),
-                    );
+                    {
+                        let default_config = default_config.into_bytes();
+                        print_config(
+                            PrettyPrinter::new()
+                                .input_from_bytes(&default_config),
+                        );
+                    }
                 } else if config_path.exists() {
                     print_config(PrettyPrinter::new().input_file(config_path));
                 }
@@ -307,14 +308,13 @@ fn main() {
                 ) {
                     let probed_metadata = probed.metadata.get();
 
-                    // TODO fix clippy
                     if let Some(tags) =
                         probed.format.metadata().current().map_or_else(
                             || {
                                 probed_metadata
                                     .as_ref()
                                     .and_then(|metadata| metadata.current())
-                                    .map(|metadata| metadata.tags())
+                                    .map(symphonia_core::meta::MetadataRevision::tags)
                             },
                             |metadata| Some(metadata.tags()),
                         )
