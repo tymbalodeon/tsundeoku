@@ -366,7 +366,11 @@ fn main() {
         }
 
         Some(Commands::Logs) => {
-            println!("Logs is not yet implemented.");
+            if let Ok(file) =
+                fs::read_to_string(format!("/tmp/{}.log", get_app_name()))
+            {
+                println!("{file}");
+            }
         }
 
         Some(Commands::Schedule {

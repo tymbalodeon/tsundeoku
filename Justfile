@@ -80,10 +80,6 @@ mod python "just/python.just"
 @remove *args:
     just python remove {{ args }}
 
-# alias for `python run`
-@run *args:
-    just python run {{ args }}
-
 # alias for `python shell`
 @shell *args:
     just python shell {{ args }}
