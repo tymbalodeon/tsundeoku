@@ -35,7 +35,7 @@ enum Config {
     /// Show config values
     Show {
         // Show the value for a particular key
-        key: ConfigKey,
+        key: Option<ConfigKey>,
 
         /// Show the default config
         #[arg(long)]
@@ -249,16 +249,29 @@ fn main() {
                 let default_config = ConfigFile::default();
 
                 if *default {
-                    if matches!(key, ConfigKey::SharedDirectories) {
-                        println!(
-                            "{:?}",
-                            default_config.shared_directories
-                        );
+                    if let Some(key) = key {
+                        let value = match key {
+                            ConfigKey::SharedDirectories => {
+                                format!(
+                                    "{:?}",
+                                    default_config.shared_directories
+                                )
+                            }
 
-                        return;
-                    }
+                            ConfigKey::IgnoredPaths => {
+                                format!("{:?}", default_config.ignored_paths)
+                            }
 
-                    if let Ok(default_config_toml) =
+                            ConfigKey::LocalDirectory => default_config
+                                .local_directory
+                                .as_os_str()
+                                .to_str()
+                                .unwrap()
+                                .to_string(),
+                        };
+
+                        println!("{value}");
+                    } else if let Ok(default_config_toml) =
                         toml::to_string(&default_config)
                     {
                         let default_config_toml =
