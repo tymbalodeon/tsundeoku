@@ -196,6 +196,25 @@ fn get_tag(tags: &[Tag], tag_name: StandardTagKey) -> Option<&Tag> {
         .map(|tag| &**tag)
 }
 
+fn get_config_value_display(
+    config: &ConfigFile,
+    key: &ConfigKey,
+) -> Option<String> {
+    match key {
+        ConfigKey::SharedDirectories => {
+            Some(format!("{:?}", config.shared_directories))
+        }
+
+        ConfigKey::IgnoredPaths => Some(format!("{:?}", config.ignored_paths)),
+
+        ConfigKey::LocalDirectory => config
+            .local_directory
+            .as_os_str()
+            .to_str()
+            .map(std::string::ToString::to_string),
+    }
+}
+
 fn main() {
     let cli = Cli::parse();
 
@@ -223,7 +242,6 @@ fn main() {
     );
 
     let config_path = Path::new(&config_path);
-
     let config_values = ConfigFile::from_file(config_path);
 
     match &cli.command {
@@ -250,27 +268,11 @@ fn main() {
 
                 if *default {
                     if let Some(key) = key {
-                        let value = match key {
-                            ConfigKey::SharedDirectories => {
-                                format!(
-                                    "{:?}",
-                                    default_config.shared_directories
-                                )
-                            }
-
-                            ConfigKey::IgnoredPaths => {
-                                format!("{:?}", default_config.ignored_paths)
-                            }
-
-                            ConfigKey::LocalDirectory => default_config
-                                .local_directory
-                                .as_os_str()
-                                .to_str()
-                                .unwrap()
-                                .to_string(),
-                        };
-
-                        println!("{value}");
+                        if let Some(value) =
+                            get_config_value_display(&default_config, key)
+                        {
+                            println!("{value}");
+                        }
                     } else if let Ok(default_config_toml) =
                         toml::to_string(&default_config)
                     {
@@ -283,7 +285,17 @@ fn main() {
                         );
                     }
                 } else if config_path.exists() {
-                    print_config(PrettyPrinter::new().input_file(config_path));
+                    if let Some(key) = key {
+                        if let Some(value) =
+                            get_config_value_display(&config_values, key)
+                        {
+                            println!("{value}");
+                        }
+                    } else {
+                        print_config(
+                            PrettyPrinter::new().input_file(config_path),
+                        );
+                    }
                 } else {
                     // TODO make proper error
                     println!("{} does not exist.", config_path.display());
