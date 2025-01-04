@@ -101,7 +101,13 @@ def import_command(
     files_requiring_prompt = []
     for directory in shared_directories:
         shared_directory_files = tuple(
-            file for file in sorted(glob(f"{directory}/**/*", recursive=True))
+            file
+            for file in sorted(
+                glob(
+                    f"{directory}/**/*.(aifc|aiff|ape|asf|flac|mp3|m4a|m4b|m4v|mp4|mpc|orf|ofs|ogg|tta|wma|wv)",
+                    recursive=True,
+                )
+            )
         )
         imported_files_file = (
             Path.home() / f".local/share/{get_app_name()}/imported_files"
