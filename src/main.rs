@@ -137,6 +137,20 @@ impl Default for ConfigFile {
     }
 }
 
+impl ConfigFile {
+    fn from_file(config_path: &Path) -> Self {
+        fs::read_to_string(config_path).map_or_else(
+            |_| Self::default(),
+            |file| {
+                // TODO
+                // expand tilde in config values
+
+                toml::from_str::<Self>(&file).unwrap_or_default()
+            },
+        )
+    }
+}
+
 fn print_config(pretty_printer: &mut PrettyPrinter) {
     pretty_printer
         .theme("ansi")
@@ -200,15 +214,7 @@ fn main() {
 
     let config_path = Path::new(&config_path);
 
-    let config_values = if config_path.exists() {
-        toml::from_str::<ConfigFile>(
-            &fs::read_to_string(config_path)
-                .expect("Failed to read config file"),
-        )
-        .unwrap_or_default()
-    } else {
-        ConfigFile::default()
-    };
+    let config_values = ConfigFile::from_file(config_path);
 
     match &cli.command {
         Some(Commands::Config {
@@ -242,6 +248,9 @@ fn main() {
                     }
                 } else if config_path.exists() {
                     print_config(PrettyPrinter::new().input_file(config_path));
+                } else {
+                    // TODO make proper error
+                    println!("{} does not exist.", config_path.display());
                 }
             }
 
