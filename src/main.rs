@@ -1,7 +1,8 @@
 use std::env::{current_dir, var};
-use std::fs;
+use std::fs::{read_to_string, File};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::string::ToString;
 
 use bat::PrettyPrinter;
 use clap::{Parser, Subcommand, ValueEnum};
@@ -149,7 +150,7 @@ impl Default for ConfigFile {
 
 impl ConfigFile {
     fn from_file(config_path: &Path) -> Self {
-        fs::read_to_string(config_path).map_or_else(
+        read_to_string(config_path).map_or_else(
             |_| Self::default(),
             |file| {
                 // TODO
@@ -211,7 +212,7 @@ fn get_config_value_display(
             .local_directory
             .as_os_str()
             .to_str()
-            .map(std::string::ToString::to_string),
+            .map(ToString::to_string),
     }
 }
 
@@ -355,7 +356,7 @@ fn main() {
                     &hint,
                     MediaSourceStream::new(
                         Box::new(
-                            std::fs::File::open(file.path())
+                            File::open(file.path())
                                 .expect("failed to open media"),
                         ),
                         MediaSourceStreamOptions::default(),
@@ -424,7 +425,7 @@ fn main() {
 
         Some(Commands::Logs) => {
             if let Ok(file) =
-                fs::read_to_string(format!("/tmp/{}.log", get_app_name()))
+                read_to_string(format!("/tmp/{}.log", get_app_name()))
             {
                 println!("{file}");
             }
