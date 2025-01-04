@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use bat::PrettyPrinter;
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use symphonia::core::formats::FormatOptions;
@@ -12,6 +12,13 @@ use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
 use symphonia::core::meta::{MetadataOptions, StandardTagKey, Tag};
 use symphonia::core::probe::Hint;
 use walkdir::WalkDir;
+
+#[derive(Clone, Debug, ValueEnum)]
+enum ConfigKey {
+    SharedDirectories,
+    IgnoredPaths,
+    LocalDirectory,
+}
 
 #[derive(Subcommand, Debug)]
 #[command(arg_required_else_help = true)]
@@ -27,6 +34,9 @@ enum Config {
 
     /// Show config values
     Show {
+        // Show the value for a particular key
+        key: ConfigKey,
+
         /// Show the default config
         #[arg(long)]
         default: bool,
@@ -235,15 +245,28 @@ fn main() {
                 }
             }
 
-            Config::Show { default } => {
+            Config::Show { key, default } => {
+                let default_config = ConfigFile::default();
+
                 if *default {
-                    if let Ok(default_config) =
-                        toml::to_string(&ConfigFile::default())
+                    if matches!(key, ConfigKey::SharedDirectories) {
+                        println!(
+                            "{:?}",
+                            default_config.shared_directories
+                        );
+
+                        return;
+                    }
+
+                    if let Ok(default_config_toml) =
+                        toml::to_string(&default_config)
                     {
-                        let default_config = default_config.into_bytes();
+                        let default_config_toml =
+                            default_config_toml.into_bytes();
+
                         print_config(
                             PrettyPrinter::new()
-                                .input_from_bytes(&default_config),
+                                .input_from_bytes(&default_config_toml),
                         );
                     }
                 } else if config_path.exists() {
