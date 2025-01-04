@@ -197,16 +197,27 @@ fn get_tag(tags: &[Tag], tag_name: StandardTagKey) -> Option<&Tag> {
         .map(|tag| &**tag)
 }
 
+fn get_path_vector_display(vector: &[PathBuf]) -> String {
+    vector
+        .iter()
+        .filter_map(|item| item.as_os_str().to_str())
+        .map(|item| item.trim().to_string())
+        .collect::<Vec<String>>()
+        .join(", ")
+}
+
 fn get_config_value_display(
     config: &ConfigFile,
     key: &ConfigKey,
 ) -> Option<String> {
     match key {
         ConfigKey::SharedDirectories => {
-            Some(format!("{:?}", config.shared_directories))
+            Some(get_path_vector_display(&config.shared_directories))
         }
 
-        ConfigKey::IgnoredPaths => Some(format!("{:?}", config.ignored_paths)),
+        ConfigKey::IgnoredPaths => {
+            Some(get_path_vector_display(&config.ignored_paths))
+        }
 
         ConfigKey::LocalDirectory => config
             .local_directory
