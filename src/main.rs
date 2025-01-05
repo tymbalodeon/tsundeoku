@@ -111,6 +111,7 @@ struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
 
+    #[arg(global = true)]
     #[arg(long)]
     #[arg(value_name = "FILE")]
     config_file: Option<String>,
@@ -269,12 +270,16 @@ fn main() {
                 }
             }
 
+            // TODO handle if is relative file with leading dot(s)
             Config::Path => {
                 if let Some(path) = config_path.to_str() {
                     println!("{path}");
                 }
             }
 
+            // TODO
+            // expand tilde?
+            // display vectors with each item on a new line?
             Config::Show { key, default } => {
                 let default_config = ConfigFile::default();
 
