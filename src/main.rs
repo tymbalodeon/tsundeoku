@@ -78,6 +78,7 @@ enum Commands {
         #[arg(value_name = "DIR")]
         shared_directories: Option<Vec<PathBuf>>,
 
+        // TODO allow wildcards
         #[arg(long)]
         #[arg(value_name = "PATH")]
         ignored_paths: Option<Vec<PathBuf>>,
