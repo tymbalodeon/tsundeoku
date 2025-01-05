@@ -8,6 +8,7 @@ bat = "0.24.0"
 clap = { version = "4.5.23", features = ["derive", "string"] }
 colored = "2.2.0"
 home = "0.5.11"
+path-dedot = "3.1.1"
 serde = { version = "1.0.217", features = ["derive"] }
 shellexpand = "3.1.0"
 symphonia = { version = "0.5.4", features = ["all-codecs", "all-formats"] }

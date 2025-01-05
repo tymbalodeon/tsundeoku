@@ -1,12 +1,14 @@
-use std::env::{current_dir, var};
+use std::env::var;
 use std::fs::{read_to_string, File};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::str::FromStr;
 use std::string::ToString;
 
 use bat::PrettyPrinter;
 use clap::{Parser, Subcommand, ValueEnum};
 use colored::Colorize;
+use path_dedot::ParseDot;
 use serde::{Deserialize, Serialize};
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
@@ -149,15 +151,42 @@ impl Default for ConfigFile {
     }
 }
 
+fn expand_path(path: &PathBuf) -> PathBuf {
+    path.as_os_str().to_str().map_or_else(
+        || path.to_owned(),
+        |path_name| {
+            PathBuf::from_str(
+                shellexpand::tilde(path_name).to_string().as_str(),
+            ).unwrap_or_else(|_| path.to_owned())
+        },
+    )
+}
+
+fn expand_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
+    paths
+        .iter()
+        .map(expand_path)
+        .collect::<Vec<PathBuf>>()
+}
+
 impl ConfigFile {
     fn from_file(config_path: &Path) -> Self {
         read_to_string(config_path).map_or_else(
             |_| Self::default(),
             |file| {
-                // TODO
-                // expand tilde in config values
+                let mut config_items =
+                    toml::from_str::<Self>(&file).unwrap_or_default();
 
-                toml::from_str::<Self>(&file).unwrap_or_default()
+                config_items.shared_directories =
+                    expand_paths(&config_items.shared_directories);
+
+                config_items.ignored_paths =
+                    expand_paths(&config_items.ignored_paths);
+
+                config_items.local_directory =
+                    expand_path(&config_items.local_directory);
+
+                config_items
             },
         )
     }
@@ -171,16 +200,16 @@ fn print_config(pretty_printer: &mut PrettyPrinter) {
         .expect("Failed to print config");
 }
 
-fn expand_path(path: &str) -> PathBuf {
+fn expand_str_to_path(path: &str) -> PathBuf {
     Path::new(&shellexpand::tilde(path).into_owned()).to_path_buf()
 }
 
 fn get_default_shared_directories() -> Vec<PathBuf> {
-    vec![expand_path("~/Dropbox")]
+    vec![expand_str_to_path("~/Dropbox")]
 }
 
 fn get_default_local_directory() -> PathBuf {
-    expand_path("~/Music")
+    expand_str_to_path("~/Music")
 }
 
 fn get_config_value<'a, T>(
@@ -204,7 +233,7 @@ fn get_path_vector_display(vector: &[PathBuf]) -> String {
         .filter_map(|item| item.as_os_str().to_str())
         .map(|item| item.trim().to_string())
         .collect::<Vec<String>>()
-        .join(", ")
+        .join("\n")
 }
 
 fn get_config_value_display(
@@ -228,29 +257,25 @@ fn get_config_value_display(
     }
 }
 
+fn print_error<T: AsRef<str>>(message: T) {
+    eprintln!("{} {}", "error:".red().bold(), message.as_ref());
+}
+
 fn main() {
     let cli = Cli::parse();
 
     let config_path = cli.config_file.as_ref().map_or_else(
         get_default_config_path,
         |config_path| {
-            let path = Path::new(config_path);
-
-            if path.is_relative() {
-                current_dir().map_or_else(
-                    |_| get_default_config_path(),
-                    |current_dir| {
-                        current_dir
-                            .join(path)
-                            .to_str()
-                            .map_or_else(get_default_config_path, |path| {
-                                path.to_string()
-                            })
-                    },
-                )
-            } else {
-                shellexpand::tilde(config_path).to_string()
-            }
+            Path::new(config_path).parse_dot().map_or(
+                shellexpand::tilde(config_path).to_string(),
+                |path| {
+                    path.to_str().map_or_else(
+                        || shellexpand::tilde(config_path).to_string(),
+                        ToString::to_string,
+                    )
+                },
+            )
         },
     );
 
@@ -270,16 +295,12 @@ fn main() {
                 }
             }
 
-            // TODO handle if is relative file with leading dot(s)
             Config::Path => {
                 if let Some(path) = config_path.to_str() {
                     println!("{path}");
                 }
             }
 
-            // TODO
-            // expand tilde?
-            // display vectors with each item on a new line?
             Config::Show { key, default } => {
                 let default_config = ConfigFile::default();
 
@@ -314,8 +335,10 @@ fn main() {
                         );
                     }
                 } else {
-                    // TODO make proper error
-                    println!("{} does not exist.", config_path.display());
+                    print_error(format!(
+                        "{} does not exist.",
+                        config_path.display()
+                    ));
                 }
             }
 
@@ -430,7 +453,7 @@ fn main() {
                         );
                     }
                 } else {
-                    println!(
+                    eprintln!(
                         "{} failed to detect {} as audio file.",
                         "error:".red().bold(),
                         file.file_name().to_string_lossy()
