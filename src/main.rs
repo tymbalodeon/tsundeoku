@@ -157,16 +157,14 @@ fn expand_path(path: &PathBuf) -> PathBuf {
         |path_name| {
             PathBuf::from_str(
                 shellexpand::tilde(path_name).to_string().as_str(),
-            ).unwrap_or_else(|_| path.to_owned())
+            )
+            .unwrap_or_else(|_| path.to_owned())
         },
     )
 }
 
 fn expand_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
-    paths
-        .iter()
-        .map(expand_path)
-        .collect::<Vec<PathBuf>>()
+    paths.iter().map(expand_path).collect::<Vec<PathBuf>>()
 }
 
 impl ConfigFile {
