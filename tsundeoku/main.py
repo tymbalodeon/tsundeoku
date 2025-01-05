@@ -1,3 +1,4 @@
+from functools import reduce
 from glob import glob
 from pathlib import Path
 from smtplib import SMTPAuthenticationError
@@ -100,15 +101,32 @@ def import_command(
         )
     files_requiring_prompt = []
     for directory in shared_directories:
-        shared_directory_files = tuple(
-            file
-            for file in sorted(
-                glob(
-                    f"{directory}/**/*.(aifc|aiff|ape|asf|flac|mp3|m4a|m4b|m4v|mp4|mpc|orf|ofs|ogg|tta|wma|wv)",
-                    recursive=True,
-                )
-            )
+        globs = reduce(
+            lambda a, b: a + b,
+            [
+                glob(f"{directory}/**/*.{extension}", recursive=True)
+                for extension in [
+                    "aifc",
+                    "aiff",
+                    "ape",
+                    "asf",
+                    "flac",
+                    "mp3",
+                    "m4a",
+                    "m4b",
+                    "m4v",
+                    "mp4",
+                    "mpc",
+                    "orf",
+                    "ofs",
+                    "ogg",
+                    "tta",
+                    "wma",
+                    "wv",
+                ]
+            ],
         )
+        shared_directory_files = tuple(file for file in sorted(globs))
         imported_files_file = (
             Path.home() / f".local/share/{get_app_name()}/imported_files"
         )
