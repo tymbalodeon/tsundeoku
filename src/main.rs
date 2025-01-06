@@ -4,10 +4,12 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::str::FromStr;
 use std::string::ToString;
+use std::vec::Vec;
 
 use bat::PrettyPrinter;
 use clap::{Parser, Subcommand, ValueEnum};
 use colored::Colorize;
+use home::home_dir;
 use path_dedot::ParseDot;
 use serde::{Deserialize, Serialize};
 use symphonia::core::formats::FormatOptions;
@@ -125,7 +127,7 @@ const fn get_app_name() -> &'static str {
 }
 
 fn get_default_config_path() -> String {
-    home::home_dir()
+    home_dir()
         .expect("Unable to determine $HOME path")
         .join(".config")
         .join(get_app_name())
@@ -348,7 +350,7 @@ fn main() {
             local_directory,
             dry_run,
             no_reformat: _,
-            force: _,
+            force,
         }) => {
             let shared_directories = get_config_value(
                 shared_directories.as_ref(),
@@ -367,14 +369,34 @@ fn main() {
 
             println!("Importing files from {shared_directories:?}, ignoring {ignored_paths:?} to {local_directory:?}");
 
+            let imported_files =
+                (!force).then_some(home_dir().map_or_else(Vec::new, |home| {
+                    read_to_string(
+                        home.join(".local/share")
+                            .join(get_app_name())
+                            .join("imported_files"),
+                    )
+                    .map_or_else(
+                        |_| vec![],
+                        |imported_files| {
+                            imported_files.lines().map(PathBuf::from).collect()
+                        },
+                    )
+                }));
+
             let files = shared_directories.iter().flat_map(|directory| {
                 WalkDir::new(directory)
                     .into_iter()
                     .filter_map(Result::ok)
                     .filter(|dir_entry| {
-                        Path::is_file(dir_entry.path())
-                            && !ignored_paths
-                                .contains(&dir_entry.path().to_path_buf())
+                        let path_buf = dir_entry.path().to_path_buf();
+
+                        !imported_files.as_ref().is_some_and(
+                            |imported_files| {
+                                imported_files.contains(&path_buf)
+                            },
+                        ) && Path::is_file(dir_entry.path())
+                            && !ignored_paths.contains(&path_buf)
                     })
             });
 
