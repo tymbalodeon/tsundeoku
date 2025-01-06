@@ -70,20 +70,23 @@ enum Commands {
 
     /// Import newly added audio files from shared folders to a local folder
     Import {
-        // #[arg(default_value = "~/Dropbox")]
         #[arg(long)]
+        #[arg(num_args(0..))]
         #[arg(value_name = "DIR")]
         shared_directories: Option<Vec<PathBuf>>,
 
         // TODO allow wildcards
         #[arg(long)]
+        #[arg(num_args(0..))]
         #[arg(value_name = "PATH")]
         ignored_paths: Option<Vec<PathBuf>>,
 
-        // #[arg(default_value = "~/Music")]
         #[arg(long)]
         #[arg(value_name = "DIR")]
         local_directory: Option<PathBuf>,
+
+        #[arg(long)]
+        dry_run: bool,
 
         #[arg(long)]
         no_reformat: bool,
@@ -343,6 +346,7 @@ fn main() {
             shared_directories,
             ignored_paths,
             local_directory,
+            dry_run,
             no_reformat: _,
             force: _,
         }) => {
@@ -434,11 +438,15 @@ fn main() {
                                 .push_str(&format!(" – {}", title.value));
                         }
 
-                        println!(
-                            "  {} {}",
-                            "Importing".green().bold(),
-                            track_display
-                        );
+                        if *dry_run {
+                            println!("{track_display}");
+                        } else {
+                            println!(
+                                "  {} {}",
+                                "Importing".green().bold(),
+                                track_display
+                            );
+                        }
                     } else {
                         println!(
                             "{} failed to detect tags for {}",
