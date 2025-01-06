@@ -403,49 +403,39 @@ fn main() {
                 ) {
                     let probed_metadata = probed.metadata.get();
 
-                    if let Some(tags) =
-                        probed.format.metadata().current().map_or_else(
-                            || {
-                                probed_metadata
-                                    .as_ref()
-                                    .and_then(|metadata| metadata.current())
-                                    .map(symphonia_core::meta::MetadataRevision::tags)
-                            },
-                            |metadata| Some(metadata.tags()),
-                        )
-                    {
+                    if let Some(tags) = probed.format.metadata().current().map_or_else(
+                        || {
+                            probed_metadata
+                                .as_ref()
+                                .and_then(|metadata| metadata.current())
+                                .map(symphonia_core::meta::MetadataRevision::tags)
+                        },
+                        |metadata| Some(metadata.tags()),
+                    ) {
                         let mut track_display = String::new();
 
-                        let artist =
-                            get_tag(tags, StandardTagKey::AlbumArtist);
+                        let artist = get_tag(tags, StandardTagKey::AlbumArtist);
 
                         if let Some(artist) = artist {
-                            track_display
-                                .push_str(&format!("{}", artist.value));
+                            track_display.push_str(&format!("{}", artist.value));
                         }
 
                         let album = get_tag(tags, StandardTagKey::Album);
 
                         if let Some(album) = album {
-                            track_display
-                                .push_str(&format!(" – {}", album.value));
+                            track_display.push_str(&format!(" – {}", album.value));
                         }
 
                         let title = get_tag(tags, StandardTagKey::TrackTitle);
 
                         if let Some(title) = title {
-                            track_display
-                                .push_str(&format!(" – {}", title.value));
+                            track_display.push_str(&format!(" – {}", title.value));
                         }
 
                         if *dry_run {
                             println!("{track_display}");
                         } else {
-                            println!(
-                                "  {} {}",
-                                "Importing".green().bold(),
-                                track_display
-                            );
+                            println!("  {} {}", "Importing".green().bold(), track_display);
                         }
                     } else {
                         println!(
