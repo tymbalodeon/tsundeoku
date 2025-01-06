@@ -1,5 +1,5 @@
 use std::env::var;
-use std::fs::{read_to_string, File};
+use std::fs::{copy, read_to_string, File};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::str::FromStr;
@@ -158,10 +158,8 @@ fn expand_path(path: &PathBuf) -> PathBuf {
     path.as_os_str().to_str().map_or_else(
         || path.to_owned(),
         |path_name| {
-            PathBuf::from_str(
-                shellexpand::tilde(path_name).to_string().as_str(),
-            )
-            .unwrap_or_else(|_| path.to_owned())
+            PathBuf::from_str(shellexpand::tilde(path_name).to_string().as_str())
+                .unwrap_or_else(|_| path.to_owned())
         },
     )
 }
@@ -175,17 +173,13 @@ impl ConfigFile {
         read_to_string(config_path).map_or_else(
             |_| Self::default(),
             |file| {
-                let mut config_items =
-                    toml::from_str::<Self>(&file).unwrap_or_default();
+                let mut config_items = toml::from_str::<Self>(&file).unwrap_or_default();
 
-                config_items.shared_directories =
-                    expand_paths(&config_items.shared_directories);
+                config_items.shared_directories = expand_paths(&config_items.shared_directories);
 
-                config_items.ignored_paths =
-                    expand_paths(&config_items.ignored_paths);
+                config_items.ignored_paths = expand_paths(&config_items.ignored_paths);
 
-                config_items.local_directory =
-                    expand_path(&config_items.local_directory);
+                config_items.local_directory = expand_path(&config_items.local_directory);
 
                 config_items
             },
@@ -213,10 +207,7 @@ fn get_default_local_directory() -> PathBuf {
     expand_str_to_path("~/Music")
 }
 
-fn get_config_value<'a, T>(
-    override_value: Option<&'a T>,
-    config_value: &'a T,
-) -> &'a T {
+fn get_config_value<'a, T>(override_value: Option<&'a T>, config_value: &'a T) -> &'a T {
     override_value.map_or(config_value, |value| value)
 }
 
@@ -237,18 +228,11 @@ fn get_path_vector_display(vector: &[PathBuf]) -> String {
         .join("\n")
 }
 
-fn get_config_value_display(
-    config: &ConfigFile,
-    key: &ConfigKey,
-) -> Option<String> {
+fn get_config_value_display(config: &ConfigFile, key: &ConfigKey) -> Option<String> {
     match key {
-        ConfigKey::SharedDirectories => {
-            Some(get_path_vector_display(&config.shared_directories))
-        }
+        ConfigKey::SharedDirectories => Some(get_path_vector_display(&config.shared_directories)),
 
-        ConfigKey::IgnoredPaths => {
-            Some(get_path_vector_display(&config.ignored_paths))
-        }
+        ConfigKey::IgnoredPaths => Some(get_path_vector_display(&config.ignored_paths)),
 
         ConfigKey::LocalDirectory => config
             .local_directory
@@ -262,23 +246,27 @@ fn print_error<T: AsRef<str>>(message: T) {
     eprintln!("{} {}", "error:".red().bold(), message.as_ref());
 }
 
+fn get_tag_or_unknown(tags: &[Tag], tag_name: StandardTagKey) -> String {
+    get_tag(tags, tag_name).map_or("Unknown".to_string(), |tag| tag.value.to_string())
+}
+
 fn main() {
     let cli = Cli::parse();
 
-    let config_path = cli.config_file.as_ref().map_or_else(
-        get_default_config_path,
-        |config_path| {
-            Path::new(config_path).parse_dot().map_or(
-                shellexpand::tilde(config_path).to_string(),
-                |path| {
-                    path.to_str().map_or_else(
-                        || shellexpand::tilde(config_path).to_string(),
-                        ToString::to_string,
-                    )
-                },
-            )
-        },
-    );
+    let config_path =
+        cli.config_file
+            .as_ref()
+            .map_or_else(get_default_config_path, |config_path| {
+                Path::new(config_path).parse_dot().map_or(
+                    shellexpand::tilde(config_path).to_string(),
+                    |path| {
+                        path.to_str().map_or_else(
+                            || shellexpand::tilde(config_path).to_string(),
+                            ToString::to_string,
+                        )
+                    },
+                )
+            });
 
     let config_path = Path::new(&config_path);
     let config_values = ConfigFile::from_file(config_path);
@@ -307,39 +295,24 @@ fn main() {
 
                 if *default {
                     if let Some(key) = key {
-                        if let Some(value) =
-                            get_config_value_display(&default_config, key)
-                        {
+                        if let Some(value) = get_config_value_display(&default_config, key) {
                             println!("{value}");
                         }
-                    } else if let Ok(default_config_toml) =
-                        toml::to_string(&default_config)
-                    {
-                        let default_config_toml =
-                            default_config_toml.into_bytes();
+                    } else if let Ok(default_config_toml) = toml::to_string(&default_config) {
+                        let default_config_toml = default_config_toml.into_bytes();
 
-                        print_config(
-                            PrettyPrinter::new()
-                                .input_from_bytes(&default_config_toml),
-                        );
+                        print_config(PrettyPrinter::new().input_from_bytes(&default_config_toml));
                     }
                 } else if config_path.exists() {
                     if let Some(key) = key {
-                        if let Some(value) =
-                            get_config_value_display(&config_values, key)
-                        {
+                        if let Some(value) = get_config_value_display(&config_values, key) {
                             println!("{value}");
                         }
                     } else {
-                        print_config(
-                            PrettyPrinter::new().input_file(config_path),
-                        );
+                        print_config(PrettyPrinter::new().input_file(config_path));
                     }
                 } else {
-                    print_error(format!(
-                        "{} does not exist.",
-                        config_path.display()
-                    ));
+                    print_error(format!("{} does not exist.", config_path.display()));
                 }
             }
         },
@@ -357,32 +330,25 @@ fn main() {
                 &config_values.shared_directories,
             );
 
-            let ignored_paths = get_config_value(
-                ignored_paths.as_ref(),
-                &config_values.ignored_paths,
-            );
+            let ignored_paths =
+                get_config_value(ignored_paths.as_ref(), &config_values.ignored_paths);
 
-            let local_directory = get_config_value(
-                local_directory.as_ref(),
-                &config_values.local_directory,
-            );
+            let local_directory =
+                get_config_value(local_directory.as_ref(), &config_values.local_directory);
 
             println!("Importing files from {shared_directories:?}, ignoring {ignored_paths:?} to {local_directory:?}");
 
-            let imported_files =
-                (!force).then_some(home_dir().map_or_else(Vec::new, |home| {
-                    read_to_string(
-                        home.join(".local/share")
-                            .join(get_app_name())
-                            .join("imported_files"),
-                    )
-                    .map_or_else(
-                        |_| vec![],
-                        |imported_files| {
-                            imported_files.lines().map(PathBuf::from).collect()
-                        },
-                    )
-                }));
+            let imported_files = (!force).then_some(home_dir().map_or_else(Vec::new, |home| {
+                read_to_string(
+                    home.join(".local/share")
+                        .join(get_app_name())
+                        .join("imported_files"),
+                )
+                .map_or_else(
+                    |_| vec![],
+                    |imported_files| imported_files.lines().map(PathBuf::from).collect(),
+                )
+            }));
 
             let files = shared_directories.iter().flat_map(|directory| {
                 WalkDir::new(directory)
@@ -391,11 +357,10 @@ fn main() {
                     .filter(|dir_entry| {
                         let path_buf = dir_entry.path().to_path_buf();
 
-                        !imported_files.as_ref().is_some_and(
-                            |imported_files| {
-                                imported_files.contains(&path_buf)
-                            },
-                        ) && Path::is_file(dir_entry.path())
+                        !imported_files
+                            .as_ref()
+                            .is_some_and(|imported_files| imported_files.contains(&path_buf))
+                            && Path::is_file(dir_entry.path())
                             && !ignored_paths.contains(&path_buf)
                     })
             });
@@ -414,10 +379,7 @@ fn main() {
                 if let Ok(mut probed) = symphonia::default::get_probe().format(
                     &hint,
                     MediaSourceStream::new(
-                        Box::new(
-                            File::open(file.path())
-                                .expect("failed to open media"),
-                        ),
+                        Box::new(File::open(file.path()).expect("failed to open media")),
                         MediaSourceStreamOptions::default(),
                     ),
                     &FormatOptions::default(),
@@ -434,30 +396,35 @@ fn main() {
                         },
                         |metadata| Some(metadata.tags()),
                     ) {
-                        let mut track_display = String::new();
-
-                        let artist = get_tag(tags, StandardTagKey::AlbumArtist);
-
-                        if let Some(artist) = artist {
-                            track_display.push_str(&format!("{}", artist.value));
-                        }
-
-                        let album = get_tag(tags, StandardTagKey::Album);
-
-                        if let Some(album) = album {
-                            track_display.push_str(&format!(" – {}", album.value));
-                        }
-
-                        let title = get_tag(tags, StandardTagKey::TrackTitle);
-
-                        if let Some(title) = title {
-                            track_display.push_str(&format!(" – {}", title.value));
-                        }
+                        let artist = get_tag_or_unknown(tags, StandardTagKey::AlbumArtist);
+                        let album = get_tag_or_unknown(tags, StandardTagKey::Album);
+                        let title = get_tag_or_unknown(tags, StandardTagKey::TrackTitle);
+                        let track_display = format!("{artist} – {album} – {title}");
 
                         if *dry_run {
                             println!("{track_display}");
                         } else {
-                            println!("  {} {}", "Importing".green().bold(), track_display);
+                            // println!("  {} {}", "Importing".green().bold(), track_display);
+
+                            let local_file = if let Some(file_name) = file.path().file_name() {
+                                file_name
+                                    .to_os_string()
+                                    .into_string()
+                                    .map_or(title, |file_name| file_name)
+                            } else {
+                                title
+                            };
+
+                            // let local_file = if local_file.exists() {
+                            //     // TODO append number to filename
+                            //     local_file
+                            // } else {
+                            //     local_file
+                            // };
+
+                            if let Err(error) = copy(file.path(), local_file) {
+                                print_error(error.to_string());
+                            }
                         }
                     } else {
                         println!(
@@ -477,9 +444,7 @@ fn main() {
         }
 
         Some(Commands::Logs) => {
-            if let Ok(file) =
-                read_to_string(format!("/tmp/{}.log", get_app_name()))
-            {
+            if let Ok(file) = read_to_string(format!("/tmp/{}.log", get_app_name())) {
                 println!("{file}");
             }
         }
