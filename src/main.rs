@@ -32,9 +32,6 @@ enum Config {
     /// Show config file path
     Path,
 
-    /// Set config values
-    Set,
-
     /// Show config values
     Show {
         // Show the value for a particular key
@@ -65,7 +62,7 @@ enum Schedule {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Show and set config values
+    /// Show config values
     Config {
         #[command(subcommand)]
         command: Option<Config>,
@@ -340,8 +337,6 @@ fn main() {
                     ));
                 }
             }
-
-            Config::Set => println!("{command:?} is not yet implemented."),
         },
 
         Some(Commands::Import {
