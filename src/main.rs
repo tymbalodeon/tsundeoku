@@ -446,7 +446,7 @@ fn main() {
                     }
                 } else {
                     eprintln!(
-                        "{} failed to detect {} as audio file.",
+                        "{} {} is not a recognized file type.",
                         "error:".red().bold(),
                         file.file_name().to_string_lossy()
                     );
