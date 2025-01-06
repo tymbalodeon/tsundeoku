@@ -158,7 +158,7 @@ def import_command(
             ):
                 files_requiring_prompt.append(file)
         if allow_prompt:
-            for file in shared_directory_files:
+            for file in files_requiring_prompt:
                 import_file(
                     file=file,
                     imported_files_file=imported_files_file,
