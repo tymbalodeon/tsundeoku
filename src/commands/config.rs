@@ -47,13 +47,22 @@ fn get_path_vector_display(vector: &[PathBuf]) -> String {
         .collect()
 }
 
-pub fn get_config_value_display(config: &ConfigFile, key: &ConfigKey) -> String {
+pub fn get_config_value_display(
+    config: &ConfigFile,
+    key: &ConfigKey,
+) -> String {
     match key {
-        ConfigKey::SharedDirectories => get_path_vector_display(&config.shared_directories),
+        ConfigKey::SharedDirectories => {
+            get_path_vector_display(&config.shared_directories)
+        }
 
-        ConfigKey::IgnoredPaths => get_path_vector_display(&config.ignored_paths),
+        ConfigKey::IgnoredPaths => {
+            get_path_vector_display(&config.ignored_paths)
+        }
 
-        ConfigKey::LocalDirectory => config.local_directory.display().to_string(),
+        ConfigKey::LocalDirectory => {
+            config.local_directory.display().to_string()
+        }
     }
 }
 
@@ -61,7 +70,11 @@ pub fn print_config(pretty_printer: &mut PrettyPrinter) -> Result<bool> {
     Ok(pretty_printer.theme("ansi").language("toml").print()?)
 }
 
-pub fn config(command: &Config, config_path: &Path, config_values: &ConfigFile) -> Result<()> {
+pub fn config(
+    command: &Config,
+    config_path: &Path,
+    config_values: &ConfigFile,
+) -> Result<()> {
     match command {
         Config::Edit => {
             Command::new(var("EDITOR")?).arg(config_path).status()?;
@@ -74,7 +87,9 @@ pub fn config(command: &Config, config_path: &Path, config_values: &ConfigFile) 
         Config::Show { key } => {
             if let Some(key) = key {
                 println!("{}", get_config_value_display(config_values, key));
-            } else if let Err(error) = print_config(PrettyPrinter::new().input_file(config_path)) {
+            } else if let Err(error) =
+                print_config(PrettyPrinter::new().input_file(config_path))
+            {
                 print_message(error.to_string(), &LogLevel::Warning);
                 println!("{config_values:#?}");
             }

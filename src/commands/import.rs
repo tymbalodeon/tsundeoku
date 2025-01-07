@@ -28,40 +28,50 @@ impl Default for ConfigFile {
     }
 }
 
-fn expand_path(path: &PathBuf) -> PathBuf {
+fn expand_path(path: &Path) -> PathBuf {
     path.display().to_string().into()
 }
 
 fn expand_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
-    paths.iter().map(expand_path).collect::<Vec<PathBuf>>()
+    paths
+        .iter()
+        .map(|path| expand_path(path.as_path()))
+        .collect::<Vec<PathBuf>>()
 }
 
 impl ConfigFile {
     pub fn from_file(config_path: &Path) -> Result<Self> {
         let file = read_to_string(config_path)?;
 
-        let mut config_items = toml::from_str::<Self>(&file).unwrap_or_default();
+        let mut config_items =
+            toml::from_str::<Self>(&file).unwrap_or_default();
 
-        config_items.shared_directories = expand_paths(&config_items.shared_directories);
+        config_items.shared_directories =
+            expand_paths(&config_items.shared_directories);
 
         config_items.ignored_paths = expand_paths(&config_items.ignored_paths);
 
-        config_items.local_directory = expand_path(&config_items.local_directory);
+        config_items.local_directory =
+            expand_path(&config_items.local_directory);
 
         Ok(config_items)
     }
 }
 
-fn get_config_value<'a, T>(override_value: Option<&'a T>, config_value: &'a T) -> &'a T {
+fn get_config_value<'a, T>(
+    override_value: Option<&'a T>,
+    config_value: &'a T,
+) -> &'a T {
     override_value.map_or(config_value, |value| value)
 }
 
 fn get_imported_files_path() -> Option<PathBuf> {
-    home_dir().map(|home| {
-        home.join(".local/share")
+    Some(
+        home_dir()?
+            .join(".local/share")
             .join(get_app_name())
-            .join("imported_files")
-    })
+            .join("imported_files"),
+    )
 }
 
 fn expand_str_to_path(path: &str) -> PathBuf {
@@ -86,7 +96,8 @@ fn get_tag(tags: &[Tag], tag_name: StandardTagKey) -> Option<&Tag> {
 }
 
 fn get_tag_or_unknown(tags: &[Tag], tag_name: StandardTagKey) -> String {
-    get_tag(tags, tag_name).map_or("Unknown".to_string(), |tag| tag.value.to_string())
+    get_tag(tags, tag_name)
+        .map_or("Unknown".to_string(), |tag| tag.value.to_string())
 }
 
 pub fn import(
@@ -97,22 +108,42 @@ pub fn import(
     dry_run: bool,
     force: bool,
 ) -> Result<()> {
-    let shared_directories =
-        get_config_value(shared_directories, &config_values.shared_directories);
+    let shared_directories = get_config_value(
+        shared_directories,
+        &config_values.shared_directories,
+    );
 
-    let ignored_paths = get_config_value(ignored_paths, &config_values.ignored_paths);
+    let ignored_paths =
+        get_config_value(ignored_paths, &config_values.ignored_paths);
 
-    let local_directory = get_config_value(local_directory, &config_values.local_directory);
+    let local_directory =
+        get_config_value(local_directory, &config_values.local_directory);
 
-    let imported_files = (!force).then_some(get_imported_files_path().map_or_else(
-        Vec::new,
-        |imported_files_path| {
-            read_to_string(imported_files_path).map_or_else(
-                |_| vec![],
-                |imported_files| imported_files.lines().map(PathBuf::from).collect(),
-            )
-        },
-    ));
+    // let imported_files = (!force).then_some(
+    //     get_imported_files_path()
+    //         .and_then(|imported_files_path| read_to_string(imported_files_path).ok())
+    //         .and_then(|imported_files| {
+    //             Some(
+    //                 imported_files
+    //                     .lines()
+    //                     .map(PathBuf::from)
+    //                     .into_iter()
+    //                     .collect(),
+    //             )
+    //         }),
+    // );
+
+    let imported_files: Option<Vec<PathBuf>> = if force {
+        None
+    } else {
+        get_imported_files_path()
+            .and_then(|imported_files_path| {
+                read_to_string(imported_files_path).ok()
+            })
+            .map(|imported_files| {
+                imported_files.lines().map(PathBuf::from).collect()
+            })
+    };
 
     let mut files: Vec<DirEntry> = shared_directories
         .iter()
@@ -122,10 +153,14 @@ pub fn import(
                     .into_iter()
                     .filter_map(Result::ok)
                     .filter(|dir_entry| {
-                        !imported_files.as_ref().is_some_and(|imported_files| {
-                            imported_files.contains(&dir_entry.path().to_path_buf())
-                        }) && Path::is_file(dir_entry.path())
-                            && !ignored_paths.contains(&dir_entry.path().to_path_buf())
+                        !imported_files.as_ref().is_some_and(
+                            |imported_files| {
+                                imported_files
+                                    .contains(&dir_entry.path().to_path_buf())
+                            },
+                        ) && Path::is_file(dir_entry.path())
+                            && !ignored_paths
+                                .contains(&dir_entry.path().to_path_buf())
                     })
                     .collect::<Vec<DirEntry>>()
             }
@@ -184,14 +219,15 @@ pub fn import(
             } else {
                 print_message(track_display, &LogLevel::Import);
 
-                let file_name = if let Some(file_name) = file.path().file_name() {
-                    file_name
-                        .to_os_string()
-                        .into_string()
-                        .map_or(title, |file_name| file_name)
-                } else {
-                    title
-                };
+                let file_name =
+                    if let Some(file_name) = file.path().file_name() {
+                        file_name
+                            .to_os_string()
+                            .into_string()
+                            .map_or(title, |file_name| file_name)
+                    } else {
+                        title
+                    };
 
                 let mut new_file = local_directory.to_owned();
 
@@ -246,14 +282,19 @@ pub fn import(
                                     .and_then(|stem| {
                                         new_file
                                             .extension()
-                                            .and_then(|extension| extension.to_str())
+                                            .and_then(|extension| {
+                                                extension.to_str()
+                                            })
                                             .map(|extension| {
-                                                path.to_path_buf().join(format!(
-                                                    "{}__{}.{}",
-                                                    stem,
-                                                    latest_version_number + 1,
-                                                    extension,
-                                                ))
+                                                path.to_path_buf().join(
+                                                    format!(
+                                                        "{}__{}.{}",
+                                                        stem,
+                                                        latest_version_number
+                                                            + 1,
+                                                        extension,
+                                                    ),
+                                                )
                                             })
                                     })
                             },
@@ -272,31 +313,56 @@ pub fn import(
                     ),
 
                     Some(new_file) => {
-                        if matches!(&new_file.parent().map(create_dir_all), Some(Ok(()))) {
+                        if matches!(
+                            &new_file.parent().map(create_dir_all),
+                            Some(Ok(()))
+                        ) {
                             match File::create_new(&new_file) {
                                 Ok(_) => {
-                                    if let Err(error) = copy(file.path(), &new_file) {
-                                        print_message(error.to_string(), &LogLevel::Error);
+                                    if let Err(error) =
+                                        copy(file.path(), &new_file)
+                                    {
+                                        print_message(
+                                            error.to_string(),
+                                            &LogLevel::Error,
+                                        );
                                     } else {
-                                        imported_files_log.as_mut().map(|imported_files| {
-                                            imported_files.as_mut().ok().map(|imported_files| {
-                                                if let Err(error) = imported_files.write(
-                                                    format!("{}\n", file.path().display())
-                                                        .as_bytes(),
-                                                ) {
-                                                    print_message(
+                                        imported_files_log.as_mut().map(
+                                            |imported_files| {
+                                                imported_files
+                                                    .as_mut()
+                                                    .ok()
+                                                    .map(|imported_files| {
+                                                        if let Err(error) =
+                                                            imported_files
+                                                                .write(
+                                                                format!(
+                                                                    "{}\n",
+                                                                    file.path(
+                                                                    )
+                                                                    .display()
+                                                                )
+                                                                .as_bytes(),
+                                                            )
+                                                        {
+                                                            print_message(
                                                         error.to_string(),
                                                         &LogLevel::Error,
                                                     );
-                                                }
-                                            })
-                                        });
+                                                        }
+                                                    })
+                                            },
+                                        );
                                     }
                                 }
 
                                 Err(error) => {
                                     print_message(
-                                        format!("{} ({})", error, new_file.display()),
+                                        format!(
+                                            "{} ({})",
+                                            error,
+                                            new_file.display()
+                                        ),
                                         &LogLevel::Error,
                                     );
                                 }
