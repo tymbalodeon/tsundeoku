@@ -609,7 +609,6 @@ fn main() {
                                                                                 "{}\n",
                                                                                 file.path()
                                                                                     .display()
-                                                                                    .to_string()
                                                                             )
                                                                             .as_bytes(),
                                                                         )
