@@ -117,22 +117,20 @@ pub fn print_message<T: AsRef<str>>(message: T, level: &LogLevel) {
     }
 }
 
-fn get_default_config_path() -> String {
-    home_dir()
-        .expect("Unable to determine $HOME path")
-        .join(".config")
-        .join(get_app_name())
-        .join(format!("{}.toml", get_app_name()))
-        .into_os_string()
-        .into_string()
-        .expect("Unable to get default config path")
-}
-
 fn main() {
     let cli = Cli::parse();
 
     let config_path = cli.config_file.as_ref().map_or_else(
-        get_default_config_path,
+        || {
+            home_dir()
+                .expect("Unable to determine $HOME path")
+                .join(".config")
+                .join(get_app_name())
+                .join(format!("{}.toml", get_app_name()))
+                .into_os_string()
+                .into_string()
+                .expect("Unable to get default config path")
+        },
         |config_path| {
             Path::new(config_path).parse_dot().map_or(
                 shellexpand::tilde(config_path).to_string(),
@@ -152,7 +150,10 @@ fn main() {
     match &cli.command {
         Some(Commands::Config {
             command: Some(command),
-        }) => config(command, config_path, &config_values),
+        }) => {
+            // TODO fix this!
+            let _ = config(command, config_path, &config_values);
+        }
 
         Some(Commands::Import {
             shared_directories,
@@ -171,9 +172,7 @@ fn main() {
         ),
 
         Some(Commands::Logs) => {
-            if let Ok(file) =
-                read_to_string(format!("/tmp/{}.log", get_app_name()))
-            {
+            if let Ok(file) = read_to_string(format!("/tmp/{}.log", get_app_name())) {
                 println!("{file}");
             }
         }

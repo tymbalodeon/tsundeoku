@@ -2,6 +2,7 @@ use std::env::var;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use anyhow::Result;
 use bat::PrettyPrinter;
 use clap::{Subcommand, ValueEnum};
 use serde::{Deserialize, Serialize};
@@ -36,108 +37,49 @@ pub enum Config {
     Show {
         // Show the value for a particular key
         key: Option<ConfigKey>,
-
-        /// Show the default config
-        #[arg(long)]
-        default: bool,
     },
 }
 
 fn get_path_vector_display(vector: &[PathBuf]) -> String {
     vector
         .iter()
-        .filter_map(|item| item.as_os_str().to_str())
-        .map(|item| item.trim().to_string())
-        .collect::<Vec<String>>()
-        .join("\n")
+        .map(|path| path.display().to_string())
+        .collect()
 }
 
-pub fn get_config_value_display(
-    config: &ConfigFile,
-    key: &ConfigKey,
-) -> Option<String> {
+pub fn get_config_value_display(config: &ConfigFile, key: &ConfigKey) -> String {
     match key {
-        ConfigKey::SharedDirectories => {
-            Some(get_path_vector_display(&config.shared_directories))
-        }
+        ConfigKey::SharedDirectories => get_path_vector_display(&config.shared_directories),
 
-        ConfigKey::IgnoredPaths => {
-            Some(get_path_vector_display(&config.ignored_paths))
-        }
+        ConfigKey::IgnoredPaths => get_path_vector_display(&config.ignored_paths),
 
-        ConfigKey::LocalDirectory => config
-            .local_directory
-            .as_os_str()
-            .to_str()
-            .map(ToString::to_string),
+        ConfigKey::LocalDirectory => config.local_directory.display().to_string(),
     }
 }
 
-pub fn print_config(pretty_printer: &mut PrettyPrinter) {
-    pretty_printer
-        .theme("ansi")
-        .language("toml")
-        .print()
-        .expect("Failed to print config");
+pub fn print_config(pretty_printer: &mut PrettyPrinter) -> Result<bool> {
+    Ok(pretty_printer.theme("ansi").language("toml").print()?)
 }
 
-pub fn config(
-    command: &Config,
-    config_path: &Path,
-    config_values: &ConfigFile,
-) {
+pub fn config(command: &Config, config_path: &Path, config_values: &ConfigFile) -> Result<()> {
     match command {
         Config::Edit => {
-            if let Ok(editor) = var("EDITOR") {
-                Command::new(editor)
-                    .arg(config_path)
-                    .status()
-                    .expect("Failed to open config file in editor.");
-            }
+            Command::new(var("EDITOR")?).arg(config_path).status()?;
         }
 
         Config::Path => {
-            if let Some(path) = config_path.to_str() {
-                println!("{path}");
-            }
+            println!("{}", config_path.display());
         }
 
-        Config::Show { key, default } => {
-            let default_config = ConfigFile::default();
-
-            if *default {
-                if let Some(key) = key {
-                    if let Some(value) =
-                        get_config_value_display(&default_config, key)
-                    {
-                        println!("{value}");
-                    }
-                } else if let Ok(default_config_toml) =
-                    toml::to_string(&default_config)
-                {
-                    let default_config_toml = default_config_toml.into_bytes();
-
-                    print_config(
-                        PrettyPrinter::new()
-                            .input_from_bytes(&default_config_toml),
-                    );
-                }
-            } else if config_path.exists() {
-                if let Some(key) = key {
-                    if let Some(value) =
-                        get_config_value_display(config_values, key)
-                    {
-                        println!("{value}");
-                    }
-                } else {
-                    print_config(PrettyPrinter::new().input_file(config_path));
-                }
-            } else {
-                print_message(
-                    format!("{} does not exist.", config_path.display()),
-                    &LogLevel::Error,
-                );
+        Config::Show { key } => {
+            if let Some(key) = key {
+                println!("{}", get_config_value_display(config_values, key));
+            } else if let Err(error) = print_config(PrettyPrinter::new().input_file(config_path)) {
+                print_message(error.to_string(), &LogLevel::Warning);
+                println!("{config_values:#?}");
             }
         }
     }
+
+    Ok(())
 }

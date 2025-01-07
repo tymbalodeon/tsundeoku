@@ -29,9 +29,7 @@ impl Default for ConfigFile {
 fn expand_path(path: &PathBuf) -> PathBuf {
     path.as_os_str().to_str().map_or_else(
         || path.to_owned(),
-        |path_name| {
-            PathBuf::from(shellexpand::tilde(path_name).to_string().as_str())
-        },
+        |path_name| PathBuf::from(shellexpand::tilde(path_name).to_string().as_str()),
     )
 }
 
@@ -44,17 +42,13 @@ impl ConfigFile {
         read_to_string(config_path).map_or_else(
             |_| Self::default(),
             |file| {
-                let mut config_items =
-                    toml::from_str::<Self>(&file).unwrap_or_default();
+                let mut config_items = toml::from_str::<Self>(&file).unwrap_or_default();
 
-                config_items.shared_directories =
-                    expand_paths(&config_items.shared_directories);
+                config_items.shared_directories = expand_paths(&config_items.shared_directories);
 
-                config_items.ignored_paths =
-                    expand_paths(&config_items.ignored_paths);
+                config_items.ignored_paths = expand_paths(&config_items.ignored_paths);
 
-                config_items.local_directory =
-                    expand_path(&config_items.local_directory);
+                config_items.local_directory = expand_path(&config_items.local_directory);
 
                 config_items
             },
@@ -62,10 +56,7 @@ impl ConfigFile {
     }
 }
 
-fn get_config_value<'a, T>(
-    override_value: Option<&'a T>,
-    config_value: &'a T,
-) -> &'a T {
+fn get_config_value<'a, T>(override_value: Option<&'a T>, config_value: &'a T) -> &'a T {
     override_value.map_or(config_value, |value| value)
 }
 
@@ -98,8 +89,7 @@ fn get_tag(tags: &[Tag], tag_name: StandardTagKey) -> Option<&Tag> {
 }
 
 fn get_tag_or_unknown(tags: &[Tag], tag_name: StandardTagKey) -> String {
-    get_tag(tags, tag_name)
-        .map_or("Unknown".to_string(), |tag| tag.value.to_string())
+    get_tag(tags, tag_name).map_or("Unknown".to_string(), |tag| tag.value.to_string())
 }
 
 pub fn import(
@@ -110,29 +100,22 @@ pub fn import(
     dry_run: bool,
     force: bool,
 ) {
-    let shared_directories = get_config_value(
-        shared_directories,
-        &config_values.shared_directories,
-    );
+    let shared_directories =
+        get_config_value(shared_directories, &config_values.shared_directories);
 
-    let ignored_paths =
-        get_config_value(ignored_paths, &config_values.ignored_paths);
+    let ignored_paths = get_config_value(ignored_paths, &config_values.ignored_paths);
 
-    let local_directory =
-        get_config_value(local_directory, &config_values.local_directory);
+    let local_directory = get_config_value(local_directory, &config_values.local_directory);
 
-    let imported_files =
-        (!force).then_some(get_imported_files_path().map_or_else(
-            Vec::new,
-            |imported_files_path| {
-                read_to_string(imported_files_path).map_or_else(
-                    |_| vec![],
-                    |imported_files| {
-                        imported_files.lines().map(PathBuf::from).collect()
-                    },
-                )
-            },
-        ));
+    let imported_files = (!force).then_some(get_imported_files_path().map_or_else(
+        Vec::new,
+        |imported_files_path| {
+            read_to_string(imported_files_path).map_or_else(
+                |_| vec![],
+                |imported_files| imported_files.lines().map(PathBuf::from).collect(),
+            )
+        },
+    ));
 
     let mut files: Vec<DirEntry> = shared_directories
         .iter()
@@ -142,14 +125,10 @@ pub fn import(
                     .into_iter()
                     .filter_map(Result::ok)
                     .filter(|dir_entry| {
-                        !imported_files.as_ref().is_some_and(
-                            |imported_files| {
-                                imported_files
-                                    .contains(&dir_entry.path().to_path_buf())
-                            },
-                        ) && Path::is_file(dir_entry.path())
-                            && !ignored_paths
-                                .contains(&dir_entry.path().to_path_buf())
+                        !imported_files.as_ref().is_some_and(|imported_files| {
+                            imported_files.contains(&dir_entry.path().to_path_buf())
+                        }) && Path::is_file(dir_entry.path())
+                            && !ignored_paths.contains(&dir_entry.path().to_path_buf())
                     })
                     .collect::<Vec<DirEntry>>()
             }
@@ -180,9 +159,7 @@ pub fn import(
         if let Ok(mut probed) = symphonia::default::get_probe().format(
             &hint,
             MediaSourceStream::new(
-                Box::new(
-                    File::open(file.path()).expect("failed to open media"),
-                ),
+                Box::new(File::open(file.path()).expect("failed to open media")),
                 MediaSourceStreamOptions::default(),
             ),
             &FormatOptions::default(),
@@ -199,11 +176,9 @@ pub fn import(
                 },
                 |metadata| Some(metadata.tags()),
             ) {
-                let artist =
-                    get_tag_or_unknown(tags, StandardTagKey::AlbumArtist);
+                let artist = get_tag_or_unknown(tags, StandardTagKey::AlbumArtist);
                 let album = get_tag_or_unknown(tags, StandardTagKey::Album);
-                let title =
-                    get_tag_or_unknown(tags, StandardTagKey::TrackTitle);
+                let title = get_tag_or_unknown(tags, StandardTagKey::TrackTitle);
                 let track_display = format!("{artist} – {album} – {title}");
 
                 if dry_run {
@@ -211,15 +186,14 @@ pub fn import(
                 } else {
                     print_message(track_display, &LogLevel::Import);
 
-                    let file_name =
-                        if let Some(file_name) = file.path().file_name() {
-                            file_name
-                                .to_os_string()
-                                .into_string()
-                                .map_or(title, |file_name| file_name)
-                        } else {
-                            title
-                        };
+                    let file_name = if let Some(file_name) = file.path().file_name() {
+                        file_name
+                            .to_os_string()
+                            .into_string()
+                            .map_or(title, |file_name| file_name)
+                    } else {
+                        title
+                    };
 
                     let mut new_file = local_directory.to_owned();
 
@@ -230,46 +204,40 @@ pub fn import(
                     let new_file = if new_file.exists() {
                         if let Some(parent) = new_file.parent() {
                             let latest_version_number = WalkDir::new(parent)
-                                        .into_iter()
-                                        .filter_map(Result::ok)
-                                        .filter(|existing_file| {
-                                            existing_file.path().file_name().is_some_and(
-                                                |existing_file| {
-                                                    existing_file.to_str().is_some_and(
-                                                        |existing_file| {
-                                                            new_file.file_stem().is_some_and(
-                                                                |file_name| {
-                                                                    file_name.to_str().is_some_and(
-                                                                        |file_name| {
-                                                                            // TODO handle weird characters!
-                                                                            existing_file
-                                                                                .contains(file_name)
-                                                                        },
-                                                                    )
-                                                                },
-                                                            )
-                                                        },
-                                                    )
-                                                },
-                                            )
-                                        })
-                                        .filter_map(|existing_file| {
-                                            existing_file
-                                                .path()
-                                                .file_stem()
-                                                .and_then(|stem| stem.to_str())
-                                                .and_then(|stem| {
-                                                    if stem.contains("__") {
-                                                        stem.split("__").last().and_then(|number| {
-                                                            number.parse::<usize>().ok()
-                                                        })
-                                                    } else {
-                                                        None
-                                                    }
+                                .into_iter()
+                                .filter_map(Result::ok)
+                                .filter(|existing_file| {
+                                    existing_file
+                                        .path()
+                                        .file_name()
+                                        .is_some_and(|existing_file| {
+                                            existing_file.to_str().is_some_and(|existing_file| {
+                                                new_file.file_stem().is_some_and(|file_name| {
+                                                    file_name.to_str().is_some_and(|file_name| {
+                                                        // TODO handle weird characters!
+                                                        existing_file.contains(file_name)
+                                                    })
                                                 })
+                                            })
                                         })
-                                        .max()
-                                        .unwrap_or_default();
+                                })
+                                .filter_map(|existing_file| {
+                                    existing_file
+                                        .path()
+                                        .file_stem()
+                                        .and_then(|stem| stem.to_str())
+                                        .and_then(|stem| {
+                                            if stem.contains("__") {
+                                                stem.split("__")
+                                                    .last()
+                                                    .and_then(|number| number.parse::<usize>().ok())
+                                            } else {
+                                                None
+                                            }
+                                        })
+                                })
+                                .max()
+                                .unwrap_or_default();
 
                             new_file.parent().map_or_else(
                                 || Some(new_file.clone()),
@@ -280,19 +248,14 @@ pub fn import(
                                         .and_then(|stem| {
                                             new_file
                                                 .extension()
-                                                .and_then(|extension| {
-                                                    extension.to_str()
-                                                })
+                                                .and_then(|extension| extension.to_str())
                                                 .map(|extension| {
-                                                    path.to_path_buf().join(
-                                                        format!(
+                                                    path.to_path_buf().join(format!(
                                                         "{}__{}.{}",
                                                         stem,
-                                                        latest_version_number
-                                                            + 1,
+                                                        latest_version_number + 1,
                                                         extension,
-                                                    ),
-                                                    )
+                                                    ))
                                                 })
                                         })
                                 },
@@ -306,61 +269,36 @@ pub fn import(
 
                     match new_file {
                         None => print_message(
-                            format!(
-                                "failed to import {}",
-                                file.path().display()
-                            ),
+                            format!("failed to import {}", file.path().display()),
                             &LogLevel::Error,
                         ),
 
                         Some(new_file) => {
-                            if matches!(
-                                &new_file.parent().map(create_dir_all),
-                                Some(Ok(()))
-                            ) {
+                            if matches!(&new_file.parent().map(create_dir_all), Some(Ok(()))) {
                                 match File::create_new(&new_file) {
                                     Ok(_) => {
-                                        if let Err(error) =
-                                            copy(file.path(), &new_file)
-                                        {
-                                            print_message(
-                                                error.to_string(),
-                                                &LogLevel::Error,
-                                            );
+                                        if let Err(error) = copy(file.path(), &new_file) {
+                                            print_message(error.to_string(), &LogLevel::Error);
                                         } else {
-                                            imported_files_log.as_mut().map(
-                                                        |imported_files| {
-                                                            imported_files.as_mut().ok().map(
-                                                                |imported_files| {
-                                                                    if let Err(error) =
-                                                                        imported_files.write(
-                                                                            format!(
-                                                                                "{}\n",
-                                                                                file.path()
-                                                                                    .display()
-                                                                            )
-                                                                            .as_bytes(),
-                                                                        )
-                                                                    {
-                                                                        print_message(
-                                                                            error.to_string(),
-                                                                            &LogLevel::Error,
-                                                                        );
-                                                                    }
-                                                                },
-                                                            )
-                                                        },
-                                                    );
+                                            imported_files_log.as_mut().map(|imported_files| {
+                                                imported_files.as_mut().ok().map(|imported_files| {
+                                                    if let Err(error) = imported_files.write(
+                                                        format!("{}\n", file.path().display())
+                                                            .as_bytes(),
+                                                    ) {
+                                                        print_message(
+                                                            error.to_string(),
+                                                            &LogLevel::Error,
+                                                        );
+                                                    }
+                                                })
+                                            });
                                         }
                                     }
 
                                     Err(error) => {
                                         print_message(
-                                            format!(
-                                                "{} ({})",
-                                                error,
-                                                new_file.display()
-                                            ),
+                                            format!("{} ({})", error, new_file.display()),
                                             &LogLevel::Error,
                                         );
                                     }
