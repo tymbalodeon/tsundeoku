@@ -4,23 +4,17 @@ use std::path::{Path, PathBuf};
 use std::string::ToString;
 use std::vec::Vec;
 
-use colored::Colorize;
 use home::home_dir;
-use serde::{Deserialize, Serialize};
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
 use symphonia::core::meta::{MetadataOptions, StandardTagKey, Tag};
 use symphonia::core::probe::Hint;
 use walkdir::{DirEntry, WalkDir};
 
+use crate::commands::config::ConfigFile;
 use crate::get_app_name;
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ConfigFile {
-    pub shared_directories: Vec<PathBuf>,
-    pub ignored_paths: Vec<PathBuf>,
-    pub local_directory: PathBuf,
-}
+use crate::print_message;
+use crate::LogLevel;
 
 impl Default for ConfigFile {
     fn default() -> Self {
@@ -106,27 +100,6 @@ fn get_tag(tags: &[Tag], tag_name: StandardTagKey) -> Option<&Tag> {
 fn get_tag_or_unknown(tags: &[Tag], tag_name: StandardTagKey) -> String {
     get_tag(tags, tag_name)
         .map_or("Unknown".to_string(), |tag| tag.value.to_string())
-}
-
-pub enum LogLevel {
-    Import,
-    Warning,
-    Error,
-}
-
-pub fn print_message<T: AsRef<str>>(message: T, level: &LogLevel) {
-    let label = match level {
-        LogLevel::Import => "  Importing".green(),
-        LogLevel::Warning => "warning:".yellow(),
-        LogLevel::Error => "error:".red(),
-    };
-
-    let message = format!("{} {}", label.bold(), message.as_ref());
-
-    match level {
-        LogLevel::Error => eprintln!("{message}"),
-        _ => println!("{message}"),
-    }
 }
 
 pub fn import(
