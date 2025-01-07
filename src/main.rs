@@ -522,6 +522,7 @@ fn main() {
                                                                 |file_name| {
                                                                     file_name.to_str().is_some_and(
                                                                         |file_name| {
+                                                                            // TODO handle weird characters!
                                                                             existing_file
                                                                                 .contains(file_name)
                                                                         },
@@ -604,10 +605,13 @@ fn main() {
                                                                 |imported_files| {
                                                                     if let Err(error) =
                                                                         imported_files.write(
-                                                                            file.path()
-                                                                                .display()
-                                                                                .to_string()
-                                                                                .as_bytes(),
+                                                                            format!(
+                                                                                "{}\n",
+                                                                                file.path()
+                                                                                    .display()
+                                                                                    .to_string()
+                                                                            )
+                                                                            .as_bytes(),
                                                                         )
                                                                     {
                                                                         print_message(
@@ -623,7 +627,10 @@ fn main() {
                                             }
 
                                             Err(error) => {
-                                                print_message(error.to_string(), &LogLevel::Error);
+                                                print_message(
+                                                    format!("{} ({})", error, new_file.display()),
+                                                    &LogLevel::Error,
+                                                );
                                             }
                                         }
                                     }
