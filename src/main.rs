@@ -1,5 +1,5 @@
 use std::env::var;
-use std::fs::{copy, read_to_string, File, OpenOptions};
+use std::fs::{copy, create_dir_all, read_to_string, File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -586,21 +586,46 @@ fn main() {
                                 ),
 
                                 Some(new_file) => {
-                                    if let Err(error) = copy(file.path(), &new_file) {
-                                        print_message(error.to_string(), &LogLevel::Error);
-                                    } else {
-                                        imported_files_log.as_mut().map(|imported_files| {
-                                            imported_files.as_mut().ok().map(|imported_files| {
-                                                if let Err(error) = imported_files.write(
-                                                    file.path().display().to_string().as_bytes(),
-                                                ) {
+                                    if matches!(
+                                        &new_file.parent().map(create_dir_all),
+                                        Some(Ok(()))
+                                    ) {
+                                        match File::create_new(&new_file) {
+                                            Ok(_) => {
+                                                if let Err(error) = copy(file.path(), &new_file) {
                                                     print_message(
                                                         error.to_string(),
                                                         &LogLevel::Error,
                                                     );
+                                                } else {
+                                                    imported_files_log.as_mut().map(
+                                                        |imported_files| {
+                                                            imported_files.as_mut().ok().map(
+                                                                |imported_files| {
+                                                                    if let Err(error) =
+                                                                        imported_files.write(
+                                                                            file.path()
+                                                                                .display()
+                                                                                .to_string()
+                                                                                .as_bytes(),
+                                                                        )
+                                                                    {
+                                                                        print_message(
+                                                                            error.to_string(),
+                                                                            &LogLevel::Error,
+                                                                        );
+                                                                    }
+                                                                },
+                                                            )
+                                                        },
+                                                    );
                                                 }
-                                            })
-                                        });
+                                            }
+
+                                            Err(error) => {
+                                                print_message(error.to_string(), &LogLevel::Error);
+                                            }
+                                        }
                                     }
                                 }
                             }
