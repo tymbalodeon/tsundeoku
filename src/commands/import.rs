@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::string::ToString;
 use std::vec::Vec;
 
+use anyhow::Result;
 use home::home_dir;
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
@@ -19,6 +20,7 @@ use crate::LogLevel;
 impl Default for ConfigFile {
     fn default() -> Self {
         Self {
+            // TODO don't use a default shared in case it contains tons of files that shouldn't be imported
             shared_directories: get_default_shared_directories(),
             ignored_paths: vec![],
             local_directory: get_default_local_directory(),
@@ -27,10 +29,7 @@ impl Default for ConfigFile {
 }
 
 fn expand_path(path: &PathBuf) -> PathBuf {
-    path.as_os_str().to_str().map_or_else(
-        || path.to_owned(),
-        |path_name| PathBuf::from(shellexpand::tilde(path_name).to_string().as_str()),
-    )
+    path.display().to_string().into()
 }
 
 fn expand_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
@@ -38,21 +37,18 @@ fn expand_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
 }
 
 impl ConfigFile {
-    pub fn from_file(config_path: &Path) -> Self {
-        read_to_string(config_path).map_or_else(
-            |_| Self::default(),
-            |file| {
-                let mut config_items = toml::from_str::<Self>(&file).unwrap_or_default();
+    pub fn from_file(config_path: &Path) -> Result<Self> {
+        let file = read_to_string(config_path)?;
 
-                config_items.shared_directories = expand_paths(&config_items.shared_directories);
+        let mut config_items = toml::from_str::<Self>(&file).unwrap_or_default();
 
-                config_items.ignored_paths = expand_paths(&config_items.ignored_paths);
+        config_items.shared_directories = expand_paths(&config_items.shared_directories);
 
-                config_items.local_directory = expand_path(&config_items.local_directory);
+        config_items.ignored_paths = expand_paths(&config_items.ignored_paths);
 
-                config_items
-            },
-        )
+        config_items.local_directory = expand_path(&config_items.local_directory);
+
+        Ok(config_items)
     }
 }
 
@@ -69,9 +65,10 @@ fn get_imported_files_path() -> Option<PathBuf> {
 }
 
 fn expand_str_to_path(path: &str) -> PathBuf {
-    Path::new(&shellexpand::tilde(path).into_owned()).to_path_buf()
+    PathBuf::from(shellexpand::tilde(path).into_owned())
 }
 
+// TODO remove this, don't use default
 fn get_default_shared_directories() -> Vec<PathBuf> {
     vec![expand_str_to_path("~/Dropbox")]
 }
@@ -99,7 +96,7 @@ pub fn import(
     local_directory: Option<&PathBuf>,
     dry_run: bool,
     force: bool,
-) {
+) -> Result<()> {
     let shared_directories =
         get_config_value(shared_directories, &config_values.shared_directories);
 
@@ -156,174 +153,177 @@ pub fn import(
             hint.with_extension(extension);
         }
 
-        if let Ok(mut probed) = symphonia::default::get_probe().format(
+        let mut probed = symphonia::default::get_probe().format(
             &hint,
             MediaSourceStream::new(
-                Box::new(File::open(file.path()).expect("failed to open media")),
+                Box::new(File::open(file.path())?),
                 MediaSourceStreamOptions::default(),
             ),
             &FormatOptions::default(),
             &MetadataOptions::default(),
+        )?;
+
+        let probed_metadata = probed.metadata.get();
+
+        if let Some(tags) = probed.format.metadata().current().map_or_else(
+            || {
+                probed_metadata
+                    .as_ref()
+                    .and_then(|metadata| metadata.current())
+                    .map(symphonia_core::meta::MetadataRevision::tags)
+            },
+            |metadata| Some(metadata.tags()),
         ) {
-            let probed_metadata = probed.metadata.get();
+            let artist = get_tag_or_unknown(tags, StandardTagKey::AlbumArtist);
+            let album = get_tag_or_unknown(tags, StandardTagKey::Album);
+            let title = get_tag_or_unknown(tags, StandardTagKey::TrackTitle);
+            let track_display = format!("{artist} – {album} – {title}");
 
-            if let Some(tags) = probed.format.metadata().current().map_or_else(
-                || {
-                    probed_metadata
-                        .as_ref()
-                        .and_then(|metadata| metadata.current())
-                        .map(symphonia_core::meta::MetadataRevision::tags)
-                },
-                |metadata| Some(metadata.tags()),
-            ) {
-                let artist = get_tag_or_unknown(tags, StandardTagKey::AlbumArtist);
-                let album = get_tag_or_unknown(tags, StandardTagKey::Album);
-                let title = get_tag_or_unknown(tags, StandardTagKey::TrackTitle);
-                let track_display = format!("{artist} – {album} – {title}");
+            if dry_run {
+                println!("{track_display}");
+            } else {
+                print_message(track_display, &LogLevel::Import);
 
-                if dry_run {
-                    println!("{track_display}");
+                let file_name = if let Some(file_name) = file.path().file_name() {
+                    file_name
+                        .to_os_string()
+                        .into_string()
+                        .map_or(title, |file_name| file_name)
                 } else {
-                    print_message(track_display, &LogLevel::Import);
+                    title
+                };
 
-                    let file_name = if let Some(file_name) = file.path().file_name() {
-                        file_name
-                            .to_os_string()
-                            .into_string()
-                            .map_or(title, |file_name| file_name)
-                    } else {
-                        title
-                    };
+                let mut new_file = local_directory.to_owned();
 
-                    let mut new_file = local_directory.to_owned();
+                new_file.push(artist);
+                new_file.push(album);
+                new_file.push(file_name);
 
-                    new_file.push(artist);
-                    new_file.push(album);
-                    new_file.push(file_name);
-
-                    let new_file = if new_file.exists() {
-                        if let Some(parent) = new_file.parent() {
-                            let latest_version_number = WalkDir::new(parent)
-                                .into_iter()
-                                .filter_map(Result::ok)
-                                .filter(|existing_file| {
-                                    existing_file
-                                        .path()
-                                        .file_name()
-                                        .is_some_and(|existing_file| {
-                                            existing_file.to_str().is_some_and(|existing_file| {
-                                                new_file.file_stem().is_some_and(|file_name| {
-                                                    file_name.to_str().is_some_and(|file_name| {
-                                                        // TODO handle weird characters!
-                                                        existing_file.contains(file_name)
-                                                    })
+                let new_file = if new_file.exists() {
+                    if let Some(parent) = new_file.parent() {
+                        let latest_version_number = WalkDir::new(parent)
+                            .into_iter()
+                            .filter_map(Result::ok)
+                            .filter(|existing_file| {
+                                existing_file
+                                    .path()
+                                    .file_name()
+                                    .is_some_and(|existing_file| {
+                                        existing_file.to_str().is_some_and(|existing_file| {
+                                            new_file.file_stem().is_some_and(|file_name| {
+                                                file_name.to_str().is_some_and(|file_name| {
+                                                    // TODO handle weird characters!
+                                                    existing_file.contains(file_name)
                                                 })
                                             })
                                         })
-                                })
-                                .filter_map(|existing_file| {
-                                    existing_file
-                                        .path()
-                                        .file_stem()
-                                        .and_then(|stem| stem.to_str())
-                                        .and_then(|stem| {
-                                            if stem.contains("__") {
-                                                stem.split("__")
-                                                    .last()
-                                                    .and_then(|number| number.parse::<usize>().ok())
-                                            } else {
-                                                None
-                                            }
-                                        })
-                                })
-                                .max()
-                                .unwrap_or_default();
+                                    })
+                            })
+                            .filter_map(|existing_file| {
+                                existing_file
+                                    .path()
+                                    .file_stem()
+                                    .and_then(|stem| stem.to_str())
+                                    .and_then(|stem| {
+                                        if stem.contains("__") {
+                                            stem.split("__")
+                                                .last()
+                                                .and_then(|number| number.parse::<usize>().ok())
+                                        } else {
+                                            None
+                                        }
+                                    })
+                            })
+                            .max()
+                            .unwrap_or_default();
 
-                            new_file.parent().map_or_else(
-                                || Some(new_file.clone()),
-                                |path| {
-                                    new_file
-                                        .file_stem()
-                                        .and_then(|stem| stem.to_str())
-                                        .and_then(|stem| {
-                                            new_file
-                                                .extension()
-                                                .and_then(|extension| extension.to_str())
-                                                .map(|extension| {
-                                                    path.to_path_buf().join(format!(
-                                                        "{}__{}.{}",
-                                                        stem,
-                                                        latest_version_number + 1,
-                                                        extension,
-                                                    ))
-                                                })
-                                        })
-                                },
-                            )
-                        } else {
-                            Some(new_file)
-                        }
+                        new_file.parent().map_or_else(
+                            || Some(new_file.clone()),
+                            |path| {
+                                new_file
+                                    .file_stem()
+                                    .and_then(|stem| stem.to_str())
+                                    .and_then(|stem| {
+                                        new_file
+                                            .extension()
+                                            .and_then(|extension| extension.to_str())
+                                            .map(|extension| {
+                                                path.to_path_buf().join(format!(
+                                                    "{}__{}.{}",
+                                                    stem,
+                                                    latest_version_number + 1,
+                                                    extension,
+                                                ))
+                                            })
+                                    })
+                            },
+                        )
                     } else {
                         Some(new_file)
-                    };
+                    }
+                } else {
+                    Some(new_file)
+                };
 
-                    match new_file {
-                        None => print_message(
-                            format!("failed to import {}", file.path().display()),
-                            &LogLevel::Error,
-                        ),
+                match new_file {
+                    None => print_message(
+                        format!("failed to import {}", file.path().display()),
+                        &LogLevel::Error,
+                    ),
 
-                        Some(new_file) => {
-                            if matches!(&new_file.parent().map(create_dir_all), Some(Ok(()))) {
-                                match File::create_new(&new_file) {
-                                    Ok(_) => {
-                                        if let Err(error) = copy(file.path(), &new_file) {
-                                            print_message(error.to_string(), &LogLevel::Error);
-                                        } else {
-                                            imported_files_log.as_mut().map(|imported_files| {
-                                                imported_files.as_mut().ok().map(|imported_files| {
-                                                    if let Err(error) = imported_files.write(
-                                                        format!("{}\n", file.path().display())
-                                                            .as_bytes(),
-                                                    ) {
-                                                        print_message(
-                                                            error.to_string(),
-                                                            &LogLevel::Error,
-                                                        );
-                                                    }
-                                                })
-                                            });
-                                        }
+                    Some(new_file) => {
+                        if matches!(&new_file.parent().map(create_dir_all), Some(Ok(()))) {
+                            match File::create_new(&new_file) {
+                                Ok(_) => {
+                                    if let Err(error) = copy(file.path(), &new_file) {
+                                        print_message(error.to_string(), &LogLevel::Error);
+                                    } else {
+                                        imported_files_log.as_mut().map(|imported_files| {
+                                            imported_files.as_mut().ok().map(|imported_files| {
+                                                if let Err(error) = imported_files.write(
+                                                    format!("{}\n", file.path().display())
+                                                        .as_bytes(),
+                                                ) {
+                                                    print_message(
+                                                        error.to_string(),
+                                                        &LogLevel::Error,
+                                                    );
+                                                }
+                                            })
+                                        });
                                     }
+                                }
 
-                                    Err(error) => {
-                                        print_message(
-                                            format!("{} ({})", error, new_file.display()),
-                                            &LogLevel::Error,
-                                        );
-                                    }
+                                Err(error) => {
+                                    print_message(
+                                        format!("{} ({})", error, new_file.display()),
+                                        &LogLevel::Error,
+                                    );
                                 }
                             }
                         }
                     }
                 }
-            } else {
-                print_message(
-                    format!(
-                        "failed to detect tags for {}",
-                        file.file_name().to_string_lossy()
-                    ),
-                    &LogLevel::Warning,
-                );
             }
         } else {
             print_message(
                 format!(
-                    "{} is not a recognized file type.",
+                    "failed to detect tags for {}",
                     file.file_name().to_string_lossy()
                 ),
-                &LogLevel::Error,
+                &LogLevel::Warning,
             );
         }
+        // } else {
+        //     print_message(
+        //         format!(
+        //             "{} is not a recognized file type.",
+        //             file.file_name().to_string_lossy()
+        //         ),
+        //         &LogLevel::Error,
+        //     );
+        // }
     }
+
+    Ok(())
 }

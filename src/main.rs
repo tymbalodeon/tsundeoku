@@ -1,10 +1,11 @@
 mod commands;
 
-use std::fs::read_to_string;
+// use std::fs::read_to_string;
 use std::path::{Path, PathBuf};
 use std::string::ToString;
 use std::vec::Vec;
 
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use colored::Colorize;
 use home::home_dir;
@@ -117,7 +118,7 @@ pub fn print_message<T: AsRef<str>>(message: T, level: &LogLevel) {
     }
 }
 
-fn main() {
+fn main() -> Result<()> {
     let cli = Cli::parse();
 
     let config_path = cli.config_file.as_ref().map_or_else(
@@ -145,15 +146,12 @@ fn main() {
     );
 
     let config_path = Path::new(&config_path);
-    let config_values = ConfigFile::from_file(config_path);
+    let config_values = ConfigFile::from_file(config_path)?;
 
     match &cli.command {
         Some(Commands::Config {
             command: Some(command),
-        }) => {
-            // TODO fix this!
-            let _ = config(command, config_path, &config_values);
-        }
+        }) => config(command, config_path, &config_values),
 
         Some(Commands::Import {
             shared_directories,
@@ -172,15 +170,16 @@ fn main() {
         ),
 
         Some(Commands::Logs) => {
-            if let Ok(file) = read_to_string(format!("/tmp/{}.log", get_app_name())) {
-                println!("{file}");
-            }
+            todo!();
+            // if let Ok(file) = read_to_string(format!("/tmp/{}.log", get_app_name())) {
+            //     println!("{file}");
+            // }
         }
 
         Some(Commands::Schedule { command: Some(_) }) => {
             todo!();
         }
 
-        _ => {}
+        _ => todo!(),
     }
 }
