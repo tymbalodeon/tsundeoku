@@ -29,7 +29,9 @@ impl Default for ConfigFile {
 }
 
 fn expand_path(path: &Path) -> PathBuf {
-    path.display().to_string().into()
+    shellexpand::tilde(&path.display().to_string())
+        .to_string()
+        .into()
 }
 
 fn expand_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
@@ -293,23 +295,19 @@ pub fn import(
     let mut files: Vec<PathBuf> = shared_directories
         .iter()
         .flat_map(|directory| {
-            {
-                WalkDir::new(directory)
-                    .into_iter()
-                    .filter_map(Result::ok)
-                    .filter(|dir_entry| {
-                        !imported_files.as_ref().is_some_and(
-                            |imported_files| {
-                                imported_files
-                                    .contains(&dir_entry.path().to_path_buf())
-                            },
-                        ) && Path::is_file(dir_entry.path())
-                            && !ignored_paths
-                                .contains(&dir_entry.path().to_path_buf())
-                    })
-                    .map(|dir_entry| dir_entry.path().to_path_buf())
-                    .collect::<Vec<PathBuf>>()
-            }
+            WalkDir::new(directory)
+                .into_iter()
+                .filter_map(Result::ok)
+                .filter(|dir_entry| {
+                    !imported_files.as_ref().is_some_and(|imported_files| {
+                        imported_files
+                            .contains(&dir_entry.path().to_path_buf())
+                    }) && Path::is_file(dir_entry.path())
+                        && !ignored_paths
+                            .contains(&dir_entry.path().to_path_buf())
+                })
+                .map(|dir_entry| dir_entry.path().to_path_buf())
+                .collect::<Vec<PathBuf>>()
         })
         .collect();
 
