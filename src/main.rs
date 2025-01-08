@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::string::ToString;
 use std::vec::Vec;
 
-use anyhow::Result;
+use anyhow::{Context, Error, Result};
 use clap::{Parser, Subcommand};
 use colored::Colorize;
 use home::home_dir;
@@ -105,9 +105,9 @@ pub enum LogLevel {
 
 pub fn print_message<T: AsRef<str>>(message: T, level: &LogLevel) {
     let label = match level {
-        LogLevel::Import => "  Importing".green(),
-        LogLevel::Warning => "warning:".yellow(),
-        LogLevel::Error => "error:".red(),
+        LogLevel::Import => "  Importing".green().to_string(),
+        LogLevel::Warning => format!("{}:", "warning".yellow()),
+        LogLevel::Error => format!("{}:", "error".red()),
     };
 
     let message = format!("{} {}", label.bold(), message.as_ref());
@@ -123,27 +123,24 @@ fn main() -> Result<()> {
 
     let config_path = cli.config_file.as_ref().map_or_else(
         || {
-            home_dir()
-                .expect("Unable to determine $HOME path")
-                .join(".config")
-                .join(get_app_name())
-                .join(format!("{}.toml", get_app_name()))
-                .into_os_string()
-                .into_string()
-                .expect("Unable to get default config path")
-        },
-        |config_path| {
-            Path::new(config_path).parse_dot().map_or(
-                shellexpand::tilde(config_path).to_string(),
-                |path| {
-                    path.to_str().map_or_else(
-                        || shellexpand::tilde(config_path).to_string(),
-                        ToString::to_string,
-                    )
-                },
+            Ok::<String, Error>(
+                home_dir()
+                    .context("$HOME should be set")?
+                    .join(".config")
+                    .join(get_app_name())
+                    .join(format!("{}.toml", get_app_name()))
+                    .display()
+                    .to_string(),
             )
         },
-    );
+        |config_path| {
+            Ok(Path::new(config_path)
+                .parse_dot()?
+                .to_str()
+                .context("config-file should be valid path")?
+                .to_string())
+        },
+    )?;
 
     let config_path = Path::new(&config_path);
     let config_values = ConfigFile::from_file(config_path)?;

@@ -327,6 +327,10 @@ pub fn import(
             dry_run,
         ) {
             print_message(error.to_string(), &LogLevel::Error);
+            print_message(
+                file.as_path().display().to_string(),
+                &LogLevel::Error,
+            );
         }
     }
 
