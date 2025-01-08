@@ -1,16 +1,16 @@
 use std::fs::{copy, create_dir_all, read_to_string, File, OpenOptions};
-use std::io::{BufWriter, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::string::ToString;
 use std::vec::Vec;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use home::home_dir;
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
 use symphonia::core::meta::{MetadataOptions, StandardTagKey, Tag};
 use symphonia::core::probe::Hint;
-use walkdir::{DirEntry, WalkDir};
+use walkdir::WalkDir;
 
 use crate::commands::config::ConfigFile;
 use crate::get_app_name;
@@ -65,13 +65,12 @@ fn get_config_value<'a, T>(
     override_value.map_or(config_value, |value| value)
 }
 
-fn get_imported_files_path() -> Option<PathBuf> {
-    Some(
-        home_dir()?
-            .join(".local/share")
-            .join(get_app_name())
-            .join("imported_files"),
-    )
+fn get_imported_files_path() -> Result<PathBuf> {
+    Ok(home_dir()
+        .context("could not determine $HOME directory")?
+        .join(".local/share")
+        .join(get_app_name())
+        .join("imported_files"))
 }
 
 fn expand_str_to_path(path: &str) -> PathBuf {
@@ -100,6 +99,167 @@ fn get_tag_or_unknown(tags: &[Tag], tag_name: StandardTagKey) -> String {
         .map_or("Unknown".to_string(), |tag| tag.value.to_string())
 }
 
+fn matches_filename(existing_file: &Path, new_file: &Path) -> Result<bool> {
+    let existing_file_error =
+        || format!("failed to get filename for {}", existing_file.display());
+
+    let existing_file_stem = existing_file
+        .file_name()
+        .with_context(existing_file_error)?
+        .to_str()
+        .with_context(existing_file_error)?;
+
+    let new_file_error =
+        || format!("failed to get filename for {}", new_file.display());
+
+    let new_file_stem = new_file
+        .file_stem()
+        .with_context(new_file_error)?
+        .to_str()
+        .with_context(new_file_error)?;
+
+    Ok(existing_file_stem.contains(new_file_stem))
+}
+
+fn copy_file(
+    file: &PathBuf,
+    local_directory: PathBuf,
+    imported_files_log: &mut File,
+    dry_run: bool,
+) -> Result<()> {
+    let mut hint = Hint::new();
+
+    if let Some(extension) =
+        file.extension().and_then(|extension| extension.to_str())
+    {
+        hint.with_extension(extension);
+    }
+
+    let mut probed = symphonia::default::get_probe().format(
+        &hint,
+        MediaSourceStream::new(
+            Box::new(File::open(file)?),
+            MediaSourceStreamOptions::default(),
+        ),
+        &FormatOptions::default(),
+        &MetadataOptions::default(),
+    )?;
+
+    let container_metadata = probed.format.metadata();
+    let other_metadata = probed.metadata.get();
+
+    let tags = container_metadata.current().map_or_else(
+        || {
+            other_metadata
+                .as_ref()
+                .and_then(|metadata| metadata.current())
+                .map(symphonia_core::meta::MetadataRevision::tags)
+                .with_context(|| {
+                    format!("failed to detect tags for {} ", file.display())
+                })
+        },
+        |metadata| Ok(metadata.tags()),
+    )?;
+
+    let artist = get_tag_or_unknown(tags, StandardTagKey::AlbumArtist);
+    let album = get_tag_or_unknown(tags, StandardTagKey::Album);
+    let title = get_tag_or_unknown(tags, StandardTagKey::TrackTitle);
+    let track_display = format!("{artist} – {album} – {title}");
+
+    if dry_run {
+        println!("{track_display}");
+    } else {
+        print_message(track_display, &LogLevel::Import);
+
+        let file_name = {
+            let error =
+                || format!("failed to get file name for {}", file.display());
+
+            file.file_name()
+                .with_context(error)?
+                .to_str()
+                .with_context(error)?
+        };
+
+        let mut new_file = local_directory;
+
+        new_file.push(artist);
+        new_file.push(album);
+        new_file.push(file_name);
+
+        let latest_version_number =
+            WalkDir::new(new_file.parent().with_context(|| {
+                format!("failed to get parent of {}", new_file.display())
+            })?)
+            .into_iter()
+            .filter_map(Result::ok)
+            .filter(|existing_file| {
+                matches_filename(existing_file.path(), &new_file)
+                    .unwrap_or_else(|_| {
+                        panic!(
+                            "failed to compare {} to {}",
+                            existing_file.path().display(),
+                            new_file.display()
+                        )
+                    })
+            })
+            .filter_map(|existing_file| {
+                existing_file
+                    .path()
+                    .file_stem()
+                    .and_then(|stem| stem.to_str())
+                    .and_then(|stem| {
+                        if stem.contains("__") {
+                            stem.split("__").last().and_then(|number| {
+                                number.parse::<usize>().ok()
+                            })
+                        } else {
+                            None
+                        }
+                    })
+            })
+            .max()
+            .unwrap_or_default();
+
+        let file_error =
+            |item| format!("failed to get {item} for {}", new_file.display());
+
+        new_file = new_file.parent().with_context(|| "")?.to_path_buf().join(
+            format!(
+                "{}__{}.{}",
+                new_file
+                    .file_stem()
+                    .with_context(|| file_error("stem"))?
+                    .to_str()
+                    .with_context(|| file_error("stem"))?,
+                latest_version_number + 1,
+                new_file
+                    .extension()
+                    .with_context(|| file_error("extension"))?
+                    .to_str()
+                    .with_context(|| file_error("extension"))?
+            ),
+        );
+
+        create_dir_all(new_file.parent().with_context(|| {
+            format!("failed to get parent of {}", new_file.display())
+        })?)?;
+
+        File::create_new(&new_file)?;
+
+        let copied = copy(file, &new_file);
+
+        if copied.is_ok() {
+            imported_files_log
+                .write_all(format!("{}\n", file.display()).as_bytes())?;
+        }
+
+        copied?;
+    }
+
+    Ok(())
+}
+
 pub fn import(
     config_values: &ConfigFile,
     shared_directories: Option<&Vec<PathBuf>>,
@@ -119,33 +279,18 @@ pub fn import(
     let local_directory =
         get_config_value(local_directory, &config_values.local_directory);
 
-    // let imported_files = (!force).then_some(
-    //     get_imported_files_path()
-    //         .and_then(|imported_files_path| read_to_string(imported_files_path).ok())
-    //         .and_then(|imported_files| {
-    //             Some(
-    //                 imported_files
-    //                     .lines()
-    //                     .map(PathBuf::from)
-    //                     .into_iter()
-    //                     .collect(),
-    //             )
-    //         }),
-    // );
-
     let imported_files: Option<Vec<PathBuf>> = if force {
         None
     } else {
-        get_imported_files_path()
-            .and_then(|imported_files_path| {
-                read_to_string(imported_files_path).ok()
-            })
-            .map(|imported_files| {
-                imported_files.lines().map(PathBuf::from).collect()
-            })
+        Some(
+            read_to_string(get_imported_files_path()?)?
+                .lines()
+                .map(PathBuf::from)
+                .collect::<Vec<PathBuf>>(),
+        )
     };
 
-    let mut files: Vec<DirEntry> = shared_directories
+    let mut files: Vec<PathBuf> = shared_directories
         .iter()
         .flat_map(|directory| {
             {
@@ -162,233 +307,29 @@ pub fn import(
                             && !ignored_paths
                                 .contains(&dir_entry.path().to_path_buf())
                     })
-                    .collect::<Vec<DirEntry>>()
+                    .map(|dir_entry| dir_entry.path().to_path_buf())
+                    .collect::<Vec<PathBuf>>()
             }
         })
         .collect();
 
-    files.sort_by(|a, b| a.path().cmp(b.path()));
+    files.sort();
 
-    let mut imported_files_log = get_imported_files_path().map(|path| {
-        OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(path)
-            .map(BufWriter::new)
-    });
-
-    for file in files {
-        let mut hint = Hint::new();
-
-        if let Some(extension) = file
-            .path()
-            .extension()
-            .and_then(|extension| extension.to_str())
-        {
-            hint.with_extension(extension);
-        }
-
-        let mut probed = symphonia::default::get_probe().format(
-            &hint,
-            MediaSourceStream::new(
-                Box::new(File::open(file.path())?),
-                MediaSourceStreamOptions::default(),
-            ),
-            &FormatOptions::default(),
-            &MetadataOptions::default(),
+    let mut imported_files_log =
+        OpenOptions::new().create(true).append(true).open(
+            get_imported_files_path()
+                .context("failed to get imported files log path")?,
         )?;
 
-        let probed_metadata = probed.metadata.get();
-
-        if let Some(tags) = probed.format.metadata().current().map_or_else(
-            || {
-                probed_metadata
-                    .as_ref()
-                    .and_then(|metadata| metadata.current())
-                    .map(symphonia_core::meta::MetadataRevision::tags)
-            },
-            |metadata| Some(metadata.tags()),
+    for file in files {
+        if let Err(error) = copy_file(
+            &file,
+            local_directory.to_owned(),
+            &mut imported_files_log,
+            dry_run,
         ) {
-            let artist = get_tag_or_unknown(tags, StandardTagKey::AlbumArtist);
-            let album = get_tag_or_unknown(tags, StandardTagKey::Album);
-            let title = get_tag_or_unknown(tags, StandardTagKey::TrackTitle);
-            let track_display = format!("{artist} – {album} – {title}");
-
-            if dry_run {
-                println!("{track_display}");
-            } else {
-                print_message(track_display, &LogLevel::Import);
-
-                let file_name =
-                    if let Some(file_name) = file.path().file_name() {
-                        file_name
-                            .to_os_string()
-                            .into_string()
-                            .map_or(title, |file_name| file_name)
-                    } else {
-                        title
-                    };
-
-                let mut new_file = local_directory.to_owned();
-
-                new_file.push(artist);
-                new_file.push(album);
-                new_file.push(file_name);
-
-                let new_file = if new_file.exists() {
-                    if let Some(parent) = new_file.parent() {
-                        let latest_version_number = WalkDir::new(parent)
-                            .into_iter()
-                            .filter_map(Result::ok)
-                            .filter(|existing_file| {
-                                existing_file
-                                    .path()
-                                    .file_name()
-                                    .is_some_and(|existing_file| {
-                                        existing_file.to_str().is_some_and(|existing_file| {
-                                            new_file.file_stem().is_some_and(|file_name| {
-                                                file_name.to_str().is_some_and(|file_name| {
-                                                    // TODO handle weird characters!
-                                                    existing_file.contains(file_name)
-                                                })
-                                            })
-                                        })
-                                    })
-                            })
-                            .filter_map(|existing_file| {
-                                existing_file
-                                    .path()
-                                    .file_stem()
-                                    .and_then(|stem| stem.to_str())
-                                    .and_then(|stem| {
-                                        if stem.contains("__") {
-                                            stem.split("__")
-                                                .last()
-                                                .and_then(|number| number.parse::<usize>().ok())
-                                        } else {
-                                            None
-                                        }
-                                    })
-                            })
-                            .max()
-                            .unwrap_or_default();
-
-                        new_file.parent().map_or_else(
-                            || Some(new_file.clone()),
-                            |path| {
-                                new_file
-                                    .file_stem()
-                                    .and_then(|stem| stem.to_str())
-                                    .and_then(|stem| {
-                                        new_file
-                                            .extension()
-                                            .and_then(|extension| {
-                                                extension.to_str()
-                                            })
-                                            .map(|extension| {
-                                                path.to_path_buf().join(
-                                                    format!(
-                                                        "{}__{}.{}",
-                                                        stem,
-                                                        latest_version_number
-                                                            + 1,
-                                                        extension,
-                                                    ),
-                                                )
-                                            })
-                                    })
-                            },
-                        )
-                    } else {
-                        Some(new_file)
-                    }
-                } else {
-                    Some(new_file)
-                };
-
-                match new_file {
-                    None => print_message(
-                        format!("failed to import {}", file.path().display()),
-                        &LogLevel::Error,
-                    ),
-
-                    Some(new_file) => {
-                        if matches!(
-                            &new_file.parent().map(create_dir_all),
-                            Some(Ok(()))
-                        ) {
-                            match File::create_new(&new_file) {
-                                Ok(_) => {
-                                    if let Err(error) =
-                                        copy(file.path(), &new_file)
-                                    {
-                                        print_message(
-                                            error.to_string(),
-                                            &LogLevel::Error,
-                                        );
-                                    } else {
-                                        imported_files_log.as_mut().map(
-                                            |imported_files| {
-                                                imported_files
-                                                    .as_mut()
-                                                    .ok()
-                                                    .map(|imported_files| {
-                                                        if let Err(error) =
-                                                            imported_files
-                                                                .write(
-                                                                format!(
-                                                                    "{}\n",
-                                                                    file.path(
-                                                                    )
-                                                                    .display()
-                                                                )
-                                                                .as_bytes(),
-                                                            )
-                                                        {
-                                                            print_message(
-                                                        error.to_string(),
-                                                        &LogLevel::Error,
-                                                    );
-                                                        }
-                                                    })
-                                            },
-                                        );
-                                    }
-                                }
-
-                                Err(error) => {
-                                    print_message(
-                                        format!(
-                                            "{} ({})",
-                                            error,
-                                            new_file.display()
-                                        ),
-                                        &LogLevel::Error,
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            print_message(
-                format!(
-                    "failed to detect tags for {}",
-                    file.file_name().to_string_lossy()
-                ),
-                &LogLevel::Warning,
-            );
+            print_message(error.to_string(), &LogLevel::Error);
         }
-        // } else {
-        //     print_message(
-        //         format!(
-        //             "{} is not a recognized file type.",
-        //             file.file_name().to_string_lossy()
-        //         ),
-        //         &LogLevel::Error,
-        //     );
-        // }
     }
 
     Ok(())
