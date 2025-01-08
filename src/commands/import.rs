@@ -137,15 +137,28 @@ fn copy_file(
         hint.with_extension(extension);
     }
 
-    let mut probed = symphonia::default::get_probe().format(
-        &hint,
-        MediaSourceStream::new(
-            Box::new(File::open(file)?),
-            MediaSourceStreamOptions::default(),
-        ),
-        &FormatOptions::default(),
-        &MetadataOptions::default(),
-    )?;
+    let mut probed = if let Ok(probed) = symphonia::default::get_probe()
+        .format(
+            &hint,
+            MediaSourceStream::new(
+                Box::new(File::open(file)?),
+                MediaSourceStreamOptions::default(),
+            ),
+            &FormatOptions::default(),
+            &MetadataOptions::default(),
+        ) {
+        probed
+    } else {
+        print_message(
+            format!(
+                "failed to read audio file metadata for {}",
+                file.as_path().display()
+            ),
+            &LogLevel::Warning,
+        );
+
+        return Ok(());
+    };
 
     let container_metadata = probed.format.metadata();
     let other_metadata = probed.metadata.get();
@@ -327,6 +340,7 @@ pub fn import(
             dry_run,
         ) {
             print_message(error.to_string(), &LogLevel::Error);
+
             print_message(
                 file.as_path().display().to_string(),
                 &LogLevel::Error,
