@@ -1,5 +1,5 @@
 use std::env::var;
-use std::path::{Path, PathBuf};
+use std::path::{absolute, Path, PathBuf};
 use std::process::Command;
 
 use anyhow::Result;
@@ -44,7 +44,8 @@ fn get_path_vector_display(vector: &[PathBuf]) -> String {
     vector
         .iter()
         .map(|path| path.display().to_string())
-        .collect()
+        .collect::<Vec<String>>()
+        .join("\n")
 }
 
 pub fn get_config_value_display(
@@ -77,11 +78,15 @@ pub fn config(
 ) -> Result<()> {
     match command {
         Config::Edit => {
-            Command::new(var("EDITOR")?).arg(config_path).status()?;
+            Command::new(
+                var("EDITOR").map_or("vim".to_string(), |editor| editor),
+            )
+            .arg(config_path)
+            .status()?;
         }
 
         Config::Path => {
-            println!("{}", config_path.display());
+            println!("{}", absolute(config_path)?.display());
         }
 
         Config::Show { key } => {
