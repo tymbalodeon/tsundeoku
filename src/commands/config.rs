@@ -1,4 +1,5 @@
 use std::env::var;
+use std::fs::read_to_string;
 use std::path::{absolute, Path, PathBuf};
 use std::process::Command;
 
@@ -15,6 +16,62 @@ pub struct ConfigFile {
     pub shared_directories: Vec<PathBuf>,
     pub ignored_paths: Vec<PathBuf>,
     pub local_directory: PathBuf,
+}
+
+fn expand_str_to_path(path: &str) -> PathBuf {
+    PathBuf::from(shellexpand::tilde(path).into_owned())
+}
+
+// TODO remove this, don't use default
+fn get_default_shared_directories() -> Vec<PathBuf> {
+    vec![expand_str_to_path("~/Dropbox")]
+}
+
+fn get_default_local_directory() -> PathBuf {
+    expand_str_to_path("~/Music")
+}
+
+impl Default for ConfigFile {
+    fn default() -> Self {
+        Self {
+            // TODO don't use a default shared in case it contains tons of files that shouldn't be imported
+            shared_directories: get_default_shared_directories(),
+            ignored_paths: vec![],
+            local_directory: get_default_local_directory(),
+        }
+    }
+}
+
+fn expand_path(path: &Path) -> PathBuf {
+    shellexpand::tilde(&path.display().to_string())
+        .to_string()
+        .into()
+}
+
+fn expand_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
+    paths
+        .iter()
+        .map(|path| expand_path(path.as_path()))
+        .collect::<Vec<PathBuf>>()
+}
+
+impl ConfigFile {
+    pub fn from_file(config_path: &Path) -> Result<Self> {
+        let file = read_to_string(config_path)?;
+
+        let mut config_items =
+            toml::from_str::<Self>(&file).unwrap_or_default();
+
+        config_items.shared_directories =
+            expand_paths(&config_items.shared_directories);
+
+        config_items.ignored_paths = expand_paths(&config_items.ignored_paths);
+
+        config_items.local_directory =
+            expand_path(&config_items.local_directory);
+
+        Ok(config_items)
+    }
 }
 
 #[derive(Clone, Debug, ValueEnum)]

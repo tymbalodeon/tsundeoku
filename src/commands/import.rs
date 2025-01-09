@@ -17,76 +17,6 @@ use crate::print_message;
 use crate::LogLevel;
 use crate::{get_app_name, get_home_dir};
 
-impl Default for ConfigFile {
-    fn default() -> Self {
-        Self {
-            // TODO don't use a default shared in case it contains tons of files that shouldn't be imported
-            shared_directories: get_default_shared_directories(),
-            ignored_paths: vec![],
-            local_directory: get_default_local_directory(),
-        }
-    }
-}
-
-fn expand_path(path: &Path) -> PathBuf {
-    shellexpand::tilde(&path.display().to_string())
-        .to_string()
-        .into()
-}
-
-fn expand_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
-    paths
-        .iter()
-        .map(|path| expand_path(path.as_path()))
-        .collect::<Vec<PathBuf>>()
-}
-
-impl ConfigFile {
-    pub fn from_file(config_path: &Path) -> Result<Self> {
-        let file = read_to_string(config_path)?;
-
-        let mut config_items =
-            toml::from_str::<Self>(&file).unwrap_or_default();
-
-        config_items.shared_directories =
-            expand_paths(&config_items.shared_directories);
-
-        config_items.ignored_paths = expand_paths(&config_items.ignored_paths);
-
-        config_items.local_directory =
-            expand_path(&config_items.local_directory);
-
-        Ok(config_items)
-    }
-}
-
-fn get_config_value<'a, T>(
-    override_value: Option<&'a T>,
-    config_value: &'a T,
-) -> &'a T {
-    override_value.map_or(config_value, |value| value)
-}
-
-fn get_imported_files_path() -> Result<PathBuf> {
-    Ok(get_home_dir()?
-        .join(".local/share")
-        .join(get_app_name())
-        .join("imported_files"))
-}
-
-fn expand_str_to_path(path: &str) -> PathBuf {
-    PathBuf::from(shellexpand::tilde(path).into_owned())
-}
-
-// TODO remove this, don't use default
-fn get_default_shared_directories() -> Vec<PathBuf> {
-    vec![expand_str_to_path("~/Dropbox")]
-}
-
-fn get_default_local_directory() -> PathBuf {
-    expand_str_to_path("~/Music")
-}
-
 fn get_tag_or_unknown(tags: &[Tag], tag_name: StandardTagKey) -> String {
     tags.iter()
         .filter(|tag| tag.std_key.is_some_and(|key| key == tag_name))
@@ -96,38 +26,36 @@ fn get_tag_or_unknown(tags: &[Tag], tag_name: StandardTagKey) -> String {
         .map_or("Unknown".to_string(), |tag| tag.value.to_string())
 }
 
-fn get_invalid_path_error(path: &Path) -> String {
-    format!("invalid path {}", path.display())
+fn get_parent_directory(path: &Path) -> Result<PathBuf> {
+    Ok(path
+        .parent()
+        .context(format!("failed to get parent of {}", path.display()))?
+        .to_path_buf())
 }
 
-fn get_file_name(path: &Path) -> Result<&str> {
-    path
-        .file_name()
-        .with_context(|| get_invalid_path_error(path))?
-        .to_str()
-        .with_context(|| get_invalid_path_error(path))
-}
-
-fn get_file_stem(path: &Path) -> Result<&str> {
-    path
-        .file_stem()
-        .with_context(|| get_invalid_path_error(path))?
-        .to_str()
-        .with_context(|| get_invalid_path_error(path))
-}
-
-fn matches_filename(existing_file: &Path, new_file: &Path) -> Result<bool> {
+fn matches_file_name(existing_file: &Path, new_file: &Path) -> Result<bool> {
     let existing_file_name = get_file_name(existing_file)?;
     let new_file_stem = get_file_stem(new_file)?;
 
     Ok(existing_file_name.contains(new_file_stem))
 }
 
-fn get_parent_directory(path: &Path) -> Result<PathBuf> {
-    Ok(path
-        .parent()
-        .context(format!("failed to get parent of {}", path.display()))?
-        .to_path_buf())
+fn get_invalid_path_error(path: &Path) -> String {
+    format!("invalid path {}", path.display())
+}
+
+fn get_file_name(path: &Path) -> Result<&str> {
+    path.file_name()
+        .with_context(|| get_invalid_path_error(path))?
+        .to_str()
+        .with_context(|| get_invalid_path_error(path))
+}
+
+fn get_file_stem(path: &Path) -> Result<&str> {
+    path.file_stem()
+        .with_context(|| get_invalid_path_error(path))?
+        .to_str()
+        .with_context(|| get_invalid_path_error(path))
 }
 
 fn copy_file(
@@ -204,7 +132,7 @@ fn copy_file(
             .into_iter()
             .filter_map(Result::ok)
             .filter(|existing_file| {
-                matches_filename(existing_file.path(), &new_file)
+                matches_file_name(existing_file.path(), &new_file)
                     .unwrap_or_else(|_| {
                         panic!(
                             "failed to compare {} to {}",
@@ -252,6 +180,20 @@ fn copy_file(
     }
 
     Ok(())
+}
+
+fn get_config_value<'a, T>(
+    override_value: Option<&'a T>,
+    config_value: &'a T,
+) -> &'a T {
+    override_value.map_or(config_value, |value| value)
+}
+
+fn get_imported_files_path() -> Result<PathBuf> {
+    Ok(get_home_dir()?
+        .join(".local/share")
+        .join(get_app_name())
+        .join("imported_files"))
 }
 
 pub fn import(
