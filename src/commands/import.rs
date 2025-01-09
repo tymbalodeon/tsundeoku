@@ -1,11 +1,11 @@
 use std::fs::{copy, create_dir_all, read_to_string, File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::string::ToString;
 use std::vec::Vec;
 
 use anyhow::{Context, Result};
-use home::home_dir;
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
 use symphonia::core::meta::{MetadataOptions, StandardTagKey, Tag};
@@ -13,9 +13,9 @@ use symphonia::core::probe::Hint;
 use walkdir::WalkDir;
 
 use crate::commands::config::ConfigFile;
-use crate::get_app_name;
 use crate::print_message;
 use crate::LogLevel;
+use crate::{get_app_name, get_home_dir};
 
 impl Default for ConfigFile {
     fn default() -> Self {
@@ -68,8 +68,7 @@ fn get_config_value<'a, T>(
 }
 
 fn get_imported_files_path() -> Result<PathBuf> {
-    Ok(home_dir()
-        .context("could not determine $HOME directory")?
+    Ok(get_home_dir()?
         .join(".local/share")
         .join(get_app_name())
         .join("imported_files"))
@@ -88,39 +87,47 @@ fn get_default_local_directory() -> PathBuf {
     expand_str_to_path("~/Music")
 }
 
-fn get_tag(tags: &[Tag], tag_name: StandardTagKey) -> Option<&Tag> {
+fn get_tag_or_unknown(tags: &[Tag], tag_name: StandardTagKey) -> String {
     tags.iter()
         .filter(|tag| tag.std_key.is_some_and(|key| key == tag_name))
         .collect::<Vec<&Tag>>()
         .first()
         .map(|tag| &**tag)
-}
-
-fn get_tag_or_unknown(tags: &[Tag], tag_name: StandardTagKey) -> String {
-    get_tag(tags, tag_name)
         .map_or("Unknown".to_string(), |tag| tag.value.to_string())
 }
 
-fn matches_filename(existing_file: &Path, new_file: &Path) -> Result<bool> {
-    let existing_file_error =
-        || format!("failed to get filename for {}", existing_file.display());
+fn get_invalid_path_error(path: &Path) -> String {
+    format!("invalid path {}", path.display())
+}
 
-    let existing_file_stem = existing_file
+fn get_file_name(path: &Path) -> Result<&str> {
+    path
         .file_name()
-        .with_context(existing_file_error)?
+        .with_context(|| get_invalid_path_error(path))?
         .to_str()
-        .with_context(existing_file_error)?;
+        .with_context(|| get_invalid_path_error(path))
+}
 
-    let new_file_error =
-        || format!("failed to get filename for {}", new_file.display());
-
-    let new_file_stem = new_file
+fn get_file_stem(path: &Path) -> Result<&str> {
+    path
         .file_stem()
-        .with_context(new_file_error)?
+        .with_context(|| get_invalid_path_error(path))?
         .to_str()
-        .with_context(new_file_error)?;
+        .with_context(|| get_invalid_path_error(path))
+}
 
-    Ok(existing_file_stem.contains(new_file_stem))
+fn matches_filename(existing_file: &Path, new_file: &Path) -> Result<bool> {
+    let existing_file_name = get_file_name(existing_file)?;
+    let new_file_stem = get_file_stem(new_file)?;
+
+    Ok(existing_file_name.contains(new_file_stem))
+}
+
+fn get_parent_directory(path: &Path) -> Result<PathBuf> {
+    Ok(path
+        .parent()
+        .context(format!("failed to get parent of {}", path.display()))?
+        .to_path_buf())
 }
 
 fn copy_file(
@@ -137,18 +144,15 @@ fn copy_file(
         hint.with_extension(extension);
     }
 
-    let mut probed = if let Ok(probed) = symphonia::default::get_probe()
-        .format(
-            &hint,
-            MediaSourceStream::new(
-                Box::new(File::open(file)?),
-                MediaSourceStreamOptions::default(),
-            ),
-            &FormatOptions::default(),
-            &MetadataOptions::default(),
-        ) {
-        probed
-    } else {
+    let Ok(mut probed) = symphonia::default::get_probe().format(
+        &hint,
+        MediaSourceStream::new(
+            Box::new(File::open(file)?),
+            MediaSourceStreamOptions::default(),
+        ),
+        &FormatOptions::default(),
+        &MetadataOptions::default(),
+    ) else {
         print_message(
             format!(
                 "failed to read audio file metadata for {}",
@@ -169,9 +173,10 @@ fn copy_file(
                 .as_ref()
                 .and_then(|metadata| metadata.current())
                 .map(symphonia_core::meta::MetadataRevision::tags)
-                .with_context(|| {
-                    format!("failed to detect tags for {} ", file.display())
-                })
+                .context(format!(
+                    "failed to detect tags for {} ",
+                    file.display()
+                ))
         },
         |metadata| Ok(metadata.tags()),
     )?;
@@ -186,26 +191,16 @@ fn copy_file(
     } else {
         print_message(track_display, &LogLevel::Import);
 
-        let file_name = {
-            let error =
-                || format!("failed to get file name for {}", file.display());
-
-            file.file_name()
-                .with_context(error)?
-                .to_str()
-                .with_context(error)?
-        };
-
+        let file_name = get_file_name(file)?;
         let mut new_file = local_directory;
 
         new_file.push(artist);
         new_file.push(album);
         new_file.push(file_name);
 
-        let latest_version_number =
-            WalkDir::new(new_file.parent().with_context(|| {
-                format!("failed to get parent of {}", new_file.display())
-            })?)
+        let parent = get_parent_directory(&new_file)?;
+
+        let latest_version_number = WalkDir::new(&parent)
             .into_iter()
             .filter_map(Result::ok)
             .filter(|existing_file| {
@@ -219,47 +214,31 @@ fn copy_file(
                     })
             })
             .filter_map(|existing_file| {
-                existing_file
-                    .path()
-                    .file_stem()
-                    .and_then(|stem| stem.to_str())
-                    .and_then(|stem| {
-                        if stem.contains("__") {
-                            stem.split("__").last().and_then(|number| {
-                                number.parse::<usize>().ok()
-                            })
-                        } else {
-                            None
-                        }
-                    })
+                get_file_stem(existing_file.path()).ok().and_then(|stem| {
+                    if stem.contains("__") {
+                        stem.split("__")
+                            .last()
+                            .and_then(|number| number.parse::<usize>().ok())
+                    } else {
+                        None
+                    }
+                })
             })
             .max()
             .unwrap_or_default();
 
-        let file_error =
-            |item| format!("failed to get {item} for {}", new_file.display());
+        new_file = parent.join(format!(
+            "{}__{}.{}",
+            get_file_stem(&new_file)?,
+            latest_version_number + 1,
+            new_file
+                .extension()
+                .with_context(|| get_invalid_path_error(&new_file))?
+                .to_str()
+                .with_context(|| get_invalid_path_error(&new_file))?
+        ));
 
-        new_file = new_file.parent().with_context(|| "")?.to_path_buf().join(
-            format!(
-                "{}__{}.{}",
-                new_file
-                    .file_stem()
-                    .with_context(|| file_error("stem"))?
-                    .to_str()
-                    .with_context(|| file_error("stem"))?,
-                latest_version_number + 1,
-                new_file
-                    .extension()
-                    .with_context(|| file_error("extension"))?
-                    .to_str()
-                    .with_context(|| file_error("extension"))?
-            ),
-        );
-
-        create_dir_all(new_file.parent().with_context(|| {
-            format!("failed to get parent of {}", new_file.display())
-        })?)?;
-
+        create_dir_all(&parent)?;
         File::create_new(&new_file)?;
 
         let copied = copy(file, &new_file);
@@ -294,17 +273,6 @@ pub fn import(
     let local_directory =
         get_config_value(local_directory, &config_values.local_directory);
 
-    let imported_files: Option<Vec<PathBuf>> = if force {
-        None
-    } else {
-        Some(
-            read_to_string(get_imported_files_path()?)?
-                .lines()
-                .map(PathBuf::from)
-                .collect::<Vec<PathBuf>>(),
-        )
-    };
-
     let mut files: Vec<PathBuf> = shared_directories
         .iter()
         .flat_map(|directory| {
@@ -312,10 +280,7 @@ pub fn import(
                 .into_iter()
                 .filter_map(Result::ok)
                 .filter(|dir_entry| {
-                    !imported_files.as_ref().is_some_and(|imported_files| {
-                        imported_files
-                            .contains(&dir_entry.path().to_path_buf())
-                    }) && Path::is_file(dir_entry.path())
+                    Path::is_file(dir_entry.path())
                         && !ignored_paths
                             .contains(&dir_entry.path().to_path_buf())
                 })
@@ -324,13 +289,50 @@ pub fn import(
         })
         .collect();
 
+    let imported_files_path = get_imported_files_path()?;
+    let imported_files = read_to_string(&imported_files_path)?;
+
+    // use nested scope to clean up shadowing sooner?
+
+    let current_imported_files: Vec<&str> = imported_files
+        .lines()
+        .filter(|path| {
+            PathBuf::from_str(path)
+                .ok()
+                .is_some_and(|path| files.contains(&path))
+        })
+        .collect();
+
+    // save the current_imported_files
+
+    let current_imported_files: Vec<PathBuf> = current_imported_files
+        .iter()
+        .filter_map(|path| PathBuf::from_str(path).ok())
+        .collect();
+
+    let imported_files: Option<Vec<PathBuf>> = if force {
+        None
+    } else {
+        Some(current_imported_files)
+    };
+
+    files = files
+        .iter()
+        .filter(|path| {
+            force
+                || imported_files.as_ref().is_some_and(|imported_files| {
+                    !imported_files.contains(path)
+                })
+        })
+        .cloned()
+        .collect::<Vec<PathBuf>>();
+
     files.sort();
 
-    let mut imported_files_log =
-        OpenOptions::new().create(true).append(true).open(
-            get_imported_files_path()
-                .context("failed to get imported files log path")?,
-        )?;
+    let mut imported_files_log = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(imported_files_path)?;
 
     for file in files {
         if let Err(error) = copy_file(

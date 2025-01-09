@@ -93,6 +93,10 @@ struct Cli {
     config_file: Option<String>,
 }
 
+fn get_home_dir() -> Result<PathBuf> {
+    home_dir().context("could not determine $HOME directory")
+}
+
 const fn get_app_name() -> &'static str {
     "tsundeoku"
 }
@@ -124,8 +128,7 @@ fn main() -> Result<()> {
     let config_path = cli.config_file.as_ref().map_or_else(
         || {
             Ok::<String, Error>(
-                home_dir()
-                    .context("$HOME should be set")?
+                get_home_dir()?
                     .join(".config")
                     .join(get_app_name())
                     .join(format!("{}.toml", get_app_name()))
@@ -137,7 +140,7 @@ fn main() -> Result<()> {
             Ok(Path::new(config_path)
                 .parse_dot()?
                 .to_str()
-                .context("config-file should be valid path")?
+                .context(format!("invalid config file path {config_path}"))?
                 .to_string())
         },
     )?;
