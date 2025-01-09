@@ -1,7 +1,7 @@
-use std::fs::{copy, create_dir_all, read_to_string, File, OpenOptions};
+use std::collections::HashSet;
+use std::fs::{self, copy, create_dir_all, read_to_string, File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 use std::string::ToString;
 use std::vec::Vec;
 
@@ -196,6 +196,32 @@ fn get_imported_files_path() -> Result<PathBuf> {
         .join("imported_files"))
 }
 
+fn sync_imported_files(
+    files: &[PathBuf],
+    imported_files_path: &Path,
+) -> Result<Vec<PathBuf>> {
+    let imported_files = read_to_string(imported_files_path)?;
+
+    let current_imported_files: Vec<PathBuf> = imported_files
+        .lines()
+        .map(PathBuf::from)
+        .collect::<HashSet<_>>()
+        .intersection(&files.iter().cloned().collect::<HashSet<PathBuf>>())
+        .cloned()
+        .collect();
+
+    fs::write(
+        imported_files_path,
+        current_imported_files
+            .iter()
+            .map(|path| path.display().to_string())
+            .collect::<Vec<String>>()
+            .join("\n"),
+    )?;
+
+    Ok(current_imported_files)
+}
+
 pub fn import(
     config_values: &ConfigFile,
     shared_directories: Option<&Vec<PathBuf>>,
@@ -232,30 +258,11 @@ pub fn import(
         .collect();
 
     let imported_files_path = get_imported_files_path()?;
-    let imported_files = read_to_string(&imported_files_path)?;
-
-    // use nested scope to clean up shadowing sooner?
-
-    let current_imported_files: Vec<&str> = imported_files
-        .lines()
-        .filter(|path| {
-            PathBuf::from_str(path)
-                .ok()
-                .is_some_and(|path| files.contains(&path))
-        })
-        .collect();
-
-    // save the current_imported_files
-
-    let current_imported_files: Vec<PathBuf> = current_imported_files
-        .iter()
-        .filter_map(|path| PathBuf::from_str(path).ok())
-        .collect();
 
     let imported_files: Option<Vec<PathBuf>> = if force {
         None
     } else {
-        Some(current_imported_files)
+        Some(sync_imported_files(&files, &imported_files_path)?)
     };
 
     files = files
