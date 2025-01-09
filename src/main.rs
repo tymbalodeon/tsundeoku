@@ -67,6 +67,10 @@ enum Commands {
         #[arg(long)]
         #[arg(short)]
         force: bool,
+
+        #[arg(long)]
+        #[arg(long)]
+        verbose: bool,
     },
 
     /// Show import logs
@@ -160,6 +164,7 @@ fn main() -> Result<()> {
             dry_run,
             no_reformat: _,
             force,
+            verbose,
         }) => import(
             &config_values,
             shared_directories.as_ref(),
@@ -167,6 +172,7 @@ fn main() -> Result<()> {
             local_directory.as_ref(),
             *dry_run,
             *force,
+            *verbose,
         ),
 
         Some(Commands::Logs) => {

@@ -63,6 +63,7 @@ fn copy_file(
     local_directory: PathBuf,
     imported_files_log: &mut File,
     dry_run: bool,
+    verbose: bool,
 ) -> Result<()> {
     let mut hint = Hint::new();
 
@@ -81,13 +82,15 @@ fn copy_file(
         &FormatOptions::default(),
         &MetadataOptions::default(),
     ) else {
-        print_message(
-            format!(
-                "failed to read audio file metadata for {}",
-                file.as_path().display()
-            ),
-            &LogLevel::Warning,
-        );
+        if verbose {
+            print_message(
+                format!(
+                    "failed to read audio file metadata for {}",
+                    file.as_path().display()
+                ),
+                &LogLevel::Warning,
+            );
+        }
 
         return Ok(());
     };
@@ -229,6 +232,7 @@ pub fn import(
     local_directory: Option<&PathBuf>,
     dry_run: bool,
     force: bool,
+    verbose: bool,
 ) -> Result<()> {
     let shared_directories = get_config_value(
         shared_directories,
@@ -289,6 +293,7 @@ pub fn import(
             local_directory.to_owned(),
             &mut imported_files_log,
             dry_run,
+            verbose,
         ) {
             print_message(error.to_string(), &LogLevel::Error);
 
