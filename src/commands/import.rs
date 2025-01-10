@@ -114,13 +114,11 @@ fn copy_file(
 
     let artist = get_tag_or_unknown(tags, StandardTagKey::AlbumArtist);
     let album = get_tag_or_unknown(tags, StandardTagKey::Album);
-    let title = get_tag_or_unknown(tags, StandardTagKey::TrackTitle);
-    let track_display = format!("{artist} – {album} – {title}");
 
     if dry_run {
-        println!("{track_display}");
+        println!("{}", file.display());
     } else {
-        print_message(track_display, &LogLevel::Import);
+        print_message(file.display().to_string(), &LogLevel::Import);
 
         let file_name = get_file_name(file)?;
         let mut new_file = local_directory;
