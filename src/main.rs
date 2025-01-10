@@ -97,7 +97,7 @@ pub enum LogLevel {
 
 pub fn print_message<T: AsRef<str>>(message: T, level: &LogLevel) {
     let label = match level {
-        LogLevel::Import => "  Importing".green().to_string(),
+        LogLevel::Import => "   Importing".green().to_string(),
         LogLevel::Warning => format!("{}:", "warning".yellow()),
         LogLevel::Error => format!("{}:", "error".red()),
     };
@@ -168,8 +168,9 @@ fn main() -> Result<()> {
 
         Some(Commands::Schedule { command }) => {
             schedule(command.as_ref());
+
             Ok(())
-        },
+        }
 
         _ => todo!(),
     }
