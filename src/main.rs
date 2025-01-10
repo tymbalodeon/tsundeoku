@@ -8,6 +8,7 @@ use std::vec::Vec;
 use anyhow::{Context, Error, Result};
 use clap::{Parser, Subcommand};
 use colored::Colorize;
+use commands::schedule::{schedule, Schedule};
 use home::home_dir;
 use path_dedot::ParseDot;
 
@@ -15,23 +16,6 @@ use crate::commands::config::config;
 use crate::commands::config::Config;
 use crate::commands::config::ConfigFile;
 use crate::commands::import::import;
-
-#[derive(Subcommand, Debug)]
-#[command(arg_required_else_help = true)]
-enum Schedule {
-    /// Enabled scheduled imports
-    Enable {
-        #[arg(long)]
-        #[arg(value_name = "TIME")]
-        time: Option<String>,
-    },
-
-    /// Disable scheduled imports
-    Disable,
-
-    /// Show schedule status
-    Status,
-}
 
 #[derive(Subcommand)]
 enum Commands {
@@ -182,9 +166,10 @@ fn main() -> Result<()> {
             // }
         }
 
-        Some(Commands::Schedule { command: Some(_) }) => {
-            todo!();
-        }
+        Some(Commands::Schedule { command }) => {
+            schedule(command.as_ref());
+            Ok(())
+        },
 
         _ => todo!(),
     }
