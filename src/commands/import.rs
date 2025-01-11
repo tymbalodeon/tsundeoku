@@ -211,14 +211,13 @@ fn sync_imported_files(
         .cloned()
         .collect();
 
-    fs::write(
-        imported_files_path,
-        current_imported_files
-            .iter()
-            .map(|path| path.display().to_string())
-            .collect::<Vec<String>>()
-            .join("\n"),
-    )?;
+    let mut imported_files_log: Vec<String> = current_imported_files
+        .iter()
+        .map(|path| path.display().to_string())
+        .collect();
+
+    imported_files_log.push("\n".to_string());
+    fs::write(imported_files_path, imported_files_log.join("\n"))?;
 
     Ok(current_imported_files)
 }

@@ -30,15 +30,13 @@ fn get_app_plist_file_name() -> String {
     format!("com.{}.import.plist", get_app_name())
 }
 
-fn is_scheduled(file_name: &str) -> Result<bool> {
-    Ok(str::from_utf8(
-        &Command::new("launchctl").arg("list").output()?.stdout,
-    )?
-    .lines()
-    .filter(|line| line.contains(file_name))
-    .filter_map(|line| line.split_whitespace().last())
-    .count()
-        == 1)
+fn is_scheduled(file_name: &str, plist_contents: &str) -> bool {
+    plist_contents
+        .lines()
+        .filter(|line| line.contains(file_name))
+        .filter_map(|line| line.split_whitespace().last())
+        .count()
+        == 1
 }
 
 fn on(frequency: Option<&String>) {
@@ -52,8 +50,13 @@ fn off() {
 fn status() -> Result<()> {
     let app_plist_file_name = get_app_plist_file_name();
 
+    let launchctl_list =
+        &Command::new("launchctl").arg("list").output()?.stdout;
+
+    let plist_contents = str::from_utf8(launchctl_list)?;
+
     if !get_plist_path(&app_plist_file_name)?.exists()
-        || !is_scheduled(&app_plist_file_name)?
+        || !is_scheduled(&app_plist_file_name, plist_contents)
     {
         println!("not scheduled");
     } else {
@@ -69,5 +72,6 @@ pub fn schedule(command: Option<&Schedule>) -> Result<()> {
         Some(Schedule::Off) => off(),
         Some(Schedule::Status) | None => status()?,
     };
+
     Ok(())
 }
