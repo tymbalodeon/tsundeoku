@@ -77,8 +77,16 @@ fn status() -> Result<()> {
         let scheduled_import: ScheduledImport =
             plist::from_file(app_plist_file.display().to_string())?;
 
-        println!("{:?}", scheduled_import.start_calendar_interval.minute);
-        println!("{:?}", scheduled_import.start_calendar_interval.hour);
+        if let Some(hour) = scheduled_import.start_calendar_interval.hour {
+            let minute = scheduled_import
+                .start_calendar_interval
+                .minute
+                .unwrap_or_default();
+
+            println!("import is scheduled for {hour:02}:{minute:02}");
+        } else if scheduled_import.start_calendar_interval.minute.is_some() {
+            println!("import is scheduled for every hour");
+        }
     }
 
     Ok(())
