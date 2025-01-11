@@ -1,8 +1,9 @@
 use std::process::Command;
-use std::str;
+use std::str::{self, FromStr};
 use std::{fs::remove_file, path::PathBuf};
 
 use anyhow::Result;
+use chrono::Utc;
 use clap::Subcommand;
 use serde::Deserialize;
 
@@ -70,6 +71,7 @@ struct ScheduledImport {
     start_calendar_interval: StartCalendarInterval,
 }
 
+// TODO
 fn status() -> Result<()> {
     let launchctl_list =
         &Command::new("launchctl").arg("list").output()?.stdout;
@@ -96,6 +98,14 @@ fn status() -> Result<()> {
         } else if scheduled_import.start_calendar_interval.minute.is_some() {
             println!("import is scheduled for every hour");
         }
+    }
+
+    // TODO
+    for datetime in cron::Schedule::from_str("0 0 * * * *")?
+        .upcoming(Utc)
+        .take(10)
+    {
+        println!("-> {datetime}");
     }
 
     Ok(())
