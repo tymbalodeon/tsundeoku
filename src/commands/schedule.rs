@@ -1,6 +1,6 @@
-use std::path::PathBuf;
 use std::process::Command;
 use std::str;
+use std::{fs::remove_file, path::PathBuf};
 
 use anyhow::Result;
 use clap::Subcommand;
@@ -44,8 +44,17 @@ fn on(frequency: Option<&String>) {
     println!("enabled scheduled imports at frequency {frequency:?}.");
 }
 
-fn off() {
-    println!("disabled scheduled imports.");
+fn off() -> Result<()> {
+    let app_plist = get_plist_path(&get_app_plist_file_name())?;
+
+    Command::new("launchctl")
+        .arg("unload")
+        .arg(&app_plist)
+        .status()?;
+
+    remove_file(&app_plist)?;
+
+    Ok(())
 }
 
 #[derive(Deserialize)]
@@ -95,7 +104,7 @@ fn status() -> Result<()> {
 pub fn schedule(command: Option<&Schedule>) -> Result<()> {
     match command {
         Some(Schedule::On { frequency }) => on(frequency.as_ref()),
-        Some(Schedule::Off) => off(),
+        Some(Schedule::Off) => off()?,
         Some(Schedule::Status) | None => status()?,
     };
 
