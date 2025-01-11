@@ -167,7 +167,7 @@ fn main() -> Result<()> {
         }
 
         Some(Commands::Schedule { command }) => {
-            schedule(command.as_ref());
+            schedule(command.as_ref())?;
 
             Ok(())
         }
