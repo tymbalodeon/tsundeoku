@@ -4,6 +4,7 @@ use std::str;
 
 use anyhow::Result;
 use clap::Subcommand;
+use serde::Deserialize;
 
 use crate::{get_app_name, get_home_dir};
 
@@ -47,20 +48,37 @@ fn off() {
     println!("disabled scheduled imports.");
 }
 
-fn status() -> Result<()> {
-    let app_plist_file_name = get_app_plist_file_name();
+#[derive(Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct StartCalendarInterval {
+    minute: Option<u8>,
+    hour: Option<u8>,
+}
 
+#[derive(Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct ScheduledImport {
+    start_calendar_interval: StartCalendarInterval,
+}
+
+fn status() -> Result<()> {
     let launchctl_list =
         &Command::new("launchctl").arg("list").output()?.stdout;
 
     let plist_contents = str::from_utf8(launchctl_list)?;
+    let app_plist_file_name = get_app_plist_file_name();
+    let app_plist_file = get_plist_path(&app_plist_file_name)?;
 
-    if !get_plist_path(&app_plist_file_name)?.exists()
+    if !app_plist_file.exists()
         || !is_scheduled(&app_plist_file_name, plist_contents)
     {
         println!("not scheduled");
     } else {
-        println!("Scheduled!");
+        let scheduled_import: ScheduledImport =
+            plist::from_file(app_plist_file.display().to_string())?;
+
+        println!("{:?}", scheduled_import.start_calendar_interval.minute);
+        println!("{:?}", scheduled_import.start_calendar_interval.hour);
     }
 
     Ok(())

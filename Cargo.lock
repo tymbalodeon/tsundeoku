@@ -1525,6 +1525,7 @@ dependencies = [
  "colored",
  "home",
  "path-dedot",
+ "plist",
  "serde",
  "shellexpand",
  "symphonia",
