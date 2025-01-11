@@ -3,13 +3,14 @@ use std::str::{self, FromStr};
 use std::{fs::remove_file, path::PathBuf};
 
 use anyhow::Result;
-use chrono::Utc;
+use chrono::{Local, Timelike};
 use clap::Subcommand;
 use serde::Deserialize;
 
 use crate::{get_app_name, get_home_dir};
 
 #[derive(Subcommand, Debug)]
+#[command(arg_required_else_help = true)]
 pub enum Schedule {
     /// Enable scheduled imports
     On {
@@ -22,6 +23,9 @@ pub enum Schedule {
 
     /// Show schedule status
     Status,
+
+    /// Show next scheduled import
+    Next,
 }
 
 fn get_plist_path(file_name: &str) -> Result<PathBuf> {
@@ -71,6 +75,19 @@ struct ScheduledImport {
     start_calendar_interval: StartCalendarInterval,
 }
 
+fn next() -> Result<()> {
+    if let Some(next) = cron::Schedule::from_str("0 0 * * * *")?
+        .upcoming(Local::now().timezone())
+        .next()
+    {
+        let period = if next.hour12().0 { "PM" } else { "AM" };
+
+        println!("{:02}:{:02} {}", next.hour12().1, next.minute(), period);
+    }
+
+    Ok(())
+}
+
 // TODO
 fn status() -> Result<()> {
     let launchctl_list =
@@ -100,14 +117,6 @@ fn status() -> Result<()> {
         }
     }
 
-    // TODO
-    for datetime in cron::Schedule::from_str("0 0 * * * *")?
-        .upcoming(Utc)
-        .take(10)
-    {
-        println!("-> {datetime}");
-    }
-
     Ok(())
 }
 
@@ -116,6 +125,7 @@ pub fn schedule(command: Option<&Schedule>) -> Result<()> {
         Some(Schedule::On { frequency }) => on(frequency.as_ref()),
         Some(Schedule::Off) => off()?,
         Some(Schedule::Status) | None => status()?,
+        Some(Schedule::Next) => next()?,
     };
 
     Ok(())
