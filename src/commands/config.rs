@@ -4,39 +4,22 @@ use std::path::{absolute, Path, PathBuf};
 use std::process::Command;
 use std::str::FromStr;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use bat::PrettyPrinter;
 use clap::{Subcommand, ValueEnum};
 use serde::{Deserialize, Serialize};
+use toml::Table;
 
 use crate::commands::import::get_log_path;
-use crate::log;
 use crate::LogLevel;
+use crate::{get_home_directory, log};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConfigFile {
     pub shared_directories: Vec<PathBuf>,
     pub ignored_paths: Vec<PathBuf>,
     pub local_directory: PathBuf,
-    pub schedule_interval: Option<cron::Schedule>,
-}
-
-fn expand_str_to_path(path: &str) -> PathBuf {
-    PathBuf::from(shellexpand::tilde(path).into_owned())
-}
-
-impl Default for ConfigFile {
-    fn default() -> Self {
-        Self {
-            // TODO don't use a default shared in case it contains tons of files that shouldn't be imported
-            shared_directories: vec![expand_str_to_path("~/Dropbox")],
-            ignored_paths: vec![],
-            local_directory: expand_str_to_path("~/Music"),
-            schedule_interval: cron::Schedule::from_str("0 0 * * * *")
-                .ok()
-                .or(None),
-        }
-    }
+    pub schedule_interval: cron::Schedule,
 }
 
 fn expand_path(path: &Path) -> PathBuf {
@@ -45,29 +28,63 @@ fn expand_path(path: &Path) -> PathBuf {
         .into()
 }
 
-fn expand_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
-    paths
-        .iter()
-        .map(|path| expand_path(path.as_path()))
-        .collect::<Vec<PathBuf>>()
+fn get_paths(config_items: &Table, key: &str) -> Result<Option<Vec<PathBuf>>> {
+    if let Some(paths) = config_items.get(key) {
+        Ok(Some(
+            paths
+                .as_array()
+                .context(format!("failed to get '{key}' value"))?
+                .iter()
+                .map(|path| expand_path(Path::new(&path.to_string())))
+                .collect(),
+        ))
+    } else {
+        Ok(None)
+    }
 }
 
 impl ConfigFile {
     pub fn from_file(config_path: &Path) -> Result<Self> {
         let file = read_to_string(config_path)?;
+        let config_items: Table = toml::from_str(&file)?;
 
-        let mut config_items =
-            toml::from_str::<Self>(&file).unwrap_or_default();
+        let shared_directories =
+            (get_paths(&config_items, "shared_directories")?)
+                .unwrap_or_default();
 
-        config_items.shared_directories =
-            expand_paths(&config_items.shared_directories);
+        let ignored_paths =
+            (get_paths(&config_items, "ignored_paths")?).unwrap_or_default();
 
-        config_items.ignored_paths = expand_paths(&config_items.ignored_paths);
+        let local_directory = if let Some(local_directory) =
+            config_items.get("local_directory")
+        {
+            PathBuf::from(
+                local_directory
+                    .as_str()
+                    .context("failed to get 'local_directory' value")?,
+            )
+        } else {
+            get_home_directory()?.join("Music")
+        };
 
-        config_items.local_directory =
-            expand_path(&config_items.local_directory);
+        let schedule_interval = if let Some(schedule_interval) =
+            config_items.get("schedule_interval")
+        {
+            cron::Schedule::from_str(
+                schedule_interval
+                    .as_str()
+                    .context("failed to get 'schedule_interval' value")?,
+            )?
+        } else {
+            cron::Schedule::from_str("0 0 * * * *")?
+        };
 
-        Ok(config_items)
+        Ok(Self {
+            shared_directories,
+            ignored_paths,
+            local_directory,
+            schedule_interval,
+        })
     }
 }
 
@@ -120,9 +137,7 @@ pub fn get_config_value_display(
             config.local_directory.display().to_string()
         }
 
-        ConfigKey::ScheduleInterval => config
-            .schedule_interval.clone()
-            .map_or(String::new(), |interval| interval.to_string()),
+        ConfigKey::ScheduleInterval => config.schedule_interval.to_string(),
     }
 }
 
