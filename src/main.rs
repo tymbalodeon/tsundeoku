@@ -113,8 +113,8 @@ pub fn log<T: AsRef<str>>(
     if matches!(level, LogLevel::Import) {
         println!("{message}");
     } else {
-        log_file.write_all(message.as_bytes())?;
         eprintln!("{message}");
+        log_file.write_all(format!("{message}\n").as_bytes())?;
     }
 
     Ok(())
