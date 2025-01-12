@@ -15,7 +15,7 @@ pub enum Schedule {
     /// Enable scheduled imports
     On {
         #[arg(long)]
-        frequency: Option<String>,
+        interval: Option<cron::Schedule>,
     },
 
     /// Disable scheduled imports
@@ -58,8 +58,8 @@ fn is_scheduled(file_name: &str, plist_contents: &str) -> bool {
 //         .status()?;
 // }
 
-fn on(frequency: Option<&String>) {
-    println!("enabled scheduled imports at frequency {frequency:?}.");
+fn on(interval: Option<&cron::Schedule>) {
+    println!("enabled scheduled imports for {interval:?}.");
 }
 
 fn off() -> Result<()> {
@@ -137,7 +137,7 @@ fn status() -> Result<()> {
 
 pub fn schedule(command: Option<&Schedule>) -> Result<()> {
     match command {
-        Some(Schedule::On { frequency }) => on(frequency.as_ref()),
+        Some(Schedule::On { interval }) => on(interval.as_ref()),
         Some(Schedule::Off) => off()?,
         Some(Schedule::Status) | None => status()?,
         Some(Schedule::Next) => next()?,

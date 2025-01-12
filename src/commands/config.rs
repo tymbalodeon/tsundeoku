@@ -2,6 +2,7 @@ use std::env::var;
 use std::fs::{read_to_string, OpenOptions};
 use std::path::{absolute, Path, PathBuf};
 use std::process::Command;
+use std::str::FromStr;
 
 use anyhow::Result;
 use bat::PrettyPrinter;
@@ -17,28 +18,23 @@ pub struct ConfigFile {
     pub shared_directories: Vec<PathBuf>,
     pub ignored_paths: Vec<PathBuf>,
     pub local_directory: PathBuf,
+    pub schedule_interval: Option<cron::Schedule>,
 }
 
 fn expand_str_to_path(path: &str) -> PathBuf {
     PathBuf::from(shellexpand::tilde(path).into_owned())
 }
 
-// TODO remove this, don't use default
-fn get_default_shared_directories() -> Vec<PathBuf> {
-    vec![expand_str_to_path("~/Dropbox")]
-}
-
-fn get_default_local_directory() -> PathBuf {
-    expand_str_to_path("~/Music")
-}
-
 impl Default for ConfigFile {
     fn default() -> Self {
         Self {
             // TODO don't use a default shared in case it contains tons of files that shouldn't be imported
-            shared_directories: get_default_shared_directories(),
+            shared_directories: vec![expand_str_to_path("~/Dropbox")],
             ignored_paths: vec![],
-            local_directory: get_default_local_directory(),
+            local_directory: expand_str_to_path("~/Music"),
+            schedule_interval: cron::Schedule::from_str("0 0 * * * *")
+                .ok()
+                .or(None),
         }
     }
 }
@@ -80,6 +76,7 @@ pub enum ConfigKey {
     SharedDirectories,
     IgnoredPaths,
     LocalDirectory,
+    ScheduleInterval,
 }
 
 #[derive(Subcommand, Debug)]
@@ -122,6 +119,10 @@ pub fn get_config_value_display(
         ConfigKey::LocalDirectory => {
             config.local_directory.display().to_string()
         }
+
+        ConfigKey::ScheduleInterval => config
+            .schedule_interval.clone()
+            .map_or(String::new(), |interval| interval.to_string()),
     }
 }
 
