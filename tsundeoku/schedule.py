@@ -71,7 +71,7 @@ def load_rotate_logs_plist():
 
 
 def get_plist_path(label: str) -> Path:
-    return Path.home() / "library/LaunchAgents" / label
+    return Path.home() / "Library/LaunchAgents" / label
 
 
 def get_calendar_interval(hour: int | None, minute: int | None) -> str:
@@ -157,7 +157,13 @@ def send_email(subject: str, contents: str):
 
 
 def get_log_path() -> Path:
-    return Path("/tmp") / f"{get_app_name()}.log"
+    return (
+        Path().home()
+        / ".local"
+        / "state"
+        / get_app_name()
+        / f"{get_app_name()}.log"
+    )
 
 
 def get_most_recent_log(text: str) -> list[str]:

@@ -93,9 +93,9 @@ fn next() -> Result<()> {
         .upcoming(Local::now().timezone())
         .next()
     {
-        let period = if next.hour12().0 { "PM" } else { "AM" };
+        let period = if next.hour12().0 { "pm" } else { "am" };
 
-        println!("{:02}:{:02} {}", next.hour12().1, next.minute(), period);
+        println!("{:02}:{:02}{}", next.hour12().1, next.minute(), period);
     }
 
     Ok(())

@@ -128,7 +128,8 @@ def import_command(
         )
         shared_directory_files = tuple(file for file in sorted(globs))
         imported_files_file = (
-            Path.home() / f".local/share/{get_app_name()}/imported_files"
+            Path.home()
+            / f".local/state/{get_app_name()}/{get_app_name()}-imported-files.log"
         )
         if imported_files_file.exists():
             imported_files = imported_files_file.read_text().splitlines()
