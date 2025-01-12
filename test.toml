@@ -1,6 +1,0 @@
-shared_directories = ["~/Dropbox/Ralph-MichaelC"]
-ignored_paths = [
-  "~/Dropbox/Ralph-MichaelC/Icon\r",
-  "~/Dropbox/Ralph-MichaelC/.DS_Store",
-]
-local_directory = "/Volumes/G-DRIVE Thunderbolt 3/Music"

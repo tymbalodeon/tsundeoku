@@ -8,7 +8,7 @@ use anyhow::{Context, Result};
 use bat::PrettyPrinter;
 use clap::{Subcommand, ValueEnum};
 use serde::{Deserialize, Serialize};
-use toml::Table;
+use toml::{Table, Value};
 
 use crate::commands::import::get_log_path;
 use crate::LogLevel;
@@ -22,10 +22,11 @@ pub struct ConfigFile {
     pub schedule_interval: cron::Schedule,
 }
 
-fn expand_path(path: &Path) -> PathBuf {
-    shellexpand::tilde(&path.display().to_string())
-        .to_string()
-        .into()
+fn expand_path(path: &Value) -> Result<PathBuf> {
+    Ok(PathBuf::from_str(&shellexpand::tilde(
+        path.as_str()
+            .context(format!("failed to parse path {path}"))?,
+    ))?)
 }
 
 fn get_paths(config_items: &Table, key: &str) -> Result<Option<Vec<PathBuf>>> {
@@ -33,10 +34,10 @@ fn get_paths(config_items: &Table, key: &str) -> Result<Option<Vec<PathBuf>>> {
         Ok(Some(
             paths
                 .as_array()
-                .context(format!("failed to get '{key}' value"))?
+                .context("YO")?
                 .iter()
-                .map(|path| expand_path(Path::new(&path.to_string())))
-                .collect(),
+                .filter_map(|path| expand_path(path).ok())
+                .collect::<Vec<PathBuf>>(),
         ))
     } else {
         Ok(None)
