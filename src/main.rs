@@ -1,6 +1,8 @@
 mod commands;
 
+use std::fs::File;
 // use std::fs::read_to_string;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::string::ToString;
 use std::vec::Vec;
@@ -81,7 +83,7 @@ struct Cli {
     config_file: Option<String>,
 }
 
-fn get_home_dir() -> Result<PathBuf> {
+fn get_home_directory() -> Result<PathBuf> {
     home_dir().context("could not determine $HOME directory")
 }
 
@@ -95,7 +97,11 @@ pub enum LogLevel {
     Error,
 }
 
-pub fn print_message<T: AsRef<str>>(message: T, level: &LogLevel) {
+pub fn log<T: AsRef<str>>(
+    message: T,
+    level: &LogLevel,
+    log_file: &mut File,
+) -> Result<()> {
     let label = match level {
         LogLevel::Import => "   Importing".green().to_string(),
         LogLevel::Warning => format!("{}:", "warning".yellow()),
@@ -104,10 +110,14 @@ pub fn print_message<T: AsRef<str>>(message: T, level: &LogLevel) {
 
     let message = format!("{} {}", label.bold(), message.as_ref());
 
-    match level {
-        LogLevel::Error => eprintln!("{message}"),
-        _ => println!("{message}"),
+    if matches!(level, LogLevel::Import) {
+        println!("{message}");
+    } else {
+        log_file.write_all(message.as_bytes())?;
+        eprintln!("{message}");
     }
+
+    Ok(())
 }
 
 fn main() -> Result<()> {
@@ -116,7 +126,7 @@ fn main() -> Result<()> {
     let config_path = cli.config_file.as_ref().map_or_else(
         || {
             Ok::<String, Error>(
-                get_home_dir()?
+                get_home_directory()?
                     .join(".config")
                     .join(get_app_name())
                     .join(format!("{}.toml", get_app_name()))

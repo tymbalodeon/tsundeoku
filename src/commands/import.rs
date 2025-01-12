@@ -13,9 +13,9 @@ use symphonia::core::probe::Hint;
 use walkdir::WalkDir;
 
 use crate::commands::config::ConfigFile;
-use crate::print_message;
+use crate::log;
 use crate::LogLevel;
-use crate::{get_app_name, get_home_dir};
+use crate::{get_app_name, get_home_directory};
 
 fn get_tag_or_unknown(tags: &[Tag], tag_name: StandardTagKey) -> String {
     tags.iter()
@@ -62,6 +62,7 @@ fn copy_file(
     file: &PathBuf,
     local_directory: PathBuf,
     imported_files_log: &mut File,
+    error_log: &mut File,
     dry_run: bool,
     verbose: bool,
 ) -> Result<()> {
@@ -83,13 +84,14 @@ fn copy_file(
         &MetadataOptions::default(),
     ) else {
         if verbose {
-            print_message(
+            log(
                 format!(
                     "failed to read audio file metadata for {}",
                     file.as_path().display()
                 ),
                 &LogLevel::Warning,
-            );
+                error_log,
+            )?;
         }
 
         return Ok(());
@@ -118,7 +120,7 @@ fn copy_file(
     if dry_run {
         println!("{}", file.display());
     } else {
-        print_message(file.display().to_string(), &LogLevel::Import);
+        log(file.display().to_string(), &LogLevel::Import, error_log)?;
 
         let file_name = get_file_name(file)?;
         let mut new_file = local_directory;
@@ -190,11 +192,19 @@ fn get_config_value<'a, T>(
     override_value.map_or(config_value, |value| value)
 }
 
+fn get_state_directory() -> Result<PathBuf> {
+    Ok(get_home_directory()?
+        .join(".local/state")
+        .join(get_app_name()))
+}
+
 fn get_imported_files_path() -> Result<PathBuf> {
-    Ok(get_home_dir()?
-        .join(".local/share")
-        .join(get_app_name())
-        .join("imported_files"))
+    Ok(get_state_directory()?
+        .join(format!("{}-imported-files.log", get_app_name())))
+}
+
+pub fn get_log_path() -> Result<PathBuf> {
+    Ok(get_state_directory()?.join(format!("{}.log", get_app_name())))
 }
 
 fn sync_imported_files(
@@ -284,20 +294,25 @@ pub fn import(
         .append(true)
         .open(imported_files_path)?;
 
+    let mut log_file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(get_log_path()?)?;
+
     for file in files {
         if let Err(error) = copy_file(
             &file,
             local_directory.to_owned(),
             &mut imported_files_log,
+            &mut log_file,
             dry_run,
             verbose,
         ) {
-            print_message(error.to_string(), &LogLevel::Error);
-
-            print_message(
-                file.as_path().display().to_string(),
+            log(
+                format!("{error}: {}", file.as_path().display()),
                 &LogLevel::Error,
-            );
+                &mut log_file,
+            )?;
         }
     }
 

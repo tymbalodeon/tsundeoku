@@ -7,7 +7,7 @@ use chrono::{Local, Timelike};
 use clap::Subcommand;
 use serde::Deserialize;
 
-use crate::{get_app_name, get_home_dir};
+use crate::{get_app_name, get_home_directory};
 
 #[derive(Subcommand, Debug)]
 #[command(arg_required_else_help = true)]
@@ -29,12 +29,18 @@ pub enum Schedule {
 }
 
 fn get_plist_path(file_name: &str) -> Result<PathBuf> {
-    Ok(get_home_dir()?.join("Library/LaunchAgents").join(file_name))
+    Ok(get_home_directory()?
+        .join("Library/LaunchAgents")
+        .join(file_name))
 }
 
 fn get_app_plist_file_name() -> String {
     format!("com.{}.import.plist", get_app_name())
 }
+
+// fn get_app_plist_file_name() -> String {
+//     format!("com.{}.import.plist", get_app_name())
+// }
 
 fn is_scheduled(file_name: &str, plist_contents: &str) -> bool {
     plist_contents
@@ -44,6 +50,13 @@ fn is_scheduled(file_name: &str, plist_contents: &str) -> bool {
         .count()
         == 1
 }
+
+// fn load_plist() {
+//     Command::new("launchctl")
+//         .arg("load")
+//         .arg(&app_plist)
+//         .status()?;
+// }
 
 fn on(frequency: Option<&String>) {
     println!("enabled scheduled imports at frequency {frequency:?}.");
@@ -116,6 +129,8 @@ fn status() -> Result<()> {
             println!("import is scheduled for every hour");
         }
     }
+
+    println!("[{}]", Local::now().format("%Y-%m-%d %H:%M:%S"));
 
     Ok(())
 }

@@ -1,5 +1,5 @@
 use std::env::var;
-use std::fs::read_to_string;
+use std::fs::{read_to_string, OpenOptions};
 use std::path::{absolute, Path, PathBuf};
 use std::process::Command;
 
@@ -8,7 +8,8 @@ use bat::PrettyPrinter;
 use clap::{Subcommand, ValueEnum};
 use serde::{Deserialize, Serialize};
 
-use crate::print_message;
+use crate::commands::import::get_log_path;
+use crate::log;
 use crate::LogLevel;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -152,7 +153,12 @@ pub fn config(
             } else if let Err(error) =
                 print_config(PrettyPrinter::new().input_file(config_path))
             {
-                print_message(error.to_string(), &LogLevel::Warning);
+                let mut log_file = OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(get_log_path()?)?;
+
+                log(error.to_string(), &LogLevel::Warning, &mut log_file)?;
                 println!("{config_values:#?}");
             }
         }
