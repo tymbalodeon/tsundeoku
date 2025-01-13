@@ -13,9 +13,8 @@ use symphonia::core::probe::Hint;
 use walkdir::WalkDir;
 
 use crate::commands::config::ConfigFile;
-use crate::log;
 use crate::LogLevel;
-use crate::{get_app_name, get_state_directory};
+use crate::{get_imported_files_path, log};
 
 fn get_tag_or_unknown(tags: &[Tag], tag_name: StandardTagKey) -> String {
     tags.iter()
@@ -190,11 +189,6 @@ fn get_config_value<'a, T>(
     config_value: &'a T,
 ) -> &'a T {
     override_value.map_or(config_value, |value| value)
-}
-
-fn get_imported_files_path() -> Result<PathBuf> {
-    Ok(get_state_directory()?
-        .join(format!("{}-imported-files.log", get_app_name())))
 }
 
 fn sync_imported_files(

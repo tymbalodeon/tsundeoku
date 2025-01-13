@@ -1,6 +1,6 @@
 mod commands;
 
-use std::fs::{File, OpenOptions};
+use std::fs::{read_to_string, File, OpenOptions};
 // use std::fs::read_to_string;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -59,6 +59,9 @@ enum Commands {
         #[arg(long)]
         verbose: bool,
     },
+
+    /// Show shared directory files that have been imported
+    Imported,
 
     /// Show import logs
     Logs,
@@ -149,6 +152,11 @@ pub fn get_state_directory() -> Result<PathBuf> {
         .join(get_app_name()))
 }
 
+fn get_imported_files_path() -> Result<PathBuf> {
+    Ok(get_state_directory()?
+        .join(format!("{}-imported-files.log", get_app_name())))
+}
+
 fn get_log_path() -> Result<PathBuf> {
     Ok(get_state_directory()?.join(format!("{}.log", get_app_name())))
 }
@@ -188,6 +196,20 @@ fn main() -> Result<()> {
                 *force,
                 *verbose,
             ),
+
+            Some(Commands::Imported) => {
+                let imported_files =
+                    read_to_string(get_imported_files_path()?)?;
+
+                let mut lines: Vec<&str> =
+                    imported_files.trim().lines().collect();
+
+                lines.sort_unstable();
+
+                println!("{}", lines.join("\n"));
+
+                Ok(())
+            }
 
             Some(Commands::Logs) => {
                 todo!();
