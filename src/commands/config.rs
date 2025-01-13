@@ -10,9 +10,8 @@ use clap::{Subcommand, ValueEnum};
 use serde::{Deserialize, Serialize};
 use toml::{Table, Value};
 
-use crate::commands::import::get_log_path;
-use crate::LogLevel;
 use crate::{get_home_directory, log};
+use crate::{get_log_path, LogLevel};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConfigFile {

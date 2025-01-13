@@ -15,7 +15,7 @@ use walkdir::WalkDir;
 use crate::commands::config::ConfigFile;
 use crate::log;
 use crate::LogLevel;
-use crate::{get_app_name, get_home_directory};
+use crate::{get_app_name, get_state_directory};
 
 fn get_tag_or_unknown(tags: &[Tag], tag_name: StandardTagKey) -> String {
     tags.iter()
@@ -192,19 +192,9 @@ fn get_config_value<'a, T>(
     override_value.map_or(config_value, |value| value)
 }
 
-fn get_state_directory() -> Result<PathBuf> {
-    Ok(get_home_directory()?
-        .join(".local/state")
-        .join(get_app_name()))
-}
-
 fn get_imported_files_path() -> Result<PathBuf> {
     Ok(get_state_directory()?
         .join(format!("{}-imported-files.log", get_app_name())))
-}
-
-pub fn get_log_path() -> Result<PathBuf> {
-    Ok(get_state_directory()?.join(format!("{}.log", get_app_name())))
 }
 
 fn sync_imported_files(
@@ -237,6 +227,7 @@ pub fn import(
     shared_directories: Option<&Vec<PathBuf>>,
     ignored_paths: Option<&Vec<PathBuf>>,
     local_directory: Option<&PathBuf>,
+    log_file: &mut File,
     dry_run: bool,
     force: bool,
     verbose: bool,
@@ -294,24 +285,19 @@ pub fn import(
         .append(true)
         .open(imported_files_path)?;
 
-    let mut log_file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(get_log_path()?)?;
-
     for file in files {
         if let Err(error) = copy_file(
             &file,
             local_directory.to_owned(),
             &mut imported_files_log,
-            &mut log_file,
+            log_file,
             dry_run,
             verbose,
         ) {
             log(
                 format!("{error}: {}", file.as_path().display()),
                 &LogLevel::Error,
-                &mut log_file,
+                log_file,
             )?;
         }
     }

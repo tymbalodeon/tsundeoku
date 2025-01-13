@@ -1,9 +1,10 @@
 mod commands;
 
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 // use std::fs::read_to_string;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::string::ToString;
 use std::vec::Vec;
 
@@ -120,68 +121,92 @@ pub fn log<T: AsRef<str>>(
     Ok(())
 }
 
-fn main() -> Result<()> {
-    let cli = Cli::parse();
-
-    let config_path = cli.config_file.as_ref().map_or_else(
+fn get_config_file(config_file: Option<&String>) -> Result<PathBuf> {
+    config_file.map_or_else(
         || {
-            Ok::<String, Error>(
+            Ok::<PathBuf, Error>(
                 get_home_directory()?
                     .join(".config")
                     .join(get_app_name())
-                    .join(format!("{}.toml", get_app_name()))
-                    .display()
-                    .to_string(),
+                    .join(format!("{}.toml", get_app_name())),
             )
         },
         |config_path| {
-            Ok(Path::new(config_path)
-                .parse_dot()?
-                .to_str()
-                .context(format!("invalid config file path {config_path}"))?
-                .to_string())
+            Ok(PathBuf::from_str(
+                Path::new(config_path)
+                    .parse_dot()
+                    .context("the")?
+                    .to_str()
+                    .context("YO")?,
+            )?)
         },
-    )?;
+    )
+}
 
-    let config_path = Path::new(&config_path);
-    let config_values = ConfigFile::from_file(config_path)?;
+pub fn get_state_directory() -> Result<PathBuf> {
+    Ok(get_home_directory()?
+        .join(".local/state")
+        .join(get_app_name()))
+}
 
-    match &cli.command {
-        Some(Commands::Config {
-            command: Some(command),
-        }) => config(command, config_path, &config_values),
+fn get_log_path() -> Result<PathBuf> {
+    Ok(get_state_directory()?.join(format!("{}.log", get_app_name())))
+}
 
-        Some(Commands::Import {
-            shared_directories,
-            ignored_paths,
-            local_directory,
-            dry_run,
-            no_reformat: _,
-            force,
-            verbose,
-        }) => import(
-            &config_values,
-            shared_directories.as_ref(),
-            ignored_paths.as_ref(),
-            local_directory.as_ref(),
-            *dry_run,
-            *force,
-            *verbose,
-        ),
+fn main() -> Result<()> {
+    let cli = Cli::parse();
 
-        Some(Commands::Logs) => {
-            todo!();
-            // if let Ok(file) = read_to_string(format!("/tmp/{}.log", get_app_name())) {
-            //     println!("{file}");
-            // }
-        }
+    let mut log_file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(get_log_path()?)?;
 
-        Some(Commands::Schedule { command }) => {
-            schedule(command.as_ref())?;
+    if let Ok(config_path) = get_config_file(cli.config_file.as_ref()) {
+        let config_path = Path::new(&config_path);
+        let config_values = ConfigFile::from_file(config_path)?;
 
-            Ok(())
-        }
+        match &cli.command {
+            Some(Commands::Config {
+                command: Some(command),
+            }) => config(command, config_path, &config_values),
 
-        _ => todo!(),
-    }
+            Some(Commands::Import {
+                shared_directories,
+                ignored_paths,
+                local_directory,
+                dry_run,
+                no_reformat: _,
+                force,
+                verbose,
+            }) => import(
+                &config_values,
+                shared_directories.as_ref(),
+                ignored_paths.as_ref(),
+                local_directory.as_ref(),
+                &mut log_file,
+                *dry_run,
+                *force,
+                *verbose,
+            ),
+
+            Some(Commands::Logs) => {
+                todo!();
+                // if let Ok(file) = read_to_string(format!("/tmp/{}.log", get_app_name())) {
+                //     println!("{file}");
+                // }
+            }
+
+            Some(Commands::Schedule { command }) => {
+                schedule(command.as_ref())?;
+
+                Ok(())
+            }
+
+            _ => todo!(),
+        }?;
+    } else {
+        log("bad", &LogLevel::Error, &mut log_file)?;
+    };
+
+    Ok(())
 }
