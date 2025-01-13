@@ -53,10 +53,6 @@ enum Commands {
         #[arg(long)]
         #[arg(short)]
         force: bool,
-
-        #[arg(long)]
-        #[arg(long)]
-        verbose: bool,
     },
 
     /// Show shared directory files that have been imported
@@ -184,7 +180,6 @@ fn main() -> Result<()> {
                 dry_run,
                 no_reformat: _,
                 force,
-                verbose,
             }) => import(
                 &config_values,
                 shared_directories.as_ref(),
@@ -193,7 +188,6 @@ fn main() -> Result<()> {
                 &mut log_file,
                 *dry_run,
                 *force,
-                *verbose,
             ),
 
             Some(Commands::Imported) => {
