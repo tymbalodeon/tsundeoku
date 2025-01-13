@@ -227,11 +227,10 @@ fn main() -> Result<()> {
             _ => todo!(),
         }?;
     } else {
-        let message = if let Some(config_file) = cli.config_file {
-            format!("{config_file} does not exist")
-        } else {
-            "invalid value for `--config-file`".to_string()
-        };
+        let message = cli.config_file.map_or_else(
+            || "invalid value for `--config-file`".to_string(),
+            |config_file| format!("{config_file} does not exist"),
+        );
 
         log(message, &LogLevel::Error, &mut log_file)?;
     };
