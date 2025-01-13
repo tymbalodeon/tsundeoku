@@ -81,14 +81,31 @@ fn copy_file(
         &FormatOptions::default(),
         &MetadataOptions::default(),
     ) else {
-        log(
-            format!(
-                "failed to read audio file metadata for {}",
-                file.as_path().display()
-            ),
-            &LogLevel::Warning,
-            error_log,
-        )?;
+        let should_warn = if let Some(extension) = file.extension() {
+            if let Some(extension) = extension.to_str() {
+                [
+                    "aac", "adpcm", "aiff", "alac", "caf", "flac", "mkv",
+                    "mp1", "mp2", "mp3", "mp4", "ogg", "vorbis", "wav",
+                    "webm",
+                ]
+                .contains(&extension)
+            } else {
+                true
+            }
+        } else {
+            true
+        };
+
+        if should_warn {
+            log(
+                format!(
+                    "failed to read audio file metadata for {}",
+                    file.as_path().display()
+                ),
+                &LogLevel::Warning,
+                error_log,
+            )?;
+        }
 
         return Ok(());
     };
