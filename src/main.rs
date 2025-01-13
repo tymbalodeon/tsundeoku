@@ -216,13 +216,9 @@ fn main() -> Result<()> {
                 Ok(())
             }
 
-            Some(Commands::Schedule { command }) => {
-                schedule(command.as_ref())?;
+            Some(Commands::Schedule { command }) => schedule(command.as_ref()),
 
-                Ok(())
-            }
-
-            _ => todo!(),
+            _ => Ok(()),
         }?;
     } else {
         let message = cli.config_file.map_or_else(
