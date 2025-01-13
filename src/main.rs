@@ -1,7 +1,6 @@
 mod commands;
 
 use std::fs::{read_to_string, File, OpenOptions};
-// use std::fs::read_to_string;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -212,10 +211,9 @@ fn main() -> Result<()> {
             }
 
             Some(Commands::Logs) => {
-                todo!();
-                // if let Ok(file) = read_to_string(format!("/tmp/{}.log", get_app_name())) {
-                //     println!("{file}");
-                // }
+                println!("{}", read_to_string(get_log_path()?)?.trim());
+
+                Ok(())
             }
 
             Some(Commands::Schedule { command }) => {
