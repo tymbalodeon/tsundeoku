@@ -81,20 +81,16 @@ fn copy_file(
         &FormatOptions::default(),
         &MetadataOptions::default(),
     ) else {
-        let should_warn = if let Some(extension) = file.extension() {
-            if let Some(extension) = extension.to_str() {
+        let should_warn = file.extension().map_or(true, |extension| {
+            extension.to_str().map_or(true, |extension| {
                 [
                     "aac", "adpcm", "aiff", "alac", "caf", "flac", "mkv",
                     "mp1", "mp2", "mp3", "mp4", "ogg", "vorbis", "wav",
                     "webm",
                 ]
                 .contains(&extension)
-            } else {
-                true
-            }
-        } else {
-            true
-        };
+            })
+        });
 
         if should_warn {
             log(
