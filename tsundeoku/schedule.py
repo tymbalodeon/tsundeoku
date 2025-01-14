@@ -143,7 +143,7 @@ def load_plist(hour: int | None, minute: int | None):
 def stamp_logs() -> None:
     with open(get_log_path(), "a") as log:
         log.write(
-            f"---- {datetime.now().strftime("%Y-%m-%d %I:%M %p")} ----\n"
+            f"---- {datetime.now().strftime('%Y-%m-%d %I:%M %p')} ----\n"
         )
 
 
