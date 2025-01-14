@@ -12,9 +12,8 @@ use symphonia::core::meta::{MetadataOptions, StandardTagKey, Tag};
 use symphonia::core::probe::Hint;
 use walkdir::WalkDir;
 
-use crate::commands::config::ConfigFile;
-use crate::LogLevel;
-use crate::{get_imported_files_path, log};
+use crate::commands::config::{get_config_value, ConfigFile};
+use crate::{get_imported_files_path, log, LogLevel};
 
 fn get_tag_or_unknown(tags: &[Tag], tag_name: StandardTagKey) -> String {
     tags.iter()
@@ -192,13 +191,6 @@ fn copy_file(
     }
 
     Ok(())
-}
-
-fn get_config_value<'a, T>(
-    override_value: Option<&'a T>,
-    config_value: &'a T,
-) -> &'a T {
-    override_value.map_or(config_value, |value| value)
 }
 
 fn sync_imported_files(

@@ -210,7 +210,9 @@ fn main() -> Result<()> {
                 Ok(())
             }
 
-            Some(Commands::Schedule { command }) => schedule(command.as_ref()),
+            Some(Commands::Schedule { command }) => {
+                schedule(&config_values, command.as_ref())
+            }
 
             _ => Ok(()),
         }?;

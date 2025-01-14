@@ -13,6 +13,30 @@ use toml::{Table, Value};
 use crate::{get_home_directory, log};
 use crate::{get_log_path, LogLevel};
 
+#[derive(Clone, Debug, ValueEnum)]
+pub enum ConfigKey {
+    SharedDirectories,
+    IgnoredPaths,
+    LocalDirectory,
+    ScheduleInterval,
+}
+
+#[derive(Subcommand, Debug)]
+#[command(arg_required_else_help = true)]
+pub enum Config {
+    /// Open config file in $EDITOR
+    Edit,
+
+    /// Show config file path
+    Path,
+
+    /// Show config values
+    Show {
+        // Show the value for a particular key
+        key: Option<ConfigKey>,
+    },
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConfigFile {
     pub shared_directories: Vec<PathBuf>,
@@ -88,28 +112,11 @@ impl ConfigFile {
     }
 }
 
-#[derive(Clone, Debug, ValueEnum)]
-pub enum ConfigKey {
-    SharedDirectories,
-    IgnoredPaths,
-    LocalDirectory,
-    ScheduleInterval,
-}
-
-#[derive(Subcommand, Debug)]
-#[command(arg_required_else_help = true)]
-pub enum Config {
-    /// Open config file in $EDITOR
-    Edit,
-
-    /// Show config file path
-    Path,
-
-    /// Show config values
-    Show {
-        // Show the value for a particular key
-        key: Option<ConfigKey>,
-    },
+pub fn get_config_value<'a, T>(
+    override_value: Option<&'a T>,
+    config_value: &'a T,
+) -> &'a T {
+    override_value.map_or(config_value, |value| value)
 }
 
 fn get_path_vector_display(vector: &[PathBuf]) -> String {

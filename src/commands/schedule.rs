@@ -1,5 +1,5 @@
 use std::process::Command;
-use std::str::{self, FromStr};
+use std::str::{self};
 use std::{fs::remove_file, path::PathBuf};
 
 use anyhow::Result;
@@ -7,6 +7,7 @@ use chrono::{Local, Timelike};
 use clap::Subcommand;
 use serde::Deserialize;
 
+use crate::commands::config::{get_config_value, ConfigFile};
 use crate::{get_app_name, get_home_directory};
 
 #[derive(Subcommand, Debug)]
@@ -25,7 +26,10 @@ pub enum Schedule {
     Status,
 
     /// Show next scheduled import
-    Next,
+    Next {
+        #[arg(long)]
+        interval: Option<cron::Schedule>,
+    },
 }
 
 fn get_plist_path(file_name: &str) -> Result<PathBuf> {
@@ -58,8 +62,11 @@ fn is_scheduled(file_name: &str, plist_contents: &str) -> bool {
 //         .status()?;
 // }
 
-fn on(interval: Option<&cron::Schedule>) {
-    println!("enabled scheduled imports for {interval:?}.");
+fn on(config_values: &ConfigFile, interval: Option<&cron::Schedule>) {
+    let interval =
+        get_config_value(interval, &config_values.schedule_interval);
+
+    println!("enabled scheduled imports for {interval:#?}.");
 }
 
 fn off() -> Result<()> {
@@ -88,20 +95,17 @@ struct ScheduledImport {
     start_calendar_interval: StartCalendarInterval,
 }
 
-fn next() -> Result<()> {
-    if let Some(next) = cron::Schedule::from_str("0 0 * * * *")?
-        .upcoming(Local::now().timezone())
-        .next()
-    {
+fn next(config_values: &ConfigFile, interval: Option<&cron::Schedule>) {
+    let interval =
+        get_config_value(interval, &config_values.schedule_interval);
+
+    if let Some(next) = interval.upcoming(Local::now().timezone()).next() {
         let period = if next.hour12().0 { "pm" } else { "am" };
 
         println!("{:02}:{:02}{}", next.hour12().1, next.minute(), period);
     }
-
-    Ok(())
 }
 
-// TODO
 fn status() -> Result<()> {
     let launchctl_list =
         &Command::new("launchctl").arg("list").output()?.stdout;
@@ -135,12 +139,20 @@ fn status() -> Result<()> {
     Ok(())
 }
 
-pub fn schedule(command: Option<&Schedule>) -> Result<()> {
+pub fn schedule(
+    config_values: &ConfigFile,
+    command: Option<&Schedule>,
+) -> Result<()> {
     match command {
-        Some(Schedule::On { interval }) => on(interval.as_ref()),
+        Some(Schedule::On { interval }) => {
+            on(config_values, interval.as_ref());
+        }
+
         Some(Schedule::Off) => off()?,
         Some(Schedule::Status) | None => status()?,
-        Some(Schedule::Next) => next()?,
+        Some(Schedule::Next { interval }) => {
+            next(config_values, interval.as_ref());
+        }
     };
 
     Ok(())
