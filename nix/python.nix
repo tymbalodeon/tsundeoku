@@ -1,8 +1,7 @@
 {pkgs}: {
   packages = with pkgs; [
     nodePackages.pnpm
-    # py-spy
-    python311
+    python313
     ruff
     uv
   ];

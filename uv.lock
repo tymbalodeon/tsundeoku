@@ -172,7 +172,7 @@ wheels = [
 
 [[package]]
 name = "cyclopts"
-version = "3.1.4"
+version = "3.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -180,9 +180,9 @@ dependencies = [
     { name = "rich" },
     { name = "rich-rst" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/44/f9/f1fc73471a2b2e372294e8517d1d71d565dc8725c1611d5d8ade5f244137/cyclopts-3.1.4.tar.gz", hash = "sha256:9e9c0fef61bec40e4a6aa9412920a804fb5b6750c77e4efd5e148acb2de22e90", size = 60476 }
+sdist = { url = "https://files.pythonhosted.org/packages/b7/9d/62598810c5cffa730ddc06139d706cc2387012d5414a09d31b256d41e10a/cyclopts-3.2.0.tar.gz", hash = "sha256:e4f25c0bff51b9f3d8091c66012d1ea74c5a15eb9d6c6fb15e4048b0fb571822", size = 60705 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/54/a3/66a0aefafd171874e16460988046bf9aa42611832e2cd88b1b517b5215bf/cyclopts-3.1.4-py3-none-any.whl", hash = "sha256:8be071bdbd2eb22813dd810ed43d137cffec1aee0395240cf64fb8796bb22740", size = 69569 },
+    { url = "https://files.pythonhosted.org/packages/ab/c7/6a7a06db6d0c2faa534f6775bb7bdd53b9010ab50f540abdc56a622bb02b/cyclopts-3.2.0-py3-none-any.whl", hash = "sha256:a38fe407d576828edb8e94a90e291ff64696612d7a0f3716c1e29c34f2b2c1fb", size = 69808 },
 ]
 
 [[package]]
@@ -331,11 +331,11 @@ wheels = [
 
 [[package]]
 name = "more-itertools"
-version = "10.5.0"
+version = "10.6.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/51/78/65922308c4248e0eb08ebcbe67c95d48615cc6f27854b6f2e57143e9178f/more-itertools-10.5.0.tar.gz", hash = "sha256:5482bfef7849c25dc3c6dd53a6173ae4795da2a41a80faea6700d9f5846c5da6", size = 121020 }
+sdist = { url = "https://files.pythonhosted.org/packages/88/3b/7fa1fe835e2e93fd6d7b52b2f95ae810cf5ba133e1845f726f5a992d62c2/more-itertools-10.6.0.tar.gz", hash = "sha256:2cd7fad1009c31cc9fb6a035108509e6547547a7a738374f10bd49a09eb3ee3b", size = 125009 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/48/7e/3a64597054a70f7c86eb0a7d4fc315b8c1ab932f64883a297bdffeb5f967/more_itertools-10.5.0-py3-none-any.whl", hash = "sha256:037b0d3203ce90cca8ab1defbbdac29d5f993fc20131f3664dc8d6acfa872aef", size = 60952 },
+    { url = "https://files.pythonhosted.org/packages/23/62/0fe302c6d1be1c777cab0616e6302478251dfbf9055ad426f5d0def75c89/more_itertools-10.6.0-py3-none-any.whl", hash = "sha256:6eb054cb4b6db1473f6e15fcc676a08e4732548acd47c708f0e179c2c7c01e89", size = 63038 },
 ]
 
 [[package]]
