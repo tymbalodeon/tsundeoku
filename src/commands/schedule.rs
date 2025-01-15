@@ -63,9 +63,17 @@ fn is_scheduled(file_name: &str, plist_contents: &str) -> bool {
 //         .status()?;
 // }
 //
-//
-//
-//
+
+struct TimeUnits {
+    years: Option<Vec<u32>>,
+    days_of_week: Option<Vec<u32>>,
+    months: Option<Vec<u32>>,
+    days_of_month: Option<Vec<u32>>,
+    hours: Option<Vec<u32>>,
+    minutes: Option<Vec<u32>>,
+    seconds: Option<Vec<u32>>,
+}
+
 fn get_time_units(
     is_all: bool,
     time_units: &impl TimeUnitSpec,
@@ -77,41 +85,50 @@ fn get_time_units(
     }
 }
 
+impl TimeUnits {
+    fn from_schedule(schedule: &cron::Schedule) -> Self {
+        Self {
+            years: get_time_units(schedule.years().is_all(), schedule.years()),
+            days_of_week: get_time_units(
+                schedule.days_of_week().is_all(),
+                schedule.days_of_week(),
+            ),
+            months: get_time_units(
+                schedule.months().is_all(),
+                schedule.months(),
+            ),
+            days_of_month: get_time_units(
+                schedule.days_of_month().is_all(),
+                schedule.days_of_month(),
+            ),
+            hours: get_time_units(schedule.hours().is_all(), schedule.hours()),
+            minutes: get_time_units(
+                schedule.minutes().is_all(),
+                schedule.minutes(),
+            ),
+            seconds: get_time_units(
+                schedule.seconds().is_all(),
+                schedule.seconds(),
+            ),
+        }
+    }
+}
+
 // TODO
-fn on(config_values: &ConfigFile, interval: Option<&cron::Schedule>) {
-    let interval =
-        get_config_value(interval, &config_values.schedule_interval);
+fn on(config_values: &ConfigFile, schedule: Option<&cron::Schedule>) {
+    let schedule =
+        get_config_value(schedule, &config_values.schedule_interval);
 
-    let years = get_time_units(interval.years().is_all(), interval.years());
-
-    let days_of_week = get_time_units(
-        interval.days_of_week().is_all(),
-        interval.days_of_week(),
-    );
-
-    let months = get_time_units(interval.months().is_all(), interval.months());
-
-    let days_of_month = get_time_units(
-        interval.days_of_month().is_all(),
-        interval.days_of_month(),
-    );
-
-    let hours = get_time_units(interval.hours().is_all(), interval.hours());
-
-    let minutes =
-        get_time_units(interval.minutes().is_all(), interval.minutes());
-
-    let seconds =
-        get_time_units(interval.seconds().is_all(), interval.seconds());
+    let time_units = TimeUnits::from_schedule(schedule);
 
     // println!("enabled scheduled imports for {interval:#?}.");
-    println!("{years:?}");
-    println!("{days_of_week:?}");
-    println!("{months:?}");
-    println!("{days_of_month:?}");
-    println!("{hours:?}");
-    println!("{minutes:?}");
-    println!("{seconds:?}");
+    println!("{:?}", time_units.years);
+    println!("{:?}", time_units.days_of_week);
+    println!("{:?}", time_units.months);
+    println!("{:?}", time_units.days_of_month);
+    println!("{:?}", time_units.hours);
+    println!("{:?}", time_units.minutes);
+    println!("{:?}", time_units.seconds);
 }
 
 fn off() -> Result<()> {
@@ -140,11 +157,11 @@ struct ScheduledImport {
     start_calendar_interval: StartCalendarInterval,
 }
 
-fn next(config_values: &ConfigFile, interval: Option<&cron::Schedule>) {
-    let interval =
-        get_config_value(interval, &config_values.schedule_interval);
+fn next(config_values: &ConfigFile, schedule: Option<&cron::Schedule>) {
+    let schedule =
+        get_config_value(schedule, &config_values.schedule_interval);
 
-    if let Some(next) = interval.upcoming(Local::now().timezone()).next() {
+    if let Some(next) = schedule.upcoming(Local::now().timezone()).next() {
         let period = if next.hour12().0 { "pm" } else { "am" };
 
         println!("{:02}:{:02}{}", next.hour12().1, next.minute(), period);
