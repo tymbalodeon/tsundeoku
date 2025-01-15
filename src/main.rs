@@ -102,7 +102,7 @@ pub fn log<T: AsRef<str>>(
     log_file: &mut File,
 ) -> Result<()> {
     let label = match level {
-        LogLevel::Import => "   Importing".green().to_string(),
+        LogLevel::Import => "  Importing".green().to_string(),
         LogLevel::Warning => format!("{}:", "warning".yellow()),
         LogLevel::Error => format!("{}:", "error".red()),
     };

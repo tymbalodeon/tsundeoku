@@ -1,10 +1,11 @@
 use std::process::Command;
-use std::str::{self};
+use std::str;
 use std::{fs::remove_file, path::PathBuf};
 
 use anyhow::Result;
 use chrono::{Local, Timelike};
 use clap::Subcommand;
+use cron::TimeUnitSpec;
 use serde::Deserialize;
 
 use crate::commands::config::{get_config_value, ConfigFile};
@@ -61,12 +62,56 @@ fn is_scheduled(file_name: &str, plist_contents: &str) -> bool {
 //         .arg(&app_plist)
 //         .status()?;
 // }
+//
+//
+//
+//
+fn get_time_units(
+    is_all: bool,
+    time_units: &impl TimeUnitSpec,
+) -> Option<Vec<u32>> {
+    if is_all {
+        None
+    } else {
+        Some(time_units.iter().collect())
+    }
+}
 
+// TODO
 fn on(config_values: &ConfigFile, interval: Option<&cron::Schedule>) {
     let interval =
         get_config_value(interval, &config_values.schedule_interval);
 
-    println!("enabled scheduled imports for {interval:#?}.");
+    let years = get_time_units(interval.years().is_all(), interval.years());
+
+    let days_of_week = get_time_units(
+        interval.days_of_week().is_all(),
+        interval.days_of_week(),
+    );
+
+    let months = get_time_units(interval.months().is_all(), interval.months());
+
+    let days_of_month = get_time_units(
+        interval.days_of_month().is_all(),
+        interval.days_of_month(),
+    );
+
+    let hours = get_time_units(interval.hours().is_all(), interval.hours());
+
+    let minutes =
+        get_time_units(interval.minutes().is_all(), interval.minutes());
+
+    let seconds =
+        get_time_units(interval.seconds().is_all(), interval.seconds());
+
+    // println!("enabled scheduled imports for {interval:#?}.");
+    println!("{years:?}");
+    println!("{days_of_week:?}");
+    println!("{months:?}");
+    println!("{days_of_month:?}");
+    println!("{hours:?}");
+    println!("{minutes:?}");
+    println!("{seconds:?}");
 }
 
 fn off() -> Result<()> {
