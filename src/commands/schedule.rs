@@ -131,6 +131,7 @@ fn status() -> Result<()> {
     {
         println!("not scheduled");
     } else {
+        // TODO convert startcalendarinterval to cron
         let scheduled_import: ScheduledImport =
             plist::from_file(app_plist_file.display().to_string())?;
 
