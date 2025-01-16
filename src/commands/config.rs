@@ -70,10 +70,13 @@ fn get_paths(config_items: &Table, key: &str) -> Result<Option<Vec<PathBuf>>> {
 }
 
 fn get_cron_expression(description: &str) -> Result<String> {
-    match str_cron_syntax(description.to_string().as_str()) {
-        Ok(schedule_interval) => Ok(schedule_interval),
-        Err(_) => Err(anyhow!("invalid cron description")),
-    }
+    str_cron_syntax(description.to_string().as_str())
+        .map_or_else(|_| Err(anyhow!("invalid cron description")), Ok)
+}
+
+fn get_cron_description(expression: &str) -> Result<String> {
+    get_description_cron(expression)
+        .map_or_else(|_| Err(anyhow!("invalid cron expression")), Ok)
 }
 
 impl ConfigFile {
@@ -145,8 +148,8 @@ fn get_path_vector_display(vector: &[PathBuf]) -> String {
 pub fn get_config_value_display(
     config: &ConfigFile,
     key: &ConfigKey,
-) -> String {
-    match key {
+) -> Result<String> {
+    Ok(match key {
         ConfigKey::SharedDirectories => {
             get_path_vector_display(&config.shared_directories)
         }
@@ -160,9 +163,9 @@ pub fn get_config_value_display(
         }
 
         ConfigKey::ScheduleInterval => {
-            get_description_cron(config.schedule_interval.source()).unwrap()
+            get_cron_description(config.schedule_interval.source())?
         }
-    }
+    })
 }
 
 pub fn print_config(pretty_printer: &mut PrettyPrinter) -> Result<bool> {
@@ -189,7 +192,7 @@ pub fn config(
 
         Config::Show { key } => {
             if let Some(key) = key {
-                println!("{}", get_config_value_display(config_values, key));
+                println!("{}", get_config_value_display(config_values, key)?);
             } else if let Err(error) =
                 print_config(PrettyPrinter::new().input_file(config_path))
             {
