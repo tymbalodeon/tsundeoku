@@ -64,7 +64,6 @@ fn is_scheduled(file_name: &str, plist_contents: &str) -> bool {
 //         .arg(&app_plist)
 //         .status()?;
 // }
-//
 
 fn on(
     config_values: &ConfigFile,

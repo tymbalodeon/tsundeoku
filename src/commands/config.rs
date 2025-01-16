@@ -4,9 +4,11 @@ use std::path::{absolute, Path, PathBuf};
 use std::process::Command;
 use std::str::FromStr;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use bat::PrettyPrinter;
 use clap::{Subcommand, ValueEnum};
+use cron_descriptor::cronparser::cron_expression_descriptor::get_description_cron;
+use english_to_cron::str_cron_syntax;
 use serde::{Deserialize, Serialize};
 use toml::{Table, Value};
 
@@ -67,6 +69,13 @@ fn get_paths(config_items: &Table, key: &str) -> Result<Option<Vec<PathBuf>>> {
     }
 }
 
+fn get_cron_expression(description: &str) -> Result<String> {
+    match str_cron_syntax(description.to_string().as_str()) {
+        Ok(schedule_interval) => Ok(schedule_interval),
+        Err(_) => Err(anyhow!("invalid cron description")),
+    }
+}
+
 impl ConfigFile {
     pub fn from_file(config_path: &Path) -> Result<Self> {
         let file = read_to_string(config_path)?;
@@ -94,11 +103,17 @@ impl ConfigFile {
         let schedule_interval = if let Some(schedule_interval) =
             config_items.get("schedule_interval")
         {
-            cron::Schedule::from_str(
+            if let Ok(schedule_interval) = cron::Schedule::from_str(
                 schedule_interval
                     .as_str()
                     .context("failed to get 'schedule_interval' value")?,
-            )?
+            ) {
+                schedule_interval
+            } else {
+                cron::Schedule::from_str(&get_cron_expression(
+                    &schedule_interval.to_string(),
+                )?)?
+            }
         } else {
             cron::Schedule::from_str("0 0 * * * *")?
         };
@@ -144,7 +159,9 @@ pub fn get_config_value_display(
             config.local_directory.display().to_string()
         }
 
-        ConfigKey::ScheduleInterval => config.schedule_interval.to_string(),
+        ConfigKey::ScheduleInterval => {
+            get_description_cron(config.schedule_interval.source()).unwrap()
+        }
     }
 }
 

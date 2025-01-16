@@ -500,6 +500,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "english-to-cron"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c16423ac933fee80f05a52b435a912d5b08edbbbfe936e0042ebb3accdf303da"
+dependencies = [
+ "lazy_static",
+ "regex",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1865,6 +1875,7 @@ dependencies = [
  "colored",
  "cron",
  "cron-descriptor",
+ "english-to-cron",
  "home",
  "path-dedot",
  "plist",
