@@ -5,7 +5,9 @@ use std::{fs::remove_file, path::PathBuf};
 use anyhow::Result;
 use chrono::{Local, Timelike};
 use clap::Subcommand;
-use cron::TimeUnitSpec;
+use cron_descriptor::cronparser::cron_expression_descriptor::{
+    get_description_cron, ParseException,
+};
 use serde::Deserialize;
 
 use crate::commands::config::{get_config_value, ConfigFile};
@@ -64,71 +66,19 @@ fn is_scheduled(file_name: &str, plist_contents: &str) -> bool {
 // }
 //
 
-struct TimeUnits {
-    years: Option<Vec<u32>>,
-    days_of_week: Option<Vec<u32>>,
-    months: Option<Vec<u32>>,
-    days_of_month: Option<Vec<u32>>,
-    hours: Option<Vec<u32>>,
-    minutes: Option<Vec<u32>>,
-    seconds: Option<Vec<u32>>,
-}
+fn on(
+    config_values: &ConfigFile,
+    schedule: Option<&cron::Schedule>,
+) -> Result<(), ParseException> {
+    println!(
+        "{}",
+        get_description_cron(
+            get_config_value(schedule, &config_values.schedule_interval)
+                .source()
+        )?
+    );
 
-fn get_time_units(
-    is_all: bool,
-    time_units: &impl TimeUnitSpec,
-) -> Option<Vec<u32>> {
-    if is_all {
-        None
-    } else {
-        Some(time_units.iter().collect())
-    }
-}
-
-impl TimeUnits {
-    fn from_schedule(schedule: &cron::Schedule) -> Self {
-        Self {
-            years: get_time_units(schedule.years().is_all(), schedule.years()),
-            days_of_week: get_time_units(
-                schedule.days_of_week().is_all(),
-                schedule.days_of_week(),
-            ),
-            months: get_time_units(
-                schedule.months().is_all(),
-                schedule.months(),
-            ),
-            days_of_month: get_time_units(
-                schedule.days_of_month().is_all(),
-                schedule.days_of_month(),
-            ),
-            hours: get_time_units(schedule.hours().is_all(), schedule.hours()),
-            minutes: get_time_units(
-                schedule.minutes().is_all(),
-                schedule.minutes(),
-            ),
-            seconds: get_time_units(
-                schedule.seconds().is_all(),
-                schedule.seconds(),
-            ),
-        }
-    }
-}
-
-// TODO
-fn on(config_values: &ConfigFile, schedule: Option<&cron::Schedule>) {
-    let schedule =
-        get_config_value(schedule, &config_values.schedule_interval);
-
-    let time_units = TimeUnits::from_schedule(schedule);
-
-    // println!("enabled scheduled imports for {interval:#?}.");
-    println!("{:?}", time_units.years);
-    println!("{:?}", time_units.days_of_week);
-    println!("{:?}", time_units.months);
-    println!("{:?}", time_units.days_of_month);
-    println!("{:?}", time_units.hours);
-    println!("{:?}", time_units.minutes);
-    println!("{:?}", time_units.seconds);
+    Ok(())
 }
 
 fn off() -> Result<()> {
@@ -207,11 +157,13 @@ pub fn schedule(
 ) -> Result<()> {
     match command {
         Some(Schedule::On { interval }) => {
-            on(config_values, interval.as_ref());
+            // TODO handle this error
+            let _ = on(config_values, interval.as_ref());
         }
 
         Some(Schedule::Off) => off()?,
         Some(Schedule::Status) | None => status()?,
+
         Some(Schedule::Next { interval }) => {
             next(config_values, interval.as_ref());
         }

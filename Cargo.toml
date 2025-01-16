@@ -10,6 +10,7 @@ chrono = "0.4.39"
 clap = { version = "4.5.23", features = ["derive", "string"] }
 colored = "2.2.0"
 cron = { version = "0.14.0", features = ["serde"] }
+cron-descriptor = "0.1.1"
 home = "0.5.11"
 path-dedot = "3.1.1"
 plist = "1.7.0"
