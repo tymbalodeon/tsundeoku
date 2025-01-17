@@ -5,6 +5,7 @@ use std::{fs::remove_file, path::PathBuf};
 use anyhow::Result;
 use chrono::{Local, Timelike};
 use clap::Subcommand;
+use cron::TimeUnitSpec;
 use cron_descriptor::cronparser::cron_expression_descriptor::{
     get_description_cron, ParseException,
 };
@@ -65,17 +66,34 @@ fn is_scheduled(file_name: &str, plist_contents: &str) -> bool {
 //         .status()?;
 // }
 
+fn get_time_unit_values(time_units: &impl TimeUnitSpec) -> Option<String> {
+    if time_units.is_all() {
+        None
+    } else {
+        Some(
+            time_units
+                .iter()
+                .map(|unit| unit.to_string())
+                .collect::<Vec<String>>()
+                .join(","),
+        )
+    }
+}
+
 fn on(
     config_values: &ConfigFile,
-    schedule: Option<&cron::Schedule>,
+    schedule_interval: Option<&cron::Schedule>,
 ) -> Result<(), ParseException> {
-    println!(
-        "{}",
-        get_description_cron(
-            get_config_value(schedule, &config_values.schedule_interval)
-                .source()
-        )?
-    );
+    let schedule =
+        get_config_value(schedule_interval, &config_values.schedule_interval);
+
+    let minutes = get_time_unit_values(schedule.minutes());
+    let hours = get_time_unit_values(schedule.hours());
+    let days_of_month = get_time_unit_values(schedule.days_of_month());
+    let days_of_week = get_time_unit_values(schedule.days_of_week());
+    let months = get_time_unit_values(schedule.months());
+
+    println!("{}", get_description_cron(schedule.source())?);
 
     Ok(())
 }
