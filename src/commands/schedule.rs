@@ -1,18 +1,17 @@
+use std::fs::File;
 use std::process::Command;
-use std::str;
+use std::{fs, str};
 use std::{fs::remove_file, path::PathBuf};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use chrono::{Local, Timelike};
 use clap::Subcommand;
 use cron::TimeUnitSpec;
-use cron_descriptor::cronparser::cron_expression_descriptor::{
-    get_description_cron, ParseException,
-};
+use cron_descriptor::cronparser::cron_expression_descriptor::get_description_cron;
 use serde::Deserialize;
 
 use crate::commands::config::{get_config_value, ConfigFile};
-use crate::{get_app_name, get_home_directory, get_log_path};
+use crate::{get_app_name, get_home_directory, get_log_path, log, LogLevel};
 
 #[derive(Subcommand, Debug)]
 #[command(arg_required_else_help = true)]
@@ -46,10 +45,6 @@ fn get_app_plist_file_name() -> String {
     format!("com.{}.import.plist", get_app_name())
 }
 
-// fn get_app_plist_file_name() -> String {
-//     format!("com.{}.import.plist", get_app_name())
-// }
-
 fn is_scheduled(file_name: &str, plist_contents: &str) -> bool {
     plist_contents
         .lines()
@@ -58,13 +53,6 @@ fn is_scheduled(file_name: &str, plist_contents: &str) -> bool {
         .count()
         == 1
 }
-
-// fn load_plist() {
-//     Command::new("launchctl")
-//         .arg("load")
-//         .arg(&app_plist)
-//         .status()?;
-// }
 
 #[derive(Debug)]
 enum CalendarInterval {
@@ -83,7 +71,7 @@ fn get_time_unit_values(
         None
     } else {
         Some(format!(
-            "\t\t<key>{:?}<key>\n\t\t\t<integer>{}</integer>",
+            "\t\t<key>{:?}</key>\n\t\t\t<integer>{}</integer>",
             name,
             time_units
                 .iter()
@@ -94,10 +82,12 @@ fn get_time_unit_values(
     }
 }
 
+// TODO don't re-write if already loaded?
 fn on(
     config_values: &ConfigFile,
     schedule_interval: Option<&cron::Schedule>,
-) -> Result<(), ParseException> {
+    log_file: &Option<File>,
+) -> Result<()> {
     let schedule =
         get_config_value(schedule_interval, &config_values.schedule_interval);
 
@@ -127,8 +117,7 @@ fn on(
             .collect::<Vec<String>>()
             .join("\n\n\t");
 
-    let plist = format!("
-<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+    let plist = format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
 <plist version=\"1.0\">
 	<dict>
@@ -136,14 +125,14 @@ fn on(
 		<string>com.{app_name}.import.plist</string>
 
 		<key>StandardOutPath</key>
-		<string>{log_path}/string>
+		<string>{log_path}</string>
 
 		<key>StandardErrorPath</key>
 		<string>{log_path}</string>
 
 		<key>StartCalendarInterval</key>
 		<dict>
-	    {calendar_intervals}
+	{calendar_intervals}
 		</dict>
 
 		<key>ProgramArguments</key>
@@ -151,29 +140,44 @@ fn on(
 			<string>{app_name} import</string>
 		</array>
 	</dict>
-</plist>
-    ",
-    app_name = get_app_name(),
-    log_path = get_log_path().unwrap().to_str().unwrap(),
-    calendar_intervals = calendar_intervals
-);
+</plist>",
+        app_name = get_app_name(),
+        log_path = get_log_path().unwrap().to_str().unwrap(),
+        calendar_intervals = calendar_intervals
+    );
 
-    println!("{plist}");
+    let app_plist = &get_plist_path(&get_app_plist_file_name())?;
 
-    println!("{}", get_description_cron(schedule.source())?);
+    off()?;
+
+    fs::write(
+        app_plist.to_str().context("failed to get plist path")?,
+        &plist,
+    )?;
+
+    Command::new("launchctl")
+        .arg("load")
+        .arg(app_plist)
+        .status()?;
+
+    match get_description_cron(schedule.source()) {
+        Ok(schedule_description) => println!("{schedule_description}"),
+        Err(error) => log(error.s, &LogLevel::Error, log_file),
+    }
 
     Ok(())
 }
 
+// TODO handle if file does not exist
 fn off() -> Result<()> {
-    let app_plist = get_plist_path(&get_app_plist_file_name())?;
+    let app_plist = &get_plist_path(&get_app_plist_file_name())?;
 
     Command::new("launchctl")
         .arg("unload")
-        .arg(&app_plist)
+        .arg(app_plist)
         .status()?;
 
-    remove_file(&app_plist)?;
+    remove_file(app_plist)?;
 
     Ok(())
 }
@@ -239,11 +243,11 @@ fn status() -> Result<()> {
 pub fn schedule(
     config_values: &ConfigFile,
     command: Option<&Schedule>,
+    log_file: &Option<File>,
 ) -> Result<()> {
     match command {
         Some(Schedule::On { interval }) => {
-            // TODO handle this error
-            let _ = on(config_values, interval.as_ref());
+            on(config_values, interval.as_ref(), log_file)?;
         }
 
         Some(Schedule::Off) => off()?,

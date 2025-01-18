@@ -2,7 +2,7 @@
   packages = with pkgs; [
     nodePackages.pnpm
     python313
-    ruff
+    # ruff
     uv
   ];
 }

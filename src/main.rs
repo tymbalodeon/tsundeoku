@@ -278,7 +278,7 @@ fn main() {
             }
 
             Some(Commands::Schedule { command }) => {
-                schedule(&config_values, command.as_ref())
+                schedule(&config_values, command.as_ref(), &log_file)
             }
 
             _ => Ok(()),
