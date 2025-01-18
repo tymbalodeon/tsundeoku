@@ -44,7 +44,7 @@ wheels = [
 
 [[package]]
 name = "bpython"
-version = "0.24"
+version = "0.25"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "curtsies" },
@@ -54,9 +54,9 @@ dependencies = [
     { name = "pyxdg" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cf/76/54e0964e2974becb673baca69417b6c6293e930d4ebcf2a2a68c1fe9704a/bpython-0.24.tar.gz", hash = "sha256:98736ffd7a8c48fd2bfb53d898a475f4241bde0b672125706af04d9d08fd3dbd", size = 222879 }
+sdist = { url = "https://files.pythonhosted.org/packages/ba/dd/cc02bf66f342a4673867fdf6c1f9fce90ec1e91e651b21bc4af4890101da/bpython-0.25.tar.gz", hash = "sha256:c246fc909ef6dcc26e9d8cb4615b0e6b1613f3543d12269b19ffd0782166c65b", size = 207610 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0c/d9/b42a98f329a61a1b0c7d335644025773b05837669f775851d7eaece7973d/bpython-0.24-py3-none-any.whl", hash = "sha256:0d196ae3d1ce3dcd559a3fb89ed2c468dfbd1504af0d680b906dd65a9c7a32eb", size = 194939 },
+    { url = "https://files.pythonhosted.org/packages/ba/74/5470df025854d5e213793b62cbea032fd66919562662955789fcc5dc17d6/bpython-0.25-py3-none-any.whl", hash = "sha256:28fd86008ca5ef6100ead407c9743aa60c51293a18ba5b18fcacea7f5b7f2257", size = 176131 },
 ]
 
 [[package]]
@@ -172,7 +172,7 @@ wheels = [
 
 [[package]]
 name = "cyclopts"
-version = "3.2.0"
+version = "3.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -180,9 +180,9 @@ dependencies = [
     { name = "rich" },
     { name = "rich-rst" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b7/9d/62598810c5cffa730ddc06139d706cc2387012d5414a09d31b256d41e10a/cyclopts-3.2.0.tar.gz", hash = "sha256:e4f25c0bff51b9f3d8091c66012d1ea74c5a15eb9d6c6fb15e4048b0fb571822", size = 60705 }
+sdist = { url = "https://files.pythonhosted.org/packages/d1/dd/723b3ea4d53eeebb41aa5b979404b24d76caa73e9d16a657037032e891d0/cyclopts-3.2.1.tar.gz", hash = "sha256:ca7ffc3acc0a10c6451a8af9efc7cc27617657d6027e53caba5b835cd3366577", size = 61274 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ab/c7/6a7a06db6d0c2faa534f6775bb7bdd53b9010ab50f540abdc56a622bb02b/cyclopts-3.2.0-py3-none-any.whl", hash = "sha256:a38fe407d576828edb8e94a90e291ff64696612d7a0f3716c1e29c34f2b2c1fb", size = 69808 },
+    { url = "https://files.pythonhosted.org/packages/99/76/af0da44b8352e54b5118b77f7737920eba7ddb2809a93c3b91f08a88870b/cyclopts-3.2.1-py3-none-any.whl", hash = "sha256:b31b767c6e71ea5f3ba688081be3913e16727fdd6a8c78455f080d4d4d705dd8", size = 70447 },
 ]
 
 [[package]]
