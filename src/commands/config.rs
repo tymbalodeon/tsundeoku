@@ -196,12 +196,14 @@ pub fn config(
             } else if let Err(error) =
                 print_config(PrettyPrinter::new().input_file(config_path))
             {
-                let mut log_file = OpenOptions::new()
-                    .create(true)
-                    .append(true)
-                    .open(get_log_path()?)?;
+                let log_file = Some(
+                    OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open(get_log_path()?)?,
+                );
 
-                log(error.to_string(), &LogLevel::Warning, &mut log_file)?;
+                log(error.to_string(), &LogLevel::Warning, &log_file);
                 println!("{config_values:#?}");
             }
         }

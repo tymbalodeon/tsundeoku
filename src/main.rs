@@ -96,11 +96,18 @@ pub enum LogLevel {
     Error,
 }
 
+fn print_error(message: &str) {
+    eprintln!(
+        "{}",
+        format!("{} {message}", format!("{}:", "error".red()).bold())
+    );
+}
+
 pub fn log<T: AsRef<str>>(
     message: T,
     level: &LogLevel,
-    log_file: &mut File,
-) -> Result<()> {
+    log_file: &Option<File>,
+) {
     let label = match level {
         LogLevel::Import => "  Importing".green().to_string(),
         LogLevel::Warning => format!("{}:", "warning".yellow()),
@@ -113,10 +120,17 @@ pub fn log<T: AsRef<str>>(
         println!("{message}");
     } else {
         eprintln!("{message}");
-        log_file.write_all(format!("{message}\n").as_bytes())?;
-    }
 
-    Ok(())
+        if let Some(mut log_file) = log_file.as_ref() {
+            if let Err(error) =
+                log_file.write_all(format!("{message}\n").as_bytes())
+            {
+                print_error(&error.to_string());
+            }
+        } else {
+            print_error("failed to write to log file");
+        }
+    }
 }
 
 fn get_config_file(config_file: Option<&String>) -> Result<PathBuf> {
@@ -156,19 +170,31 @@ fn get_log_path() -> Result<PathBuf> {
     Ok(get_state_directory()?.join(format!("{}.log", get_app_name())))
 }
 
-fn main() -> Result<()> {
+fn main() {
     let cli = Cli::parse();
 
-    let mut log_file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(get_log_path()?)?;
+    let log_file = if let Ok(log_path) = get_log_path() {
+        if let Ok(file) =
+            OpenOptions::new().create(true).append(true).open(log_path)
+        {
+            Some(file)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
 
     if let Ok(config_path) = get_config_file(cli.config_file.as_ref()) {
         let config_path = Path::new(&config_path);
-        let config_values = ConfigFile::from_file(config_path)?;
 
-        match &cli.command {
+        let Ok(config_values) = ConfigFile::from_file(config_path) else {
+            log("failed to read config file", &LogLevel::Error, &log_file);
+
+            return;
+        };
+
+        if let Err(error) = match &cli.command {
             Some(Commands::Config {
                 command: Some(command),
             }) => config(command, config_path, &config_values),
@@ -185,14 +211,38 @@ fn main() -> Result<()> {
                 shared_directories.as_ref(),
                 ignored_paths.as_ref(),
                 local_directory.as_ref(),
-                &mut log_file,
+                &log_file,
                 *dry_run,
                 *force,
             ),
 
             Some(Commands::Imported) => {
-                let imported_files =
-                    read_to_string(get_imported_files_path()?)?;
+                let imported_files = if let Ok(imported_files_path) =
+                    get_imported_files_path()
+                {
+                    if let Ok(imported_files) =
+                        read_to_string(imported_files_path)
+                    {
+                        imported_files
+                    } else {
+                        log(
+                            "failed to get imported files",
+                            &LogLevel::Error,
+                            &log_file,
+                        );
+
+                        return;
+                    }
+                } else {
+                    // TODO dry this up?
+                    log(
+                        "failed to get imported files",
+                        &LogLevel::Error,
+                        &log_file,
+                    );
+
+                    return;
+                };
 
                 let mut lines: Vec<&str> =
                     imported_files.trim().lines().collect();
@@ -205,7 +255,24 @@ fn main() -> Result<()> {
             }
 
             Some(Commands::Logs) => {
-                println!("{}", read_to_string(get_log_path()?)?.trim());
+                if let Ok(log_path) = get_log_path() {
+                    if let Ok(logs) = read_to_string(log_path) {
+                        println!("{}", logs.trim());
+                    } else {
+                        log(
+                            "failed to read logs",
+                            &LogLevel::Error,
+                            &log_file,
+                        );
+
+                        return;
+                    }
+                } else {
+                    // TODO dry this up?
+                    log("failed to read logs", &LogLevel::Error, &log_file);
+
+                    return;
+                };
 
                 Ok(())
             }
@@ -215,15 +282,15 @@ fn main() -> Result<()> {
             }
 
             _ => Ok(()),
-        }?;
+        } {
+            log(error.to_string(), &LogLevel::Error, &log_file);
+        }
     } else {
         let message = cli.config_file.map_or_else(
             || "invalid value for `--config-file`".to_string(),
             |config_file| format!("{config_file} does not exist"),
         );
 
-        log(message, &LogLevel::Error, &mut log_file)?;
+        log(message, &LogLevel::Error, &log_file);
     };
-
-    Ok(())
 }
