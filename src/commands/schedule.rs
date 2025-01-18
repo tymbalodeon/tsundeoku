@@ -66,17 +66,31 @@ fn is_scheduled(file_name: &str, plist_contents: &str) -> bool {
 //         .status()?;
 // }
 
-fn get_time_unit_values(time_units: &impl TimeUnitSpec) -> Option<String> {
+#[derive(Debug)]
+enum CalendarInterval {
+    Minute,
+    Hour,
+    Day,
+    Weekday,
+    Month,
+}
+
+fn get_time_unit_values(
+    time_units: &impl TimeUnitSpec,
+    name: &CalendarInterval,
+) -> Option<String> {
     if time_units.is_all() {
         None
     } else {
-        Some(
+        Some(format!(
+            "<key>{:?}<key>\n<integer>{}</integer>",
+            name,
             time_units
                 .iter()
                 .map(|unit| unit.to_string())
                 .collect::<Vec<String>>()
-                .join(","),
-        )
+                .join(",")
+        ))
     }
 }
 
@@ -87,11 +101,31 @@ fn on(
     let schedule =
         get_config_value(schedule_interval, &config_values.schedule_interval);
 
-    let minutes = get_time_unit_values(schedule.minutes());
-    let hours = get_time_unit_values(schedule.hours());
-    let days_of_month = get_time_unit_values(schedule.days_of_month());
-    let days_of_week = get_time_unit_values(schedule.days_of_week());
-    let months = get_time_unit_values(schedule.months());
+    let minutes =
+        get_time_unit_values(schedule.minutes(), &CalendarInterval::Minute);
+
+    let hours =
+        get_time_unit_values(schedule.hours(), &CalendarInterval::Hour);
+
+    let days_of_month =
+        get_time_unit_values(schedule.days_of_month(), &CalendarInterval::Day);
+
+    let days_of_week = get_time_unit_values(
+        schedule.days_of_week(),
+        &CalendarInterval::Weekday,
+    );
+
+    let months =
+        get_time_unit_values(schedule.months(), &CalendarInterval::Month);
+
+    let calendar_intervals =
+        [minutes, hours, days_of_month, days_of_week, months]
+            .iter()
+            .filter_map(|value| value.as_ref().map(std::string::ToString::to_string))
+            .collect::<Vec<String>>()
+            .join("\n");
+
+    println!("{calendar_intervals}");
 
     println!("{}", get_description_cron(schedule.source())?);
 
