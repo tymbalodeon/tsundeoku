@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::{fs, str};
 use std::{fs::remove_file, path::PathBuf};
 
@@ -168,16 +168,29 @@ fn on(
     Ok(())
 }
 
-// TODO handle if file does not exist
 fn off() -> Result<()> {
-    let app_plist = &get_plist_path(&get_app_plist_file_name())?;
+    let app_plist_file_name = &get_app_plist_file_name();
+    let app_plist = &get_plist_path(app_plist_file_name)?;
 
-    Command::new("launchctl")
-        .arg("unload")
-        .arg(app_plist)
-        .status()?;
+    if let Some(exit_code) = Command::new("launchctl")
+        .arg("list")
+        .arg(app_plist_file_name)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()?
+        .code()
+    {
+        if exit_code == 0 {
+            Command::new("launchctl")
+                .arg("unload")
+                .arg(app_plist)
+                .status()?;
+        }
+    }
 
-    remove_file(app_plist)?;
+    if app_plist.exists() {
+        remove_file(app_plist)?;
+    }
 
     Ok(())
 }
