@@ -12,7 +12,7 @@ use cron_descriptor::cronparser::cron_expression_descriptor::{
 use serde::Deserialize;
 
 use crate::commands::config::{get_config_value, ConfigFile};
-use crate::{get_app_name, get_home_directory};
+use crate::{get_app_name, get_home_directory, get_log_path};
 
 #[derive(Subcommand, Debug)]
 #[command(arg_required_else_help = true)]
@@ -83,7 +83,7 @@ fn get_time_unit_values(
         None
     } else {
         Some(format!(
-            "<key>{:?}<key>\n<integer>{}</integer>",
+            "\t\t<key>{:?}<key>\n\t\t\t<integer>{}</integer>",
             name,
             time_units
                 .iter()
@@ -121,11 +121,44 @@ fn on(
     let calendar_intervals =
         [minutes, hours, days_of_month, days_of_week, months]
             .iter()
-            .filter_map(|value| value.as_ref().map(std::string::ToString::to_string))
+            .filter_map(|value| {
+                value.as_ref().map(std::string::ToString::to_string)
+            })
             .collect::<Vec<String>>()
-            .join("\n");
+            .join("\n\n\t");
 
-    println!("{calendar_intervals}");
+    let plist = format!("
+<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
+	<dict>
+		<key>Label</key>
+		<string>com.{app_name}.import.plist</string>
+
+		<key>StandardOutPath</key>
+		<string>{log_path}/string>
+
+		<key>StandardErrorPath</key>
+		<string>{log_path}</string>
+
+		<key>StartCalendarInterval</key>
+		<dict>
+	    {calendar_intervals}
+		</dict>
+
+		<key>ProgramArguments</key>
+		<array>
+			<string>{app_name} import</string>
+		</array>
+	</dict>
+</plist>
+    ",
+    app_name = get_app_name(),
+    log_path = get_log_path().unwrap().to_str().unwrap(),
+    calendar_intervals = calendar_intervals
+);
+
+    println!("{plist}");
 
     println!("{}", get_description_cron(schedule.source())?);
 
