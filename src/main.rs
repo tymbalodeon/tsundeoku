@@ -1,6 +1,6 @@
 mod commands;
 
-use std::fs::{create_dir_all, read_to_string, File, OpenOptions};
+use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -10,7 +10,6 @@ use std::vec::Vec;
 use anyhow::{Context, Error, Result};
 use clap::{Parser, Subcommand};
 use colored::Colorize;
-use commands::schedule::{schedule, Schedule};
 use home::home_dir;
 use path_dedot::ParseDot;
 
@@ -18,6 +17,9 @@ use crate::commands::config::config;
 use crate::commands::config::Config;
 use crate::commands::config::ConfigFile;
 use crate::commands::import::import;
+use crate::commands::imported::imported;
+use crate::commands::logs::logs;
+use crate::commands::schedule::{schedule, Schedule};
 
 #[derive(Subcommand)]
 enum Commands {
@@ -107,7 +109,7 @@ pub fn log<T: AsRef<str>>(
     write: bool,
 ) {
     let label = match level {
-        LogLevel::Import => "  Importing".green().to_string(),
+        LogLevel::Import => "  Imported".green().to_string(),
         LogLevel::Warning => format!("{}:", "warning".yellow()),
         LogLevel::Error => format!("{}:", "error".red()),
     };
@@ -242,77 +244,13 @@ fn main() {
             Some(Commands::Imported) => {
                 warn_about_missing_shared_directories(&config_values);
 
-                let imported_files = if let Ok(imported_files_path) =
-                    get_imported_files_path()
-                {
-                    if imported_files_path.exists() {
-                        if let Ok(imported_files) =
-                            read_to_string(imported_files_path)
-                        {
-                            imported_files
-                        } else {
-                            log(
-                                "failed to get imported files",
-                                &LogLevel::Error,
-                                &log_file,
-                                true,
-                            );
-
-                            return;
-                        }
-                    } else {
-                        return;
-                    }
-                } else {
-                    // TODO dry this up?
-                    log(
-                        "failed to get imported files",
-                        &LogLevel::Error,
-                        &log_file,
-                        true,
-                    );
-
-                    return;
-                };
-
-                let mut lines: Vec<&str> =
-                    imported_files.trim().lines().collect();
-
-                lines.sort_unstable();
-
-                println!("{}", lines.join("\n"));
-
-                Ok(())
+                imported(&log_file)
             }
 
             Some(Commands::Logs) => {
                 warn_about_missing_shared_directories(&config_values);
 
-                if let Ok(log_path) = get_log_path() {
-                    if let Ok(logs) = read_to_string(log_path) {
-                        println!("{}", logs.trim());
-                    } else {
-                        log(
-                            "failed to read logs",
-                            &LogLevel::Error,
-                            &log_file,
-                            true,
-                        );
-
-                        return;
-                    }
-                } else {
-                    // TODO dry this up?
-                    log(
-                        "failed to read logs",
-                        &LogLevel::Error,
-                        &log_file,
-                        true,
-                    );
-
-                    return;
-                };
-
+                logs(&log_file);
                 Ok(())
             }
 
