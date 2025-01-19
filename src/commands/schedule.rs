@@ -142,7 +142,7 @@ fn on(
 	</dict>
 </plist>",
         app_name = get_app_name(),
-        log_path = get_log_path().unwrap().to_str().unwrap(),
+        log_path = get_log_path()?.to_str().context("failed to get log path")?,
         calendar_intervals = calendar_intervals
     );
 

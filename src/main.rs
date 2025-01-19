@@ -157,7 +157,7 @@ fn get_config_file(config_file: Option<&String>) -> Result<PathBuf> {
     )
 }
 
-pub fn get_state_directory() -> Result<PathBuf> {
+fn get_state_directory() -> Result<PathBuf> {
     let state_directory = get_home_directory()?
         .join(".local/state")
         .join(get_app_name());
@@ -244,7 +244,8 @@ fn main() {
             Some(Commands::Imported) => {
                 warn_about_missing_shared_directories(&config_values);
 
-                imported(&log_file)
+                imported(&log_file);
+                Ok(())
             }
 
             Some(Commands::Logs) => {

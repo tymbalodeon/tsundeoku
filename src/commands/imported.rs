@@ -1,10 +1,8 @@
 use std::fs::{read_to_string, File};
 
-use anyhow::Result;
-
 use crate::{get_imported_files_path, log, LogLevel};
 
-pub fn imported(log_file: &Option<File>) -> Result<()> {
+pub fn imported(log_file: &Option<File>) {
     let imported_files = if let Ok(imported_files_path) =
         get_imported_files_path()
     {
@@ -19,10 +17,10 @@ pub fn imported(log_file: &Option<File>) -> Result<()> {
                     true,
                 );
 
-                return Ok(());
+                return;
             }
         } else {
-            return Ok(());
+            return;
         }
     } else {
         // TODO dry this up?
@@ -33,7 +31,7 @@ pub fn imported(log_file: &Option<File>) -> Result<()> {
             true,
         );
 
-        return Ok(());
+        return;
     };
 
     let mut lines: Vec<&str> = imported_files.trim().lines().collect();
@@ -41,6 +39,4 @@ pub fn imported(log_file: &Option<File>) -> Result<()> {
     lines.sort_unstable();
 
     println!("{}", lines.join("\n"));
-
-    Ok(())
 }
