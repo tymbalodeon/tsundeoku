@@ -111,7 +111,7 @@ fn get_plist(
                 get_log_path()?.to_str().context("failed to get log path")?
         )
     } else {
-        "".to_string()
+        String::new()
     };
 
     Ok(format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>
@@ -130,7 +130,7 @@ fn get_plist(
 
         <key>ProgramArguments</key>
         <array>
-            {program_arguments}
+            <string>{program_arguments}</string>
         </array>
     </dict>
 </plist>"))
