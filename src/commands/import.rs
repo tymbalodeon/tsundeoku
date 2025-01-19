@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::string::ToString;
 use std::vec::Vec;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
 use symphonia::core::meta::{MetadataOptions, StandardTagKey, Tag};
@@ -237,6 +237,14 @@ pub fn import(
         shared_directories,
         &config_values.shared_directories,
     );
+
+    if shared_directories.is_empty() {
+        let error_message = "shared-directories is not set";
+
+        log(error_message, &LogLevel::Error, log_file, true);
+
+        return Err(anyhow!(error_message));
+    }
 
     let ignored_paths =
         get_config_value(ignored_paths, &config_values.ignored_paths);
