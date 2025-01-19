@@ -161,7 +161,11 @@ fn on(
         .status()?;
 
     match get_description_cron(schedule.source()) {
-        Ok(schedule_description) => println!("{schedule_description}"),
+        Ok(schedule_description) => println!(
+            "import schedule for {}",
+            schedule_description.to_lowercase()
+        ),
+
         Err(error) => log(error.s, &LogLevel::Error, log_file, true),
     }
 
@@ -247,8 +251,6 @@ fn status() -> Result<()> {
             println!("import is scheduled for every hour");
         }
     }
-
-    println!("[{}]", Local::now().format("%Y-%m-%d %H:%M:%S"));
 
     Ok(())
 }
