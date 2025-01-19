@@ -176,7 +176,7 @@ fn get_log_path() -> Result<PathBuf> {
     Ok(get_state_directory()?.join(format!("{}.log", get_app_name())))
 }
 
-fn warn_about_missing_shared_directories(config_values: &ConfigFile) {
+pub fn warn_about_missing_shared_directories(config_values: &ConfigFile) {
     if config_values.shared_directories.is_empty() {
         log(
             "shared-directories is not set",
@@ -219,8 +219,6 @@ fn main() {
             Some(Commands::Config {
                 command: Some(command),
             }) => {
-                warn_about_missing_shared_directories(&config_values);
-
                 config(command, config_path, &config_values, log_file.as_ref())
             }
 
@@ -242,22 +240,18 @@ fn main() {
             ),
 
             Some(Commands::Imported) => {
-                warn_about_missing_shared_directories(&config_values);
+                imported(&config_values, log_file.as_ref());
 
-                imported(log_file.as_ref());
                 Ok(())
             }
 
             Some(Commands::Logs) => {
-                warn_about_missing_shared_directories(&config_values);
+                logs(&config_values, log_file.as_ref());
 
-                logs(log_file.as_ref());
                 Ok(())
             }
 
             Some(Commands::Schedule { command }) => {
-                warn_about_missing_shared_directories(&config_values);
-
                 schedule(&config_values, command.as_ref(), log_file.as_ref())
             }
 

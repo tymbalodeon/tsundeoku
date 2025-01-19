@@ -11,7 +11,10 @@ use cron_descriptor::cronparser::cron_expression_descriptor::get_description_cro
 use serde::Deserialize;
 
 use crate::commands::config::{get_config_value, ConfigFile};
-use crate::{get_app_name, get_home_directory, get_log_path, log, LogLevel};
+use crate::{
+    get_app_name, get_home_directory, get_log_path, log,
+    warn_about_missing_shared_directories, LogLevel,
+};
 
 #[derive(Subcommand, Debug)]
 #[command(arg_required_else_help = true)]
@@ -260,6 +263,8 @@ pub fn schedule(
     command: Option<&Schedule>,
     log_file: Option<&File>,
 ) -> Result<()> {
+    warn_about_missing_shared_directories(config_values);
+
     match command {
         Some(Schedule::On { interval }) => {
             on(config_values, interval.as_ref(), log_file)?;

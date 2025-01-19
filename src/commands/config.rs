@@ -12,8 +12,8 @@ use english_to_cron::str_cron_syntax;
 use serde::{Deserialize, Serialize};
 use toml::{Table, Value};
 
-use crate::LogLevel;
 use crate::{get_home_directory, log};
+use crate::{warn_about_missing_shared_directories, LogLevel};
 
 #[derive(Clone, Debug, ValueEnum)]
 pub enum ConfigKey {
@@ -178,6 +178,8 @@ pub fn config(
     config_values: &ConfigFile,
     log_file: Option<&File>,
 ) -> Result<()> {
+    warn_about_missing_shared_directories(config_values);
+
     match command {
         Config::Edit => {
             Command::new(
