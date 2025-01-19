@@ -187,6 +187,7 @@ fn on(
     let rotate_plist_file =
         &get_plist_path(&get_plist_file_name("rotatelogs"))?;
 
+    // TODO is the unload first necessary or can the file just be overwritten?
     off()?;
 
     for (file, contents) in [
@@ -214,27 +215,31 @@ fn on(
 }
 
 fn off() -> Result<()> {
-    let app_plist_file_name = &&get_plist_file_name("import");
-    let app_plist = &get_plist_path(app_plist_file_name)?;
+    let app_plist_file_name = &get_plist_file_name("import");
+    let app_plist_file = &get_plist_path(app_plist_file_name)?;
+    let rotate_plist_file_name = &get_plist_file_name("rotatelogs");
+    let rotate_plist_file = &get_plist_path(rotate_plist_file_name)?;
 
-    if let Some(exit_code) = Command::new("launchctl")
-        .arg("list")
-        .arg(app_plist_file_name)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()?
-        .code()
-    {
-        if exit_code == 0 {
-            Command::new("launchctl")
-                .arg("unload")
-                .arg(app_plist)
-                .status()?;
+    for (file_name, file) in [
+        (app_plist_file_name, app_plist_file),
+        (rotate_plist_file_name, rotate_plist_file),
+    ] {
+        if let Some(exit_code) = Command::new("launchctl")
+            .arg("list")
+            .arg(file_name)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()?
+            .code()
+        {
+            if exit_code == 0 {
+                Command::new("launchctl").arg("unload").arg(file).status()?;
+            }
         }
-    }
 
-    if app_plist.exists() {
-        remove_file(app_plist)?;
+        if file.exists() {
+            remove_file(file)?;
+        }
     }
 
     Ok(())
