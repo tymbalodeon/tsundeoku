@@ -2,7 +2,7 @@ use std::fs::{read_to_string, File};
 
 use crate::{get_imported_files_path, log, LogLevel};
 
-pub fn imported(log_file: &Option<File>) {
+pub fn imported(log_file: Option<&File>) {
     let imported_files = if let Ok(imported_files_path) =
         get_imported_files_path()
     {

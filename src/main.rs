@@ -105,7 +105,7 @@ fn print_error(message: &str) {
 pub fn log<T: AsRef<str>>(
     message: T,
     level: &LogLevel,
-    log_file: &Option<File>,
+    log_file: Option<&File>,
     write: bool,
 ) {
     let label = match level {
@@ -122,7 +122,7 @@ pub fn log<T: AsRef<str>>(
         eprintln!("{message}");
 
         if write {
-            if let Some(mut log_file) = log_file.as_ref() {
+            if let Some(mut log_file) = log_file {
                 if let Err(error) =
                     log_file.write_all(format!("{message}\n").as_bytes())
                 {
@@ -181,7 +181,7 @@ fn warn_about_missing_shared_directories(config_values: &ConfigFile) {
         log(
             "shared-directories is not set",
             &LogLevel::Warning,
-            &None,
+            None,
             false,
         );
     }
@@ -208,7 +208,7 @@ fn main() {
             log(
                 "failed to read config file",
                 &LogLevel::Error,
-                &log_file,
+                log_file.as_ref(),
                 true,
             );
 
@@ -221,7 +221,7 @@ fn main() {
             }) => {
                 warn_about_missing_shared_directories(&config_values);
 
-                config(command, config_path, &config_values, &log_file)
+                config(command, config_path, &config_values, log_file.as_ref())
             }
 
             Some(Commands::Import {
@@ -236,7 +236,7 @@ fn main() {
                 shared_directories.as_ref(),
                 ignored_paths.as_ref(),
                 local_directory.as_ref(),
-                &log_file,
+                log_file.as_ref(),
                 *dry_run,
                 *force,
             ),
@@ -244,26 +244,26 @@ fn main() {
             Some(Commands::Imported) => {
                 warn_about_missing_shared_directories(&config_values);
 
-                imported(&log_file);
+                imported(log_file.as_ref());
                 Ok(())
             }
 
             Some(Commands::Logs) => {
                 warn_about_missing_shared_directories(&config_values);
 
-                logs(&log_file);
+                logs(log_file.as_ref());
                 Ok(())
             }
 
             Some(Commands::Schedule { command }) => {
                 warn_about_missing_shared_directories(&config_values);
 
-                schedule(&config_values, command.as_ref(), &log_file)
+                schedule(&config_values, command.as_ref(), log_file.as_ref())
             }
 
             _ => Ok(()),
         } {
-            log(error.to_string(), &LogLevel::Error, &log_file, true);
+            log(error.to_string(), &LogLevel::Error, log_file.as_ref(), true);
         }
     } else {
         let message = cli.config_file.map_or_else(
@@ -271,6 +271,6 @@ fn main() {
             |config_file| format!("{config_file} does not exist"),
         );
 
-        log(message, &LogLevel::Error, &log_file, true);
+        log(message, &LogLevel::Error, log_file.as_ref(), true);
     };
 }

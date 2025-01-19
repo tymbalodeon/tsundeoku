@@ -60,7 +60,7 @@ fn copy_file(
     file: &PathBuf,
     local_directory: PathBuf,
     imported_files_log: &mut File,
-    log_file: &Option<File>,
+    log_file: Option<&File>,
     dry_run: bool,
 ) -> Result<()> {
     let mut hint = Hint::new();
@@ -229,7 +229,7 @@ pub fn import(
     shared_directories: Option<&Vec<PathBuf>>,
     ignored_paths: Option<&Vec<PathBuf>>,
     local_directory: Option<&PathBuf>,
-    log_file: &Option<File>,
+    log_file: Option<&File>,
     dry_run: bool,
     force: bool,
 ) -> Result<()> {

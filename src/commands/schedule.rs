@@ -86,7 +86,7 @@ fn get_time_unit_values(
 fn on(
     config_values: &ConfigFile,
     schedule_interval: Option<&cron::Schedule>,
-    log_file: &Option<File>,
+    log_file: Option<&File>,
 ) -> Result<()> {
     let schedule =
         get_config_value(schedule_interval, &config_values.schedule_interval);
@@ -258,7 +258,7 @@ fn status() -> Result<()> {
 pub fn schedule(
     config_values: &ConfigFile,
     command: Option<&Schedule>,
-    log_file: &Option<File>,
+    log_file: Option<&File>,
 ) -> Result<()> {
     match command {
         Some(Schedule::On { interval }) => {

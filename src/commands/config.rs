@@ -176,7 +176,7 @@ pub fn config(
     command: &Config,
     config_path: &Path,
     config_values: &ConfigFile,
-    log_file: &Option<File>,
+    log_file: Option<&File>,
 ) -> Result<()> {
     match command {
         Config::Edit => {
