@@ -1,5 +1,5 @@
 use std::env::var;
-use std::fs::{read_to_string, OpenOptions};
+use std::fs::{read_to_string, File};
 use std::path::{absolute, Path, PathBuf};
 use std::process::Command;
 use std::str::FromStr;
@@ -12,8 +12,8 @@ use english_to_cron::str_cron_syntax;
 use serde::{Deserialize, Serialize};
 use toml::{Table, Value};
 
+use crate::LogLevel;
 use crate::{get_home_directory, log};
-use crate::{get_log_path, LogLevel};
 
 #[derive(Clone, Debug, ValueEnum)]
 pub enum ConfigKey {
@@ -176,6 +176,7 @@ pub fn config(
     command: &Config,
     config_path: &Path,
     config_values: &ConfigFile,
+    log_file: &Option<File>,
 ) -> Result<()> {
     match command {
         Config::Edit => {
@@ -192,18 +193,15 @@ pub fn config(
 
         Config::Show { key } => {
             if let Some(key) = key {
-                println!("{}", get_config_value_display(config_values, key)?);
+                let display = get_config_value_display(config_values, key)?;
+
+                if !display.is_empty() {
+                    println!("{display}");
+                };
             } else if let Err(error) =
                 print_config(PrettyPrinter::new().input_file(config_path))
             {
-                let log_file = Some(
-                    OpenOptions::new()
-                        .create(true)
-                        .append(true)
-                        .open(get_log_path()?)?,
-                );
-
-                log(error.to_string(), &LogLevel::Warning, &log_file);
+                log(error.to_string(), &LogLevel::Warning, log_file, true);
                 println!("{config_values:#?}");
             }
         }

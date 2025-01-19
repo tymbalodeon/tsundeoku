@@ -60,7 +60,7 @@ fn copy_file(
     file: &PathBuf,
     local_directory: PathBuf,
     imported_files_log: &mut File,
-    error_log: &Option<File>,
+    log_file: &Option<File>,
     dry_run: bool,
 ) -> Result<()> {
     let mut hint = Hint::new();
@@ -98,7 +98,8 @@ fn copy_file(
                     file.as_path().display()
                 ),
                 &LogLevel::Warning,
-                error_log,
+                log_file,
+                true,
             );
         }
 
@@ -128,7 +129,12 @@ fn copy_file(
     if dry_run {
         println!("{}", file.display());
     } else {
-        log(file.display().to_string(), &LogLevel::Import, error_log);
+        log(
+            file.display().to_string(),
+            &LogLevel::Import,
+            log_file,
+            true,
+        );
 
         let file_name = get_file_name(file)?;
         let mut new_file = local_directory;
@@ -292,6 +298,7 @@ pub fn import(
                 format!("{error}: {}", file.as_path().display()),
                 &LogLevel::Error,
                 log_file,
+                true,
             );
         }
     }

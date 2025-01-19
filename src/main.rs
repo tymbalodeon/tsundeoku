@@ -1,6 +1,6 @@
 mod commands;
 
-use std::fs::{read_to_string, File, OpenOptions};
+use std::fs::{create_dir_all, read_to_string, File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -97,16 +97,14 @@ pub enum LogLevel {
 }
 
 fn print_error(message: &str) {
-    eprintln!(
-        "{}",
-        format!("{} {message}", format!("{}:", "error".red()).bold())
-    );
+    eprintln!("{} {message}", format!("{}:", "error".red()).bold());
 }
 
 pub fn log<T: AsRef<str>>(
     message: T,
     level: &LogLevel,
     log_file: &Option<File>,
+    write: bool,
 ) {
     let label = match level {
         LogLevel::Import => "  Importing".green().to_string(),
@@ -121,14 +119,16 @@ pub fn log<T: AsRef<str>>(
     } else {
         eprintln!("{message}");
 
-        if let Some(mut log_file) = log_file.as_ref() {
-            if let Err(error) =
-                log_file.write_all(format!("{message}\n").as_bytes())
-            {
-                print_error(&error.to_string());
+        if write {
+            if let Some(mut log_file) = log_file.as_ref() {
+                if let Err(error) =
+                    log_file.write_all(format!("{message}\n").as_bytes())
+                {
+                    print_error(&error.to_string());
+                }
+            } else {
+                print_error("failed to write to log file");
             }
-        } else {
-            print_error("failed to write to log file");
         }
     }
 }
@@ -156,9 +156,13 @@ fn get_config_file(config_file: Option<&String>) -> Result<PathBuf> {
 }
 
 pub fn get_state_directory() -> Result<PathBuf> {
-    Ok(get_home_directory()?
+    let state_directory = get_home_directory()?
         .join(".local/state")
-        .join(get_app_name()))
+        .join(get_app_name());
+
+    create_dir_all(&state_directory)?;
+
+    Ok(state_directory)
 }
 
 fn get_imported_files_path() -> Result<PathBuf> {
@@ -170,26 +174,41 @@ fn get_log_path() -> Result<PathBuf> {
     Ok(get_state_directory()?.join(format!("{}.log", get_app_name())))
 }
 
+fn warn_about_missing_shared_directories(config_values: &ConfigFile) {
+    if config_values.shared_directories.is_empty() {
+        log(
+            "shared-directories is not set",
+            &LogLevel::Warning,
+            &None,
+            false,
+        );
+    }
+}
+
 fn main() {
     let cli = Cli::parse();
 
-    let log_file = if let Ok(log_path) = get_log_path() {
-        if let Ok(file) =
-            OpenOptions::new().create(true).append(true).open(log_path)
-        {
-            Some(file)
-        } else {
-            None
-        }
-    } else {
-        None
-    };
+    let log_file = get_log_path().map_or_else(
+        |_| None,
+        |log_path| {
+            OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(log_path)
+                .ok()
+        },
+    );
 
     if let Ok(config_path) = get_config_file(cli.config_file.as_ref()) {
         let config_path = Path::new(&config_path);
 
         let Ok(config_values) = ConfigFile::from_file(config_path) else {
-            log("failed to read config file", &LogLevel::Error, &log_file);
+            log(
+                "failed to read config file",
+                &LogLevel::Error,
+                &log_file,
+                true,
+            );
 
             return;
         };
@@ -197,7 +216,11 @@ fn main() {
         if let Err(error) = match &cli.command {
             Some(Commands::Config {
                 command: Some(command),
-            }) => config(command, config_path, &config_values),
+            }) => {
+                warn_about_missing_shared_directories(&config_values);
+
+                config(command, config_path, &config_values, &log_file)
+            }
 
             Some(Commands::Import {
                 shared_directories,
@@ -217,20 +240,27 @@ fn main() {
             ),
 
             Some(Commands::Imported) => {
+                warn_about_missing_shared_directories(&config_values);
+
                 let imported_files = if let Ok(imported_files_path) =
                     get_imported_files_path()
                 {
-                    if let Ok(imported_files) =
-                        read_to_string(imported_files_path)
-                    {
-                        imported_files
-                    } else {
-                        log(
-                            "failed to get imported files",
-                            &LogLevel::Error,
-                            &log_file,
-                        );
+                    if imported_files_path.exists() {
+                        if let Ok(imported_files) =
+                            read_to_string(imported_files_path)
+                        {
+                            imported_files
+                        } else {
+                            log(
+                                "failed to get imported files",
+                                &LogLevel::Error,
+                                &log_file,
+                                true,
+                            );
 
+                            return;
+                        }
+                    } else {
                         return;
                     }
                 } else {
@@ -239,6 +269,7 @@ fn main() {
                         "failed to get imported files",
                         &LogLevel::Error,
                         &log_file,
+                        true,
                     );
 
                     return;
@@ -255,6 +286,8 @@ fn main() {
             }
 
             Some(Commands::Logs) => {
+                warn_about_missing_shared_directories(&config_values);
+
                 if let Ok(log_path) = get_log_path() {
                     if let Ok(logs) = read_to_string(log_path) {
                         println!("{}", logs.trim());
@@ -263,13 +296,19 @@ fn main() {
                             "failed to read logs",
                             &LogLevel::Error,
                             &log_file,
+                            true,
                         );
 
                         return;
                     }
                 } else {
                     // TODO dry this up?
-                    log("failed to read logs", &LogLevel::Error, &log_file);
+                    log(
+                        "failed to read logs",
+                        &LogLevel::Error,
+                        &log_file,
+                        true,
+                    );
 
                     return;
                 };
@@ -278,12 +317,14 @@ fn main() {
             }
 
             Some(Commands::Schedule { command }) => {
+                warn_about_missing_shared_directories(&config_values);
+
                 schedule(&config_values, command.as_ref(), &log_file)
             }
 
             _ => Ok(()),
         } {
-            log(error.to_string(), &LogLevel::Error, &log_file);
+            log(error.to_string(), &LogLevel::Error, &log_file, true);
         }
     } else {
         let message = cli.config_file.map_or_else(
@@ -291,6 +332,6 @@ fn main() {
             |config_file| format!("{config_file} does not exist"),
         );
 
-        log(message, &LogLevel::Error, &log_file);
+        log(message, &LogLevel::Error, &log_file, true);
     };
 }

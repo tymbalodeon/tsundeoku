@@ -162,7 +162,7 @@ fn on(
 
     match get_description_cron(schedule.source()) {
         Ok(schedule_description) => println!("{schedule_description}"),
-        Err(error) => log(error.s, &LogLevel::Error, log_file),
+        Err(error) => log(error.s, &LogLevel::Error, log_file, true),
     }
 
     Ok(())
