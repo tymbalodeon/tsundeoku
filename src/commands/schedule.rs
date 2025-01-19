@@ -48,6 +48,14 @@ fn get_plist_file_name(name: &str) -> String {
     format!("com.{}.{}.plist", get_app_name(), name)
 }
 
+fn get_app_plist_file_name() -> String {
+    get_plist_file_name("import")
+}
+
+fn get_rotate_plist_file_name() -> String {
+    get_plist_file_name("rotatelogs")
+}
+
 fn is_scheduled(file_name: &str, plist_contents: &str) -> bool {
     plist_contents
         .lines()
@@ -162,7 +170,8 @@ fn on(
             .collect::<Vec<String>>()
             .join("\n\n\t");
 
-    let app_plist_file_name = &&get_plist_file_name("import");
+    let app_plist_file_name = get_app_plist_file_name();
+    let rotate_plist_file_name = get_rotate_plist_file_name();
 
     let app_plist = get_plist(
         &app_plist_file_name,
@@ -172,7 +181,7 @@ fn on(
     )?;
 
     let rotate_plist = get_plist(
-        &format!("com.{}.rotate.plist", get_app_name()),
+        &rotate_plist_file_name,
         "<key>Day</key>
         <integer>1</integer>",
         &format!(
@@ -183,9 +192,7 @@ fn on(
     )?;
 
     let app_plist_file = &get_plist_path(&app_plist_file_name)?;
-
-    let rotate_plist_file =
-        &get_plist_path(&get_plist_file_name("rotatelogs"))?;
+    let rotate_plist_file = &get_plist_path(&rotate_plist_file_name)?;
 
     // TODO is the unload first necessary or can the file just be overwritten?
     off()?;
@@ -215,9 +222,9 @@ fn on(
 }
 
 fn off() -> Result<()> {
-    let app_plist_file_name = &get_plist_file_name("import");
+    let app_plist_file_name = &get_app_plist_file_name();
     let app_plist_file = &get_plist_path(app_plist_file_name)?;
-    let rotate_plist_file_name = &get_plist_file_name("rotatelogs");
+    let rotate_plist_file_name = &get_rotate_plist_file_name();
     let rotate_plist_file = &get_plist_path(rotate_plist_file_name)?;
 
     for (file_name, file) in [
@@ -274,7 +281,7 @@ fn status() -> Result<()> {
         &Command::new("launchctl").arg("list").output()?.stdout;
 
     let plist_contents = str::from_utf8(launchctl_list)?;
-    let app_plist_file_name = get_plist_file_name("import");
+    let app_plist_file_name = get_app_plist_file_name();
     let app_plist_file = get_plist_path(&app_plist_file_name)?;
 
     if !app_plist_file.exists()
