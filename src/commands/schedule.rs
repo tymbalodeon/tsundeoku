@@ -44,8 +44,8 @@ fn get_plist_path(file_name: &str) -> Result<PathBuf> {
         .join(file_name))
 }
 
-fn get_app_plist_file_name() -> String {
-    format!("com.{}.import.plist", get_app_name())
+fn get_plist_file_name(name: &str) -> String {
+    format!("com.{}.{}.plist", get_app_name(), name)
 }
 
 fn is_scheduled(file_name: &str, plist_contents: &str) -> bool {
@@ -74,7 +74,8 @@ fn get_time_unit_values(
         None
     } else {
         Some(format!(
-            "\t\t<key>{:?}</key>\n\t\t\t<integer>{}</integer>",
+            "<key>{:?}</key>
+            <integer>{}</integer>",
             name,
             time_units
                 .iter()
@@ -85,7 +86,48 @@ fn get_time_unit_values(
     }
 }
 
-// TODO don't re-write if already loaded?
+fn get_plist(
+    label: &str,
+    calendar_interval: &str,
+    program_arguments: &str,
+    log: bool,
+) -> Result<String> {
+    let log_path = if log {
+        format!(
+            "<key>StandardOutPath</key>
+        <string>{log_path}</string>
+
+        <key>StandardErrorPath</key>
+        <string>{log_path}</string>\n",
+            log_path =
+                get_log_path()?.to_str().context("failed to get log path")?
+        )
+    } else {
+        "".to_string()
+    };
+
+    Ok(format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
+    <dict>
+        <key>Label</key>
+        <string>{label}</string>
+
+        {log_path}
+
+        <key>StartCalendarInterval</key>
+        <dict>
+            {calendar_interval}
+        </dict>
+
+        <key>ProgramArguments</key>
+        <array>
+            {program_arguments}
+        </array>
+    </dict>
+</plist>"))
+}
+
 fn on(
     config_values: &ConfigFile,
     schedule_interval: Option<&cron::Schedule>,
@@ -111,7 +153,7 @@ fn on(
     let months =
         get_time_unit_values(schedule.months(), &CalendarInterval::Month);
 
-    let calendar_intervals =
+    let calendar_interval =
         [minutes, hours, days_of_month, days_of_week, months]
             .iter()
             .filter_map(|value| {
@@ -120,48 +162,44 @@ fn on(
             .collect::<Vec<String>>()
             .join("\n\n\t");
 
-    let plist = format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
-<plist version=\"1.0\">
-	<dict>
-		<key>Label</key>
-		<string>com.{app_name}.import.plist</string>
+    let app_plist_file_name = &&get_plist_file_name("import");
 
-		<key>StandardOutPath</key>
-		<string>{log_path}</string>
+    let app_plist = get_plist(
+        &app_plist_file_name,
+        &calendar_interval,
+        &format!("{} import", get_app_name()),
+        true,
+    )?;
 
-		<key>StandardErrorPath</key>
-		<string>{log_path}</string>
+    let rotate_plist = get_plist(
+        &format!("com.{}.rotate.plist", get_app_name()),
+        "<key>Day</key>
+        <integer>1</integer>",
+        &format!(
+            "truncate -s 0 {}",
+            get_log_path()?.to_str().context("failed to get log path")?
+        ),
+        true,
+    )?;
 
-		<key>StartCalendarInterval</key>
-		<dict>
-	{calendar_intervals}
-		</dict>
+    let app_plist_file = &get_plist_path(&app_plist_file_name)?;
 
-		<key>ProgramArguments</key>
-		<array>
-			<string>{app_name} import</string>
-		</array>
-	</dict>
-</plist>",
-        app_name = get_app_name(),
-        log_path = get_log_path()?.to_str().context("failed to get log path")?,
-        calendar_intervals = calendar_intervals
-    );
-
-    let app_plist = &get_plist_path(&get_app_plist_file_name())?;
+    let rotate_plist_file =
+        &get_plist_path(&get_plist_file_name("rotatelogs"))?;
 
     off()?;
 
-    fs::write(
-        app_plist.to_str().context("failed to get plist path")?,
-        &plist,
-    )?;
+    for (file, contents) in [
+        (app_plist_file, app_plist),
+        (rotate_plist_file, rotate_plist),
+    ] {
+        fs::write(
+            file.to_str().context("failed to get plist path")?,
+            &contents,
+        )?;
 
-    Command::new("launchctl")
-        .arg("load")
-        .arg(app_plist)
-        .status()?;
+        Command::new("launchctl").arg("load").arg(file).status()?;
+    }
 
     match get_description_cron(schedule.source()) {
         Ok(schedule_description) => println!(
@@ -176,7 +214,7 @@ fn on(
 }
 
 fn off() -> Result<()> {
-    let app_plist_file_name = &get_app_plist_file_name();
+    let app_plist_file_name = &&get_plist_file_name("import");
     let app_plist = &get_plist_path(app_plist_file_name)?;
 
     if let Some(exit_code) = Command::new("launchctl")
@@ -231,7 +269,7 @@ fn status() -> Result<()> {
         &Command::new("launchctl").arg("list").output()?.stdout;
 
     let plist_contents = str::from_utf8(launchctl_list)?;
-    let app_plist_file_name = get_app_plist_file_name();
+    let app_plist_file_name = get_plist_file_name("import");
     let app_plist_file = get_plist_path(&app_plist_file_name)?;
 
     if !app_plist_file.exists()
