@@ -194,7 +194,6 @@ fn on(
     let app_plist_file = &get_plist_path(&app_plist_file_name)?;
     let rotate_plist_file = &get_plist_path(&rotate_plist_file_name)?;
 
-    // TODO is the unload first necessary or can the file just be overwritten?
     off()?;
 
     for (file, contents) in [
