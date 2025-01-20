@@ -128,6 +128,10 @@ impl ConfigFile {
             schedule_interval,
         })
     }
+
+    fn to_toml(&self) -> String {
+        toml::to_string(&self).unwrap()
+    }
 }
 
 pub fn get_config_value<'a, T>(
@@ -200,11 +204,16 @@ pub fn config(
                 if !display.is_empty() {
                     println!("{display}");
                 };
-            } else if let Err(error) =
-                print_config(PrettyPrinter::new().input_file(config_path))
-            {
-                log(error.to_string(), &LogLevel::Warning, log_file, true);
-                println!("{config_values:#?}");
+            } else {
+                let toml = config_values.to_toml().into_bytes();
+                let mut pretty_printer = PrettyPrinter::new();
+
+                pretty_printer.input_from_bytes(&toml);
+
+                if let Err(error) = print_config(&mut pretty_printer) {
+                    log(error.to_string(), &LogLevel::Warning, log_file, true);
+                    println!("{config_values:#?}");
+                }
             }
         }
     }
