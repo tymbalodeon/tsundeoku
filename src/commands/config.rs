@@ -21,6 +21,7 @@ pub enum ConfigKey {
     IgnoredPaths,
     LocalDirectory,
     ScheduleInterval,
+    ScheduleIntervalDescription,
 }
 
 #[derive(Subcommand, Debug)]
@@ -167,6 +168,10 @@ pub fn get_config_value_display(
         }
 
         ConfigKey::ScheduleInterval => {
+            config.schedule_interval.source().to_string()
+        }
+
+        ConfigKey::ScheduleIntervalDescription => {
             get_cron_description(config.schedule_interval.source())?
         }
     })
