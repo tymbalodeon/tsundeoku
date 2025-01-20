@@ -129,8 +129,8 @@ impl ConfigFile {
         })
     }
 
-    fn to_toml(&self) -> String {
-        toml::to_string(&self).unwrap()
+    fn to_toml(&self) -> Result<String> {
+        Ok(toml::to_string(&self)?)
     }
 }
 
@@ -205,7 +205,7 @@ pub fn config(
                     println!("{display}");
                 };
             } else {
-                let toml = config_values.to_toml().into_bytes();
+                let toml = config_values.to_toml()?.into_bytes();
                 let mut pretty_printer = PrettyPrinter::new();
 
                 pretty_printer.input_from_bytes(&toml);
