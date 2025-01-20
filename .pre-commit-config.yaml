@@ -93,20 +93,20 @@ repos:
         name: taplo
         entry: taplo format
         language: system
-      - id: ruff format
-        name: ruff format
-        entry: ruff format
-        language: system
-        pass_filenames: false
-      - id: ruff check
-        name: ruff check
-        entry: ruff check
-        language: system
-        pass_filenames: false
-        args:
-          - --fix
-          - --select
-          - I
+        # - id: ruff format
+        #   name: ruff format
+        #   entry: ruff format
+        #   language: system
+        #   pass_filenames: false
+        # - id: ruff check
+        #   name: ruff check
+        #   entry: ruff check
+        #   language: system
+        #   pass_filenames: false
+        #   args:
+        #     - --fix
+        #     - --select
+        #     - I
   # rust
   - repo: https://github.com/doublify/pre-commit-rust
     rev: v1.0
