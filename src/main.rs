@@ -220,7 +220,21 @@ fn main() {
             return;
         };
 
-        if let Err(error) = match &cli.command {
+        let command = &cli.command;
+
+        let should_log = matches!(
+            command,
+            Some(Commands::Import {
+                shared_directories: _,
+                ignored_paths: _,
+                local_directory: _,
+                dry_run: _,
+                no_reformat: _,
+                force: _,
+            })
+        );
+
+        if let Err(error) = match command {
             Some(Commands::Config {
                 command: Some(command),
             }) => {
@@ -262,7 +276,12 @@ fn main() {
 
             _ => Ok(()),
         } {
-            log(error.to_string(), &LogLevel::Error, log_file.as_ref(), true);
+            log(
+                error.to_string(),
+                &LogLevel::Error,
+                log_file.as_ref(),
+                should_log,
+            );
         }
     } else {
         let message = cli.config_file.map_or_else(

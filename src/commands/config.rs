@@ -216,7 +216,13 @@ pub fn config(
                 pretty_printer.input_from_bytes(&toml);
 
                 if let Err(error) = print_config(&mut pretty_printer) {
-                    log(error.to_string(), &LogLevel::Warning, log_file, true);
+                    log(
+                        error.to_string(),
+                        &LogLevel::Warning,
+                        log_file,
+                        false,
+                    );
+
                     println!("{config_values:#?}");
                 }
             }

@@ -214,7 +214,7 @@ fn on(
             schedule_description.to_lowercase()
         ),
 
-        Err(error) => log(error.s, &LogLevel::Error, log_file, true),
+        Err(error) => log(error.s, &LogLevel::Error, log_file, false),
     }
 
     Ok(())

@@ -6,18 +6,21 @@ use crate::{
 
 use super::config::ConfigFile;
 
-fn log_error(log_file: Option<&File>) {
-    log("failed to read logs", &LogLevel::Error, log_file, true);
-}
-
 pub fn logs(config_values: &ConfigFile, log_file: Option<&File>) {
     warn_about_missing_shared_directories(config_values);
 
     get_log_path().map_or_else(
-        |_| log_error(log_file),
+        |error| log(error.to_string(), &LogLevel::Error, log_file, false),
         |log_path| {
-            read_to_string(log_path).map_or_else(
-                |_| log_error(log_file),
+            read_to_string(&log_path).map_or_else(
+                |_| {
+                    log(
+                        format!("failed to read {}", log_path.display()),
+                        &LogLevel::Error,
+                        log_file,
+                        true,
+                    );
+                },
                 |logs| {
                     let logs = logs.trim();
 

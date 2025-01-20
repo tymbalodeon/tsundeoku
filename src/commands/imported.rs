@@ -32,7 +32,7 @@ pub fn imported(config_values: &ConfigFile, log_file: Option<&File>) {
             "failed to get imported files",
             &LogLevel::Error,
             log_file,
-            true,
+            false,
         ),
     }
 }
