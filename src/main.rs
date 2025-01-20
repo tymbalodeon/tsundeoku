@@ -73,6 +73,7 @@ enum Commands {
 /// Import audio files from a shared folder to a local folder
 #[derive(Parser)]
 #[command(arg_required_else_help = true)]
+#[command(before_help = "積んでおく (tsundeoku) –– \"to pile up for later\"")]
 #[command(version)]
 struct Cli {
     #[command(subcommand)]
@@ -90,6 +91,10 @@ fn get_home_directory() -> Result<PathBuf> {
 
 const fn get_app_name() -> &'static str {
     "tsundeoku"
+}
+
+const fn get_binary_name() -> &'static str {
+    "tsu"
 }
 
 pub enum LogLevel {

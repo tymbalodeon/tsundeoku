@@ -12,7 +12,7 @@ use serde::Deserialize;
 
 use crate::commands::config::{get_config_value, ConfigFile};
 use crate::{
-    get_app_name, get_home_directory, get_log_path, log,
+    get_app_name, get_binary_name, get_home_directory, get_log_path, log,
     warn_about_missing_shared_directories, LogLevel,
 };
 
@@ -176,7 +176,7 @@ fn on(
     let app_plist = get_plist(
         &app_plist_file_name,
         &calendar_interval,
-        &format!("{} import", get_app_name()),
+        &format!("{} import", get_binary_name()),
         true,
     )?;
 
