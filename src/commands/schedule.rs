@@ -106,7 +106,7 @@ fn get_plist(
         <string>{log_path}</string>
 
         <key>StandardErrorPath</key>
-        <string>{log_path}</string>\n",
+        <string>{log_path}</string>",
             log_path =
                 get_log_path()?.to_str().context("failed to get log path")?
         )
