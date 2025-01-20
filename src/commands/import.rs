@@ -129,13 +129,6 @@ fn copy_file(
     if dry_run {
         println!("{}", file.display());
     } else {
-        log(
-            file.display().to_string(),
-            &LogLevel::Import,
-            log_file,
-            true,
-        );
-
         let file_name = get_file_name(file)?;
         let mut new_file = local_directory;
 
@@ -192,6 +185,13 @@ fn copy_file(
             imported_files_log
                 .write_all(format!("{}\n", file.display()).as_bytes())?;
         }
+
+        log(
+            file.display().to_string(),
+            &LogLevel::Import,
+            log_file,
+            true,
+        );
 
         copied?;
     }
