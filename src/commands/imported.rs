@@ -23,9 +23,11 @@ pub fn imported(config_values: &ConfigFile, log_file: Option<&File>) {
         Some(imported_files) => {
             let mut lines: Vec<&str> = imported_files.trim().lines().collect();
 
-            lines.sort_unstable();
+            if !lines.is_empty() {
+                lines.sort_unstable();
 
-            println!("{}", lines.join("\n"));
+                println!("{}", lines.join("\n"));
+            }
         }
 
         None => log(

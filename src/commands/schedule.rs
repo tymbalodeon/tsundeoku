@@ -83,7 +83,7 @@ fn get_time_unit_values(
     } else {
         Some(format!(
             "<key>{:?}</key>
-            <integer>{}</integer>",
+      <integer>{}</integer>",
             name,
             time_units
                 .iter()
@@ -97,16 +97,16 @@ fn get_time_unit_values(
 fn get_plist(
     label: &str,
     calendar_interval: &str,
-    program_arguments: &str,
+    program_arguments: &[&str],
     log: bool,
 ) -> Result<String> {
     let log_path = if log {
         format!(
             "<key>StandardOutPath</key>
-        <string>{log_path}</string>
+    <string>{log_path}</string>
 
-        <key>StandardErrorPath</key>
-        <string>{log_path}</string>",
+    <key>StandardErrorPath</key>
+    <string>{log_path}</string>",
             log_path =
                 get_log_path()?.to_str().context("failed to get log path")?
         )
@@ -114,25 +114,28 @@ fn get_plist(
         String::new()
     };
 
+    let program_arguments = program_arguments
+        .iter()
+        .map(|argument| format!("<string>{argument}</string>"))
+        .collect::<Vec<String>>()
+        .join("\n      ");
+
     Ok(format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
 <plist version=\"1.0\">
+  <dict>
+    <key>Label</key>
+    <string>{label}</string>
+    {log_path}
+    <key>StartCalendarInterval</key>
     <dict>
-        <key>Label</key>
-        <string>{label}</string>
-
-        {log_path}
-
-        <key>StartCalendarInterval</key>
-        <dict>
-            {calendar_interval}
-        </dict>
-
-        <key>ProgramArguments</key>
-        <array>
-            <string>{program_arguments}</string>
-        </array>
+      {calendar_interval}
     </dict>
+    <key>ProgramArguments</key>
+    <array>
+      {program_arguments}
+    </array>
+  </dict>
 </plist>"))
 }
 
@@ -168,7 +171,7 @@ fn on(
                 value.as_ref().map(std::string::ToString::to_string)
             })
             .collect::<Vec<String>>()
-            .join("\n\n\t");
+            .join("\n\n      ");
 
     let app_plist_file_name = get_app_plist_file_name();
     let rotate_plist_file_name = get_rotate_plist_file_name();
@@ -176,18 +179,20 @@ fn on(
     let app_plist = get_plist(
         &app_plist_file_name,
         &calendar_interval,
-        &format!("{} import", get_binary_name()),
+        &[get_binary_name(), "import"],
         true,
     )?;
 
     let rotate_plist = get_plist(
         &rotate_plist_file_name,
         "<key>Day</key>
-        <integer>1</integer>",
-        &format!(
-            "truncate -s 0 {}",
-            get_log_path()?.to_str().context("failed to get log path")?
-        ),
+    <integer>1</integer>",
+        &[
+            "truncate",
+            "-s",
+            "0",
+            get_log_path()?.to_str().context("failed to get log path")?,
+        ],
         true,
     )?;
 
