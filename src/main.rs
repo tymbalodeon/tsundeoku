@@ -87,15 +87,15 @@ struct Cli {
 }
 
 fn get_home_directory() -> Result<PathBuf> {
-    home_dir().context("could not determine $HOME directory")
+    home_dir().context("failed to get $HOME directory")
 }
 
 const fn get_app_name() -> &'static str {
     "tsundeoku"
 }
 
-const fn get_binary_name() -> &'static str {
-    "tsu"
+fn get_binary_path() -> Result<PathBuf> {
+    Ok(get_home_directory()?.join(".cargo").join("bin").join("tsu"))
 }
 
 pub enum LogLevel {
