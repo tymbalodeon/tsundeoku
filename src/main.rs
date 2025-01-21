@@ -134,9 +134,10 @@ pub fn log(
         if let Some(mut log_file) = log_file {
             if let Err(error) = log_file.write_all(
                 format!(
-                    "[{}] {:>7} {message}\n",
+                    "[{}] {:>7} {}\n",
                     Local::now().format("%Y-%m-%d %H:%M:%S"),
-                    format!("{level:?}").to_uppercase().bold()
+                    format!("{level:?}").to_uppercase().bold(),
+                    message.trim()
                 )
                 .as_bytes(),
             ) {
