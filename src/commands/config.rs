@@ -60,7 +60,7 @@ fn get_paths(config_items: &Table, key: &str) -> Result<Option<Vec<PathBuf>>> {
         Ok(Some(
             paths
                 .as_array()
-                .context("YO")?
+                .context(format!("failed to parse {key} values"))?
                 .iter()
                 .filter_map(|path| expand_path(path).ok())
                 .collect::<Vec<PathBuf>>(),
@@ -217,7 +217,7 @@ pub fn config(
 
                 if let Err(error) = print_config(&mut pretty_printer) {
                     log(
-                        error.to_string(),
+                        &error.to_string(),
                         &LogLevel::Warning,
                         log_file,
                         false,

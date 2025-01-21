@@ -93,7 +93,7 @@ fn copy_file(
 
         if should_warn {
             log(
-                format!(
+                &format!(
                     "failed to read audio file metadata for {}",
                     file.as_path().display()
                 ),
@@ -187,7 +187,7 @@ fn copy_file(
         }
 
         log(
-            file.display().to_string(),
+            &file.display().to_string(),
             &LogLevel::Import,
             log_file,
             true,
@@ -303,13 +303,15 @@ pub fn import(
             dry_run,
         ) {
             log(
-                format!("{error}: {}", file.as_path().display()),
+                &format!("{error}: {}", file.as_path().display()),
                 &LogLevel::Error,
                 log_file,
                 true,
             );
         }
     }
+
+    log("import complete", &LogLevel::Info, log_file, true);
 
     Ok(())
 }

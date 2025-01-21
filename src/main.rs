@@ -8,6 +8,7 @@ use std::string::ToString;
 use std::vec::Vec;
 
 use anyhow::{Context, Error, Result};
+use chrono::Local;
 use clap::{Parser, Subcommand};
 use colored::Colorize;
 use home::home_dir;
@@ -99,6 +100,7 @@ const fn get_binary_name() -> &'static str {
 
 pub enum LogLevel {
     Import,
+    Info,
     Warning,
     Error,
 }
@@ -107,30 +109,43 @@ fn print_error(message: &str) {
     eprintln!("{} {message}", format!("{}:", "error".red()).bold());
 }
 
-pub fn log<T: AsRef<str>>(
-    message: T,
+pub fn log(
+    message: &str,
     level: &LogLevel,
     log_file: Option<&File>,
     write: bool,
 ) {
-    let label = match level {
+    let log_level = match level {
         LogLevel::Import => "  Imported".green().to_string(),
-        LogLevel::Warning => format!("{}:", "warning".yellow()),
-        LogLevel::Error => format!("{}:", "error".red()),
+        LogLevel::Info => "info".to_string(),
+        LogLevel::Warning => format!("{}", "warning".yellow()),
+        LogLevel::Error => format!("{}", "error".red()),
     };
 
-    let message = format!("{} {}", label.bold(), message.as_ref());
+    let level_display = match level {
+        LogLevel::Warning | LogLevel::Error => &format!("{log_level}:"),
+        _ => &log_level,
+    };
+
+    let message_display = format!("{} {}", level_display.bold(), message);
 
     if matches!(level, LogLevel::Import) {
-        println!("{message}");
+        println!("{message_display}");
     } else {
-        eprintln!("{message}");
+        if !matches!(level, LogLevel::Info) {
+            eprintln!("{message_display}");
+        }
 
         if write {
             if let Some(mut log_file) = log_file {
-                if let Err(error) =
-                    log_file.write_all(format!("{message}\n").as_bytes())
-                {
+                if let Err(error) = log_file.write_all(
+                    format!(
+                        "[{}] {:>7} {message}\n",
+                        Local::now().format("%Y-%m-%d %H:%M:%S"),
+                        log_level.to_uppercase().bold()
+                    )
+                    .as_bytes(),
+                ) {
                     print_error(&error.to_string());
                 }
             } else {
@@ -154,9 +169,9 @@ fn get_config_file(config_file: Option<&String>) -> Result<PathBuf> {
             Ok(PathBuf::from_str(
                 Path::new(config_path)
                     .parse_dot()
-                    .context("the")?
+                    .context("failed to parse config path")?
                     .to_str()
-                    .context("YO")?,
+                    .context("failed to get config path")?,
             )?)
         },
     )
@@ -277,7 +292,7 @@ fn main() {
             _ => Ok(()),
         } {
             log(
-                error.to_string(),
+                &error.to_string(),
                 &LogLevel::Error,
                 log_file.as_ref(),
                 should_log,
@@ -289,6 +304,6 @@ fn main() {
             |config_file| format!("{config_file} does not exist"),
         );
 
-        log(message, &LogLevel::Error, log_file.as_ref(), true);
+        log(&message, &LogLevel::Error, log_file.as_ref(), true);
     };
 }
