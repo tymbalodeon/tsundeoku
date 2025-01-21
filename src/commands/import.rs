@@ -188,11 +188,7 @@ fn copy_file(
         }
 
         log(
-            &format!(
-                "{} {}",
-                "  Imported".green(),
-                file.display()
-            ),
+            &format!("{} {}", "  Imported".green(), file.display()),
             &LogLevel::Info,
             log_file,
             true,
@@ -326,7 +322,7 @@ pub fn import(
         };
     }
 
-    if !imported {
+    if !dry_run && !imported {
         log("nothing to import", &LogLevel::Info, log_file, true);
     }
 
