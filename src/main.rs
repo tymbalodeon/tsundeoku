@@ -98,8 +98,8 @@ fn get_binary_path() -> Result<PathBuf> {
     Ok(get_home_directory()?.join(".cargo").join("bin").join("tsu"))
 }
 
+#[derive(Debug)]
 pub enum LogLevel {
-    Import,
     Info,
     Warning,
     Error,
@@ -115,42 +115,35 @@ pub fn log(
     log_file: Option<&File>,
     write: bool,
 ) {
-    let log_level = match level {
-        LogLevel::Import => "  Imported".green().to_string(),
-        LogLevel::Info => "info".to_string(),
-        LogLevel::Warning => format!("{}", "warning".yellow()),
-        LogLevel::Error => format!("{}", "error".red()),
-    };
+    let message = match level {
+        LogLevel::Info => None,
+        LogLevel::Warning => Some("warning.yellow()".to_string()),
+        LogLevel::Error => Some("error".red().to_string()),
+    }
+    .map_or(message.to_string(), |level_label| {
+        format!("{level_label}: {message}")
+    });
 
-    let level_display = match level {
-        LogLevel::Warning | LogLevel::Error => &format!("{log_level}:"),
-        _ => &log_level,
-    };
-
-    let message_display = format!("{} {}", level_display.bold(), message);
-
-    if matches!(level, LogLevel::Import) {
-        println!("{message_display}");
+    if matches!(level, LogLevel::Info) {
+        println!("{message}");
     } else {
-        if !matches!(level, LogLevel::Info) {
-            eprintln!("{message_display}");
-        }
+        eprintln!("{message}");
+    }
 
-        if write {
-            if let Some(mut log_file) = log_file {
-                if let Err(error) = log_file.write_all(
-                    format!(
-                        "[{}] {:>7} {message}\n",
-                        Local::now().format("%Y-%m-%d %H:%M:%S"),
-                        log_level.to_uppercase().bold()
-                    )
-                    .as_bytes(),
-                ) {
-                    print_error(&error.to_string());
-                }
-            } else {
-                print_error("failed to write to log file");
+    if write {
+        if let Some(mut log_file) = log_file {
+            if let Err(error) = log_file.write_all(
+                format!(
+                    "[{}] {:>7} {message}\n",
+                    Local::now().format("%Y-%m-%d %H:%M:%S"),
+                    format!("{level:?}").to_uppercase().bold()
+                )
+                .as_bytes(),
+            ) {
+                print_error(&error.to_string());
             }
+        } else {
+            print_error("failed to write to log file");
         }
     }
 }

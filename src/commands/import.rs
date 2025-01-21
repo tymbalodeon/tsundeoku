@@ -6,6 +6,7 @@ use std::string::ToString;
 use std::vec::Vec;
 
 use anyhow::{anyhow, Context, Result};
+use colored::Colorize;
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
 use symphonia::core::meta::{MetadataOptions, StandardTagKey, Tag};
@@ -62,7 +63,7 @@ fn copy_file(
     imported_files_log: &mut File,
     log_file: Option<&File>,
     dry_run: bool,
-) -> Result<()> {
+) -> Result<Option<u64>> {
     let mut hint = Hint::new();
 
     if let Some(extension) =
@@ -103,7 +104,7 @@ fn copy_file(
             );
         }
 
-        return Ok(());
+        return Ok(None);
     };
 
     let container_metadata = probed.format.metadata();
@@ -187,16 +188,20 @@ fn copy_file(
         }
 
         log(
-            &file.display().to_string(),
-            &LogLevel::Import,
+            &format!(
+                "{} {}",
+                "  Imported".green(),
+                file.display()
+            ),
+            &LogLevel::Info,
             log_file,
             true,
         );
 
-        copied?;
+        return Ok(Some(copied?));
     }
 
-    Ok(())
+    Ok(None)
 }
 
 fn sync_imported_files(
@@ -294,24 +299,36 @@ pub fn import(
         .append(true)
         .open(imported_files_path)?;
 
+    let mut imported = false;
+
     for file in files {
-        if let Err(error) = copy_file(
+        match copy_file(
             &file,
             local_directory.to_owned(),
             &mut imported_files_log,
             log_file,
             dry_run,
         ) {
-            log(
-                &format!("{error}: {}", file.as_path().display()),
-                &LogLevel::Error,
-                log_file,
-                true,
-            );
-        }
+            Ok(copied) => {
+                if copied.is_some() {
+                    imported = true;
+                }
+            }
+
+            Err(error) => {
+                log(
+                    &format!("{error}: {}", file.as_path().display()),
+                    &LogLevel::Error,
+                    log_file,
+                    true,
+                );
+            }
+        };
     }
 
-    log("import complete", &LogLevel::Info, log_file, true);
+    if !imported {
+        log("nothing to import", &LogLevel::Info, log_file, true);
+    }
 
     Ok(())
 }
