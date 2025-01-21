@@ -5,11 +5,11 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.95"
-bat = "0.24.0"
+bat = "0.25.0"
 chrono = "0.4.39"
 clap = { version = "4.5.23", features = ["derive", "string"] }
-colored = "2.2.0"
-cron = { version = "0.14.0", features = ["serde"] }
+colored = "3.0.0"
+cron = { version = "0.15.0", features = ["serde"] }
 cron-descriptor = "0.1.1"
 english-to-cron = "0.1.2"
 home = "0.5.11"
