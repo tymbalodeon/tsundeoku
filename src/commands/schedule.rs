@@ -98,36 +98,19 @@ fn get_plist(
     label: &str,
     calendar_interval: &str,
     program_arguments: &[&str],
-    log: bool,
-) -> Result<String> {
-    let log_path = if log {
-        format!(
-            "<key>StandardOutPath</key>
-    <string>{log_path}</string>
-
-    <key>StandardErrorPath</key>
-    <string>{log_path}</string>",
-            log_path =
-                get_log_path()?.to_str().context("failed to get log path")?
-        )
-    } else {
-        String::new()
-    };
-
+) -> String {
     let program_arguments = program_arguments
         .iter()
         .map(|argument| format!("<string>{argument}</string>"))
         .collect::<Vec<String>>()
         .join("\n      ");
 
-    Ok(format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+    format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
 <plist version=\"1.0\">
   <dict>
     <key>Label</key>
     <string>{label}</string>
-
-    {log_path}
 
     <key>StartCalendarInterval</key>
     <dict>
@@ -139,7 +122,7 @@ fn get_plist(
       {program_arguments}
     </array>
   </dict>
-</plist>"))
+</plist>")
 }
 
 fn on(
@@ -183,8 +166,7 @@ fn on(
         &app_plist_file_name,
         &calendar_interval,
         &[&get_binary_path()?.display().to_string(), "import"],
-        true,
-    )?;
+    );
 
     let rotate_plist = get_plist(
         &rotate_plist_file_name,
@@ -196,8 +178,7 @@ fn on(
             "0",
             get_log_path()?.to_str().context("failed to get log path")?,
         ],
-        true,
-    )?;
+    );
 
     let app_plist_file = &get_plist_path(&app_plist_file_name)?;
     let rotate_plist_file = &get_plist_path(&rotate_plist_file_name)?;
