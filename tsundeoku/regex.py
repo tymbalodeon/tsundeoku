@@ -1,8 +1,0 @@
-BRACKET_YEAR_REGEX = r"\s\[\d{4}(\s(.*EP|.*single))?\]"
-YEAR_RANGE_REGEX = r"\s\[\d{4}(-|\/)(\d{2}|\d{4})\]"
-BRACKET_DISC_REGEX = r"\s\[(d|D)is(c|k)\s\d+\]"
-SOLO_INSTRUMENT_REGEX = r"\s\[solo.+\]"
-RECORDING_REGEX = r"\bRec\."
-RECORDINGS_REGEX = r"\bRecs"
-ORIGINAL_REGEX = r"\bOrig\."
-EDITION_REGEX = r"\bEd\."

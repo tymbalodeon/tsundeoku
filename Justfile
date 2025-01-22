@@ -58,45 +58,15 @@ alias find := find-recipe
 
 alias src := view-source
 
-mod python "just/python.just"
-
-# alias for `python _help`
-@_help *args:
-    just python _help {{ args }}
-
-# alias for `python add`
-@add *args:
-    just python add {{ args }}
-
-# alias for `python build`
-@build *args:
-    just python build {{ args }}
-
-# alias for `python pin`
-@pin *args:
-    just python pin {{ args }}
-
-# alias for `python profile`
-@profile *args:
-    just python profile {{ args }}
-
-# alias for `python remove`
-@remove *args:
-    just python remove {{ args }}
-
-# alias for `python run`
-@run *args:
-    just python run {{ args }}
-
-# alias for `python shell`
-@shell *args:
-    just python shell {{ args }}
-
-# alias for `python update`
-@update *args:
-    just python update {{ args }}
-
 mod rust "just/rust.just"
+
+# alias for `rust add`
+@add *args:
+    just rust add {{ args }}
+
+# alias for `rust build`
+@build *args:
+    just rust build {{ args }}
 
 # alias for `rust clean`
 @clean *args:
@@ -113,3 +83,15 @@ mod rust "just/rust.just"
 # alias for `rust install`
 @install *args:
     just rust install {{ args }}
+
+# alias for `rust remove`
+@remove *args:
+    just rust remove {{ args }}
+
+# alias for `rust run`
+@run *args:
+    just rust run {{ args }}
+
+# alias for `rust update`
+@update *args:
+    just rust update {{ args }}
