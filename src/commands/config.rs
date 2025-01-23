@@ -25,7 +25,7 @@ pub enum ConfigKey {
 }
 
 #[derive(Subcommand, Debug)]
-#[command(arg_required_else_help = true)]
+// #[command(arg_required_else_help = true)]
 pub enum Config {
     /// Open config file in $EDITOR
     Edit,
@@ -181,6 +181,33 @@ pub fn print_config(pretty_printer: &mut PrettyPrinter) -> Result<bool> {
     Ok(pretty_printer.theme("ansi").language("toml").print()?)
 }
 
+pub fn show(
+    config_values: &ConfigFile,
+    log_file: Option<&File>,
+    key: Option<&ConfigKey>,
+) -> Result<()> {
+    if let Some(key) = key {
+        let display = get_config_value_display(config_values, key)?;
+
+        if !display.is_empty() {
+            println!("{display}");
+        };
+    } else {
+        let toml = config_values.to_toml()?.into_bytes();
+        let mut pretty_printer = PrettyPrinter::new();
+
+        pretty_printer.input_from_bytes(&toml);
+
+        if let Err(error) = print_config(&mut pretty_printer) {
+            log(&error.to_string(), &LogLevel::Warning, log_file, false);
+
+            println!("{config_values:#?}");
+        }
+    }
+
+    Ok(())
+}
+
 pub fn config(
     command: &Config,
     config_path: &Path,
@@ -202,31 +229,7 @@ pub fn config(
             println!("{}", absolute(config_path)?.display());
         }
 
-        Config::Show { key } => {
-            if let Some(key) = key {
-                let display = get_config_value_display(config_values, key)?;
-
-                if !display.is_empty() {
-                    println!("{display}");
-                };
-            } else {
-                let toml = config_values.to_toml()?.into_bytes();
-                let mut pretty_printer = PrettyPrinter::new();
-
-                pretty_printer.input_from_bytes(&toml);
-
-                if let Err(error) = print_config(&mut pretty_printer) {
-                    log(
-                        &error.to_string(),
-                        &LogLevel::Warning,
-                        log_file,
-                        false,
-                    );
-
-                    println!("{config_values:#?}");
-                }
-            }
-        }
+        Config::Show { key } => show(config_values, log_file, key.as_ref())?,
     }
 
     Ok(())

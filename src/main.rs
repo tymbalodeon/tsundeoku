@@ -11,6 +11,7 @@ use anyhow::{Context, Error, Result};
 use chrono::Local;
 use clap::{Parser, Subcommand};
 use colored::Colorize;
+use commands::config::show;
 use home::home_dir;
 use path_dedot::ParseDot;
 
@@ -317,7 +318,11 @@ fn main() {
                 true,
             ),
 
-            Some(Commands::Config { command: None }) | None => Ok(()),
+            Some(Commands::Config { command: None }) => {
+                show(&config_values, log_file.as_ref(), None)
+            }
+
+            None => Ok(()),
         } {
             log(
                 &error.to_string(),
