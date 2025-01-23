@@ -202,6 +202,8 @@ pub fn warn_about_missing_shared_directories(config_values: &ConfigFile) {
 }
 
 fn main() {
+    colored::control::set_override(true);
+
     let cli = Cli::parse();
 
     let log_file = get_log_path().map_or_else(
