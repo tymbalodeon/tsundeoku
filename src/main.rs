@@ -69,6 +69,24 @@ enum Commands {
         #[command(subcommand)]
         command: Option<Schedule>,
     },
+
+    /// Show all files in shared directories
+    SharedFiles {
+        #[arg(long)]
+        #[arg(num_args(0..))]
+        #[arg(value_name = "DIR")]
+        shared_directories: Option<Vec<PathBuf>>,
+
+        // TODO allow wildcards
+        #[arg(long)]
+        #[arg(num_args(0..))]
+        #[arg(value_name = "PATH")]
+        ignored_paths: Option<Vec<PathBuf>>,
+
+        #[arg(long)]
+        #[arg(value_name = "DIR")]
+        local_directory: Option<PathBuf>,
+    },
 }
 
 /// Import audio files from a shared folder to a local folder
@@ -285,7 +303,21 @@ fn main() {
                 schedule(&config_values, command.as_ref(), log_file.as_ref())
             }
 
-            _ => Ok(()),
+            Some(Commands::SharedFiles {
+                shared_directories,
+                ignored_paths,
+                local_directory,
+            }) => import(
+                &config_values,
+                shared_directories.as_ref(),
+                ignored_paths.as_ref(),
+                local_directory.as_ref(),
+                log_file.as_ref(),
+                true,
+                true,
+            ),
+
+            Some(Commands::Config { command: None }) | None => Ok(()),
         } {
             log(
                 &error.to_string(),
