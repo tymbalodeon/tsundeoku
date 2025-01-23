@@ -63,7 +63,10 @@ enum Commands {
     Imported,
 
     /// Show import logs
-    Logs,
+    Logs {
+        #[arg(long)]
+        imported: bool,
+    },
 
     /// Enable and disable scheduled imports
     Schedule {
@@ -294,8 +297,8 @@ fn main() {
                 Ok(())
             }
 
-            Some(Commands::Logs) => {
-                logs(&config_values, log_file.as_ref());
+            Some(Commands::Logs { imported }) => {
+                logs(&config_values, log_file.as_ref(), *imported);
 
                 Ok(())
             }
