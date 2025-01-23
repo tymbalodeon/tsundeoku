@@ -1,5 +1,6 @@
 {pkgs}: {
-  packages = [
-    pkgs.vhs
+  packages = with pkgs; [
+    mdbook
+    vhs
   ];
 }
