@@ -1832,9 +1832,9 @@ dependencies = [
 
 [[package]]
 name = "terminal-colorsaurus"
-version = "0.4.7"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "858625398bdd5da7a96e8ad33a10031a50c3a5ad50d5aaa81a2827369a9c216c"
+checksum = "b7afe4c174a3cbfb52ebcb11b28965daf74fe9111d4e07e40689d05af06e26e8"
 dependencies = [
  "cfg-if",
  "libc",
@@ -1842,13 +1842,14 @@ dependencies = [
  "mio",
  "terminal-trx",
  "windows-sys 0.59.0",
+ "xterm-color",
 ]
 
 [[package]]
 name = "terminal-trx"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57a5b836e7f4f81afe61b5cd399eee774f25edcfd47009a76e29f53bb6487833"
+checksum = "975b4233aefa1b02456d5e53b22c61653c743e308c51cf4181191d8ce41753ab"
 dependencies = [
  "cfg-if",
  "libc",
@@ -2004,9 +2005,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.14"
+version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adb9e6ca4f869e1180728b7950e35922a7fc6397f7b641499e8f3ef06e50dc83"
+checksum = "11cd88e12b17c6494200a9c1b683a04fcac9573ed74cd1b62aeb2727c5592243"
 
 [[package]]
 name = "unicode-width"
@@ -2455,6 +2456,12 @@ name = "writeable"
 version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e9df38ee2d2c3c5948ea468a8406ff0db0b29ae1ffde1bcf20ef305bcc95c51"
+
+[[package]]
+name = "xterm-color"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4de5f056fb9dc8b7908754867544e26145767187aaac5a98495e88ad7cb8a80f"
 
 [[package]]
 name = "yaml-rust"
