@@ -137,7 +137,7 @@ pub fn log(
     log_file: Option<&File>,
     write: bool,
 ) {
-    let message = match level {
+    let printed_message = match level {
         LogLevel::Info => None,
         LogLevel::Warning => Some("warning.yellow()".to_string()),
         LogLevel::Error => Some("error".red().to_string()),
@@ -147,18 +147,27 @@ pub fn log(
     });
 
     if matches!(level, LogLevel::Info) {
-        println!("{message}");
+        println!("{printed_message}");
     } else {
-        eprintln!("{message}");
+        eprintln!("{printed_message}");
     }
 
     if write {
+        let mut level_display =
+            format!("{level:?}").to_uppercase().bold().to_string();
+
+        level_display = match *level {
+            LogLevel::Info => level_display,
+            LogLevel::Warning => level_display.yellow().to_string(),
+            LogLevel::Error => level_display.red().to_string(),
+        };
+
         if let Some(mut log_file) = log_file {
             if let Err(error) = log_file.write_all(
                 format!(
                     "[{}] {:>7} {}\n",
                     Local::now().format("%Y-%m-%d %H:%M:%S"),
-                    format!("{level:?}").to_uppercase().bold(),
+                    level_display,
                     message.trim()
                 )
                 .as_bytes(),
