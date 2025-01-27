@@ -153,8 +153,7 @@ pub fn log(
     }
 
     if write {
-        let mut level_display =
-            format!("{level:?}").to_uppercase().bold().to_string();
+        let mut level_display = format!("{level:?}").to_uppercase();
 
         level_display = match *level {
             LogLevel::Info => level_display,
@@ -167,7 +166,7 @@ pub fn log(
                 format!(
                     "[{}] {:>7} {}\n",
                     Local::now().format("%Y-%m-%d %H:%M:%S"),
-                    level_display,
+                    level_display.bold(),
                     message.trim()
                 )
                 .as_bytes(),
