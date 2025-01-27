@@ -165,7 +165,11 @@ fn on(
     let app_plist = get_plist(
         &app_plist_file_name,
         &calendar_interval,
-        &[&get_binary_path()?.display().to_string(), "import"],
+        &[
+            &get_binary_path()?.display().to_string(),
+            "import",
+            "--is-scheduled",
+        ],
     );
 
     let rotate_plist = get_plist(
