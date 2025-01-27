@@ -5,8 +5,12 @@ use crate::{
     warn_about_missing_shared_directories, LogLevel,
 };
 
-pub fn imported(config_values: &ConfigFile, log_file: Option<&File>) {
-    warn_about_missing_shared_directories(config_values);
+pub fn imported(
+    config_values: &ConfigFile,
+    log_file: Option<&File>,
+    is_scheduled: bool,
+) {
+    warn_about_missing_shared_directories(config_values, is_scheduled);
 
     let imported_files =
         get_imported_files_path()

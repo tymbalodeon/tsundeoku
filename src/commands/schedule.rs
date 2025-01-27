@@ -300,8 +300,9 @@ pub fn schedule(
     config_values: &ConfigFile,
     command: Option<&Schedule>,
     log_file: Option<&File>,
+    is_scheduled: bool,
 ) -> Result<()> {
-    warn_about_missing_shared_directories(config_values);
+    warn_about_missing_shared_directories(config_values, is_scheduled);
 
     match command {
         Some(Schedule::On { interval }) => {

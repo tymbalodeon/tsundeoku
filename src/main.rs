@@ -57,6 +57,10 @@ enum Commands {
         #[arg(long)]
         #[arg(short)]
         force: bool,
+
+        #[arg(hide = true)]
+        #[arg(long)]
+        is_scheduled: bool,
     },
 
     /// Show shared directory files that have been imported
@@ -137,21 +141,6 @@ pub fn log(
     log_file: Option<&File>,
     write: bool,
 ) {
-    let printed_message = match level {
-        LogLevel::Info => None,
-        LogLevel::Warning => Some("warning.yellow()".to_string()),
-        LogLevel::Error => Some("error".red().to_string()),
-    }
-    .map_or(message.to_string(), |level_label| {
-        format!("{level_label}: {message}")
-    });
-
-    if matches!(level, LogLevel::Info) {
-        println!("{printed_message}");
-    } else {
-        eprintln!("{printed_message}");
-    }
-
     if write {
         let mut level_display = format!("{level:?}").to_uppercase();
 
@@ -175,6 +164,21 @@ pub fn log(
             }
         } else {
             print_error("failed to write to log file");
+        }
+    } else {
+        let message = match level {
+            LogLevel::Info => None,
+            LogLevel::Warning => Some("warning.yellow()".to_string()),
+            LogLevel::Error => Some("error".red().to_string()),
+        }
+        .map_or(message.to_string(), |level_label| {
+            format!("{level_label}: {message}")
+        });
+
+        if matches!(level, LogLevel::Info) {
+            println!("{message}");
+        } else {
+            eprintln!("{message}");
         }
     }
 }
@@ -220,13 +224,16 @@ fn get_log_path() -> Result<PathBuf> {
     Ok(get_state_directory()?.join(format!("{}.log", get_app_name())))
 }
 
-pub fn warn_about_missing_shared_directories(config_values: &ConfigFile) {
+pub fn warn_about_missing_shared_directories(
+    config_values: &ConfigFile,
+    is_scheduled: bool,
+) {
     if config_values.shared_directories.is_empty() {
         log(
             "shared-directories is not set",
             &LogLevel::Warning,
             None,
-            false,
+            is_scheduled,
         );
     }
 }
@@ -255,32 +262,33 @@ fn main() {
                 "failed to read config file",
                 &LogLevel::Error,
                 log_file.as_ref(),
-                true,
+                matches!(
+                    &cli.command,
+                    Some(Commands::Import {
+                        shared_directories: _,
+                        ignored_paths: _,
+                        local_directory: _,
+                        dry_run: _,
+                        no_reformat: _,
+                        force: _,
+                        is_scheduled: _
+                    })
+                ),
             );
 
             return;
         };
 
-        let command = &cli.command;
-
-        let should_log = matches!(
-            command,
-            Some(Commands::Import {
-                shared_directories: _,
-                ignored_paths: _,
-                local_directory: _,
-                dry_run: _,
-                no_reformat: _,
-                force: _,
-            })
-        );
-
-        if let Err(error) = match command {
+        if let Err(error) = match &cli.command {
             Some(Commands::Config {
                 command: Some(command),
-            }) => {
-                config(command, config_path, &config_values, log_file.as_ref())
-            }
+            }) => config(
+                command,
+                config_path,
+                &config_values,
+                log_file.as_ref(),
+                false,
+            ),
 
             Some(Commands::Import {
                 shared_directories,
@@ -289,6 +297,7 @@ fn main() {
                 dry_run,
                 no_reformat: _,
                 force,
+                is_scheduled,
             }) => import(
                 &config_values,
                 shared_directories.as_ref(),
@@ -297,23 +306,27 @@ fn main() {
                 log_file.as_ref(),
                 *dry_run,
                 *force,
+                *is_scheduled,
             ),
 
             Some(Commands::Imported) => {
-                imported(&config_values, log_file.as_ref());
+                imported(&config_values, log_file.as_ref(), false);
 
                 Ok(())
             }
 
             Some(Commands::Logs { imported }) => {
-                logs(&config_values, log_file.as_ref(), *imported);
+                logs(&config_values, log_file.as_ref(), *imported, false);
 
                 Ok(())
             }
 
-            Some(Commands::Schedule { command }) => {
-                schedule(&config_values, command.as_ref(), log_file.as_ref())
-            }
+            Some(Commands::Schedule { command }) => schedule(
+                &config_values,
+                command.as_ref(),
+                log_file.as_ref(),
+                false,
+            ),
 
             Some(Commands::SharedFiles {
                 shared_directories,
@@ -327,6 +340,7 @@ fn main() {
                 log_file.as_ref(),
                 true,
                 true,
+                false,
             ),
 
             Some(Commands::Config { command: None }) => {
@@ -339,7 +353,7 @@ fn main() {
                 &error.to_string(),
                 &LogLevel::Error,
                 log_file.as_ref(),
-                should_log,
+                false,
             );
         }
     } else {
@@ -348,6 +362,22 @@ fn main() {
             |config_file| format!("{config_file} does not exist"),
         );
 
-        log(&message, &LogLevel::Error, log_file.as_ref(), true);
+        log(
+            &message,
+            &LogLevel::Error,
+            log_file.as_ref(),
+            matches!(
+                &cli.command,
+                Some(Commands::Import {
+                    shared_directories: _,
+                    ignored_paths: _,
+                    local_directory: _,
+                    dry_run: _,
+                    no_reformat: _,
+                    force: _,
+                    is_scheduled: _
+                })
+            ),
+        );
     };
 }

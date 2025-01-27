@@ -29,8 +29,9 @@ pub fn logs(
     config_values: &ConfigFile,
     log_file: Option<&File>,
     imported: bool,
+    is_scheduled: bool,
 ) {
-    warn_about_missing_shared_directories(config_values);
+    warn_about_missing_shared_directories(config_values, is_scheduled);
 
     get_log_path().map_or_else(
         |error| log(&error.to_string(), &LogLevel::Error, log_file, false),

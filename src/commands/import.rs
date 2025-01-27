@@ -63,6 +63,7 @@ fn copy_file(
     imported_files_log: &mut File,
     log_file: Option<&File>,
     dry_run: bool,
+    is_scheduled: bool,
 ) -> Result<Option<u64>> {
     let mut hint = Hint::new();
 
@@ -100,7 +101,7 @@ fn copy_file(
                 ),
                 &LogLevel::Warning,
                 log_file,
-                true,
+                is_scheduled,
             );
         }
 
@@ -191,7 +192,7 @@ fn copy_file(
             &format!("{} {}", "  Imported".green(), file.display()),
             &LogLevel::Info,
             log_file,
-            true,
+            is_scheduled,
         );
 
         return Ok(Some(copied?));
@@ -233,6 +234,7 @@ pub fn import(
     log_file: Option<&File>,
     dry_run: bool,
     force: bool,
+    is_scheduled: bool,
 ) -> Result<()> {
     let shared_directories = get_config_value(
         shared_directories,
@@ -242,7 +244,7 @@ pub fn import(
     if shared_directories.is_empty() {
         let error_message = "shared-directories is not set";
 
-        log(error_message, &LogLevel::Error, log_file, true);
+        log(error_message, &LogLevel::Error, log_file, is_scheduled);
 
         return Err(anyhow!(error_message));
     }
@@ -304,6 +306,7 @@ pub fn import(
             &mut imported_files_log,
             log_file,
             dry_run,
+            is_scheduled,
         ) {
             Ok(copied) => {
                 if copied.is_some() {
@@ -316,14 +319,14 @@ pub fn import(
                     &format!("{error}: {}", file.as_path().display()),
                     &LogLevel::Error,
                     log_file,
-                    true,
+                    is_scheduled,
                 );
             }
         };
     }
 
     if !dry_run && !imported {
-        log("nothing to import", &LogLevel::Info, log_file, true);
+        log("nothing to import", &LogLevel::Info, log_file, is_scheduled);
     }
 
     Ok(())
