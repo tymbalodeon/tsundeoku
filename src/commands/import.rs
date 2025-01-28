@@ -189,7 +189,7 @@ fn copy_file(
         }
 
         log(
-            &format!("{} {}", "  Imported".green(), file.display()),
+            &format!("{} {}", "Imported".green(), file.display()),
             &LogLevel::Info,
             log_file,
             is_scheduled,

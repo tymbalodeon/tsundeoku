@@ -176,7 +176,7 @@ pub fn log(
         });
 
         if matches!(level, LogLevel::Info) {
-            println!("{message}");
+            println!("  {message}");
         } else {
             eprintln!("{message}");
         }
