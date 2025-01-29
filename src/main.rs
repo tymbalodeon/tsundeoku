@@ -176,7 +176,7 @@ pub fn log(
         });
 
         if matches!(level, LogLevel::Info) {
-            let message = if message.starts_with("Imported") {
+            let message = if message.contains("Imported") {
                 format!("  {message}")
             } else {
                 message
