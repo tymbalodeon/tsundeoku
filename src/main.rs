@@ -145,9 +145,11 @@ pub fn log(
         let mut level_display = format!("{level:?}").to_uppercase();
 
         level_display = match *level {
-            LogLevel::Info => level_display,
+            LogLevel::Info => format!("   {level_display}"),
             LogLevel::Warning => level_display.yellow().to_string(),
-            LogLevel::Error => level_display.red().to_string(),
+            LogLevel::Error => {
+                format!("  {}", level_display.red())
+            }
         };
 
         if let Some(mut log_file) = log_file {
