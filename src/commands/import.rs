@@ -95,10 +95,7 @@ fn copy_file(
 
         if should_warn {
             log(
-                &format!(
-                    "failed to read audio file metadata for {}",
-                    file.as_path().display()
-                ),
+                &format!("failed to detect tags for {}", file.display()),
                 &LogLevel::Warning,
                 log_file,
                 is_scheduled,
