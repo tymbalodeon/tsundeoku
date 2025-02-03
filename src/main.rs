@@ -170,7 +170,7 @@ pub fn log(
     } else {
         let message = match level {
             LogLevel::Info => None,
-            LogLevel::Warning => Some("warning.yellow()".to_string()),
+            LogLevel::Warning => Some("warning".yellow().to_string()),
             LogLevel::Error => Some("error".red().to_string()),
         }
         .map_or(message.to_string(), |level_label| {

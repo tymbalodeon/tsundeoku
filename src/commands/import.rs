@@ -256,9 +256,27 @@ pub fn import(
                 .into_iter()
                 .filter_map(Result::ok)
                 .filter(|dir_entry| {
-                    Path::is_file(dir_entry.path())
-                        && !ignored_paths
-                            .contains(&dir_entry.path().to_path_buf())
+                    if Path::is_file(dir_entry.path()) {
+                        let mut include = true;
+
+                        dir_entry.path().to_str().map_or(include, |path| {
+                            for ignored_path in ignored_paths {
+                                if let Some(ignored_path) =
+                                    ignored_path.to_str()
+                                {
+                                    include = !path.contains(ignored_path);
+
+                                    if !include {
+                                        break;
+                                    }
+                                }
+                            }
+
+                            include
+                        })
+                    } else {
+                        false
+                    }
                 })
                 .map(|dir_entry| dir_entry.path().to_path_buf())
                 .collect::<Vec<PathBuf>>()
