@@ -117,10 +117,7 @@ fn copy_file(
                 .as_ref()
                 .and_then(|metadata| metadata.current())
                 .map(symphonia_core::meta::MetadataRevision::tags)
-                .context(format!(
-                    "failed to detect tags for {} ",
-                    file.display()
-                ))
+                .context("failed to detect tags")
         },
         |metadata| Ok(metadata.tags()),
     )?;
