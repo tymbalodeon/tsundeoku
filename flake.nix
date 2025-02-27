@@ -15,7 +15,11 @@
 
           modules =
             map (module: (import ./nix/${module} {inherit pkgs;}))
-            (builtins.attrNames (builtins.readDir ./nix));
+            (
+              if (builtins.pathExists ./nix)
+              then (builtins.attrNames (builtins.readDir ./nix))
+              else []
+            );
 
           pkgs = import nixpkgs {inherit system;};
         });
@@ -46,6 +50,7 @@
               gh
               git
               glab
+              jujutsu
               just
               lychee
               markdown-oxide
@@ -57,6 +62,7 @@
               pre-commit
               python312Packages.pre-commit-hooks
               ripgrep
+              serie
               statix
               stylelint
               taplo

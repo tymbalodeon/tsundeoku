@@ -1,12 +1,16 @@
-# View help text
-@help *recipe:
-    ./scripts/help.nu {{ recipe }}
+[private]
+@default:
+    just help --default
+
+# View full help text, or for a specific recipe
+@help *args:
+    ./scripts/help.nu {{ args }}
 
 # Check flake and run pre-commit hooks
 @check *args:
     ./scripts/check.nu {{ args }}
 
-# List dependencies (alias: `deps`)
+# List dependencies
 @dependencies *args:
     ./scripts/dependencies.nu {{ args }}
 
@@ -61,37 +65,46 @@ alias src := view-source
 mod rust "just/rust.just"
 
 # alias for `rust add`
+[group("aliases")]
 @add *args:
     just rust add {{ args }}
 
 # alias for `rust build`
+[group("aliases")]
 @build *args:
     just rust build {{ args }}
 
 # alias for `rust clean`
+[group("aliases")]
 @clean *args:
     just rust clean {{ args }}
 
 # alias for `rust clippy`
+[group("aliases")]
 @clippy *args:
     just rust clippy {{ args }}
 
 # alias for `rust dev`
+[group("aliases")]
 @dev *args:
     just rust dev {{ args }}
 
 # alias for `rust install`
+[group("aliases")]
 @install *args:
     just rust install {{ args }}
 
 # alias for `rust remove`
+[group("aliases")]
 @remove *args:
     just rust remove {{ args }}
 
 # alias for `rust run`
+[group("aliases")]
 @run *args:
     just rust run {{ args }}
 
 # alias for `rust update`
+[group("aliases")]
 @update *args:
     just rust update {{ args }}
