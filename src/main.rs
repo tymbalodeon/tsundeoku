@@ -12,6 +12,7 @@ use chrono::Local;
 use clap::{Parser, Subcommand};
 use colored::Colorize;
 use commands::config::show;
+use commands::logs::LogCommand;
 use home::home_dir;
 use path_dedot::ParseDot;
 
@@ -66,8 +67,11 @@ enum Commands {
     /// Show shared directory files that have been imported
     Imported,
 
-    /// Show import logs
+    /// Show and clear import logs
     Logs {
+        #[command(subcommand)]
+        command: Option<LogCommand>,
+
         #[arg(long)]
         imported: bool,
     },
@@ -323,8 +327,14 @@ fn main() {
                 Ok(())
             }
 
-            Some(Commands::Logs { imported }) => {
-                logs(&config_values, log_file.as_ref(), *imported, false);
+            Some(Commands::Logs { command, imported }) => {
+                logs(
+                    &config_values,
+                    command.as_ref(),
+                    log_file.as_ref(),
+                    *imported,
+                    false,
+                );
 
                 Ok(())
             }
