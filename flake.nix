@@ -1,5 +1,10 @@
 {
   inputs = {
+    environments = {
+      inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:tymbalodeon/environments?dir=src";
+    };
+
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
     nutest = {
@@ -9,14 +14,53 @@
   };
 
   outputs = {
+    environments,
     nixpkgs,
     nutest,
     ...
-  }: let
-    forEachSupportedSystem = f:
-      nixpkgs.lib.genAttrs supportedSystems
-      (system:
-        f rec {
+  }: {
+    devShells =
+      nixpkgs.lib.genAttrs [
+        "x86_64-darwin"
+        "x86_64-linux"
+      ] (
+        system: let
+          activeEnvironments =
+            [
+              "generic"
+              "git"
+              "nix"
+              "yaml"
+            ]
+            ++ (
+              if builtins.pathExists ./.environments.toml
+              then
+                (
+                  builtins.fromTOML (builtins.readFile ./.environments.toml)
+                )
+                .environments
+              else []
+            );
+
+          getFilenames = dir: (
+            if builtins.pathExists dir
+            then builtins.attrNames (builtins.readDir dir)
+            else []
+          );
+
+          inactiveEnvironments =
+            builtins.filter
+            (environment: !(builtins.elem environment activeEnvironments))
+            (
+              let
+                srcDirectory = builtins.readDir environments;
+                srcDirectoryItems = builtins.attrNames srcDirectory;
+              in
+                builtins.filter
+                (item: srcDirectory.${item} == "directory")
+                srcDirectoryItems
+            );
+
           mergeModuleAttrs = {
             attr,
             nullValue,
@@ -25,86 +69,76 @@
             (map (module: module.${attr} or nullValue) modules);
 
           modules =
-            map (module: (import ./nix/${module} {inherit pkgs;}))
-            (
-              if (builtins.pathExists ./nix)
-              then (builtins.attrNames (builtins.readDir ./nix))
-              else []
-            );
+            map
+            (module: (import ./nix/${module} {inherit pkgs;}))
+            (getFilenames ./nix);
 
-          pkgs = import nixpkgs {inherit system;};
-        });
+          pkgs = import nixpkgs {
+            config.allowUnfree = true;
+            inherit system;
+          };
+        in {
+          default = pkgs.mkShellNoCC ({
+              inputsFrom =
+                builtins.map
+                (environment: environments.devShells.${system}.${environment})
+                activeEnvironments;
 
-    supportedSystems = [
-      "x86_64-darwin"
-      "x86_64-linux"
-    ];
-  in {
-    devShells = forEachSupportedSystem ({
-      mergeModuleAttrs,
-      modules,
-      pkgs,
-    }: {
-      default = pkgs.mkShell ({
-          packages = with pkgs;
-            [
-              alejandra
-              ansible-language-server
-              bat
-              cocogitto
-              deadnix
-              delta
-              eza
-              fd
-              flake-checker
-              fzf
-              gh
-              git
-              glab
-              jujutsu
-              just
-              lychee
-              markdown-oxide
-              marksman
-              nb
-              nil
-              nodePackages.prettier
-              nushell
-              pre-commit
-              python312Packages.pre-commit-hooks
-              ripgrep
-              serie
-              statix
-              stylelint
-              taplo
-              tokei
-              vscode-langservers-extracted
-              yaml-language-server
-              yamlfmt
-            ]
-            ++ mergeModuleAttrs {
-              attr = "packages";
-              nullValue = [];
-            };
+              packages = mergeModuleAttrs {
+                attr = "packages";
+                nullValue = [];
+              };
 
-          shellHook = with pkgs;
-            lib.concatLines (
-              [
-                "pre-commit install --hook-type commit-msg"
-                "export NUTEST=${nutest}"
-              ]
-              ++ mergeModuleAttrs {
-                attr = "shellHook";
-                nullValue = "";
-              }
-            );
+              shellHook = let
+                getArgsOrNone = args:
+                  if args == ""
+                  then "none"
+                  else args;
+              in
+                with pkgs;
+                  lib.concatLines (
+                    [
+                      ''
+                        export NUTEST=${nutest}
+                        export ENVIRONMENTS=${environments}
+
+                        ${pre-commit}/bin/pre-commit install \
+                          --hook-type commit-msg \
+                          --overwrite
+
+                        ${nushell}/bin/nu ${environments}/shell-hook.nu \
+                          --active-environments "${
+                          getArgsOrNone (lib.concatStringsSep " " activeEnvironments)
+                        }" \
+                          --environments-directory "${environments}" \
+                          --inactive-environments "${
+                          getArgsOrNone (lib.concatStringsSep " " inactiveEnvironments)
+                        }" \
+                          --local-justfiles "${
+                          getArgsOrNone (lib.concatStringsSep " " (
+                            map
+                            (filename:
+                              builtins.elemAt
+                              (lib.strings.splitString "." filename)
+                              0)
+                            (getFilenames ./just)
+                          ))
+                        }"
+                      ''
+                    ]
+                    ++ mergeModuleAttrs {
+                      attr = "shellHook";
+                      nullValue = "";
+                    }
+                  );
+            }
+            // builtins.foldl'
+            (a: b: a // b)
+            {}
+            (map
+              (module: builtins.removeAttrs module ["packages" "shellHook"])
+              modules));
         }
-        // builtins.foldl'
-        (a: b: a // b)
-        {}
-        (map
-          (module: builtins.removeAttrs module ["packages" "shellHook"])
-          modules));
-    });
+      );
   };
 }

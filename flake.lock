@@ -1,12 +1,34 @@
 {
   "nodes": {
+    "environments": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "dir": "src",
+        "lastModified": 1748138699,
+        "narHash": "sha256-mJ0DbMiA9e8daYqzq4Nj0JTz0BXGSj9dvq5lWOD6qiM=",
+        "owner": "tymbalodeon",
+        "repo": "environments",
+        "rev": "e9f4f211047f98696388abc0360ba4d8361fb4e5",
+        "type": "github"
+      },
+      "original": {
+        "dir": "src",
+        "owner": "tymbalodeon",
+        "repo": "environments",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1743095683,
-        "narHash": "sha256-gWd4urRoLRe8GLVC/3rYRae1h+xfQzt09xOfb0PaHSk=",
+        "lastModified": 1748026106,
+        "narHash": "sha256-6m1Y3/4pVw1RWTsrkAK2VMYSzG4MMIj7sqUy7o8th1o=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "5e5402ecbcb27af32284d4a62553c019a3a49ea6",
+        "rev": "063f43f2dbdef86376cc29ad646c45c46e93234c",
         "type": "github"
       },
       "original": {
@@ -19,11 +41,11 @@
     "nutest": {
       "flake": false,
       "locked": {
-        "lastModified": 1739469972,
-        "narHash": "sha256-lGV2TRJvZnXdPTFau3nB4bWNlMacPm0YYo6HXRHloE0=",
+        "lastModified": 1745000154,
+        "narHash": "sha256-z8/6NqBbk/VoVjvRl80mZn48edoggCUJfQK6zq+L1JU=",
         "owner": "vyadh",
         "repo": "nutest",
-        "rev": "d19774c07482268f77f050480f1220c1155a8286",
+        "rev": "f5b251469aa51c3a95fd1caeac8acbcbccb91a27",
         "type": "github"
       },
       "original": {
@@ -34,6 +56,7 @@
     },
     "root": {
       "inputs": {
+        "environments": "environments",
         "nixpkgs": "nixpkgs",
         "nutest": "nutest"
       }
