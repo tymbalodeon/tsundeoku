@@ -4,11 +4,10 @@ use anyhow::Result;
 use bat::PrettyPrinter;
 use clap::Subcommand;
 
+use super::config::ConfigFile;
 use crate::{
     get_log_path, log, warn_about_missing_shared_directories, LogLevel,
 };
-
-use super::config::ConfigFile;
 
 #[derive(Subcommand, Debug)]
 pub enum LogCommand {
@@ -87,5 +86,5 @@ pub fn logs(
     match command {
         Some(LogCommand::Clear) => clear(log_file),
         None | Some(LogCommand::Show) => show(log_file, imported),
-    };
+    }
 }

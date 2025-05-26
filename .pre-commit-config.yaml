@@ -77,12 +77,13 @@ repos:
   - repo: https://github.com/doublify/pre-commit-rust
     rev: v1.0
     hooks:
-      - id: fmt
-      - id: cargo-check
+    - id: fmt
+    - id: cargo-check
   - repo: local
     hooks:
-      - id: clippy
-        name: clippy
-        language: system
-        entry: just clippy
-        pass_filenames: false
+    - id: clippy
+      name: clippy
+      language: system
+      entry: just clippy
+      pass_filenames: false
+  

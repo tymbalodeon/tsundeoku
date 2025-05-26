@@ -334,7 +334,7 @@ pub fn import(
                     is_scheduled,
                 );
             }
-        };
+        }
     }
 
     if !dry_run && !imported {

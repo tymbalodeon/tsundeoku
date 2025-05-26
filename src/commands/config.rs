@@ -191,7 +191,7 @@ pub fn show(
 
         if !display.is_empty() {
             println!("{display}");
-        };
+        }
     } else {
         let toml = config_values.to_toml()?.into_bytes();
         let mut pretty_printer = PrettyPrinter::new();

@@ -319,7 +319,7 @@ pub fn schedule(
         Some(Schedule::Next { interval }) => {
             next(config_values, interval.as_ref());
         }
-    };
+    }
 
     Ok(())
 }
