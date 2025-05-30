@@ -2,6 +2,18 @@
 
 use environment.nu get-project-root
 
+# Clean pre-commit cache
+def "main clean" [] {
+  cd (get-project-root)
+  pre-commit clean
+}
+
+# Run `nix flake check`
+def "main flake" [] {
+  cd (get-project-root)
+  nix flake check
+}
+
 export def get-pre-commit-hook-names [config: record<repos: list<any>>] {
   $config
   | get repos.hooks
@@ -10,12 +22,6 @@ export def get-pre-commit-hook-names [config: record<repos: list<any>>] {
   | append flake
   | sort
   | to text --no-newline
-}
-
-# Run `nix flake check`
-def --wrapped "main flake" [...$args] {
-  cd (get-project-root)
-  nix flake check ...$args
 }
 
 # List hook ids

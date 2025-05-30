@@ -1,50 +1,5 @@
 #!/usr/bin/env nu
 
-export def display-message [
-  action: string
-  message: string
-  --color-entire-message
-  --color: string
-] {
-  let color = if ($color | is-not-empty) {
-    $color
-  } else match $color_entire_message {
-    true => (
-      match $action {
-        "Added" =>  "light_green_bold"
-        "Removed" => "light_yellow_bold"
-        "Skipped" => "light_gray_bold"
-        "Upgraded" =>  "light_cyan_bold"
-        _ => "white"
-      }
-    )
-
-    false => (
-      match $action {
-        "Added" =>  "green_bold"
-        "Removed" => "yellow_bold"
-        "Skipped" => "light_gray_dimmed"
-        "Upgraded" =>  "cyan_bold"
-        _ => "white"
-      }
-    )
-  }
-
-  mut action = $action
-
-  while (($action | split chars | length) < 8) {
-    $action = $" ($action)"
-  }
-
-  let message = if $color_entire_message {
-    $"(ansi $color)($action) ($message)(ansi reset)"
-  } else {
-    $"(ansi $color)($action)(ansi reset) ($message)"
-  }
-
-  print $"  ($message)"
-}
-
 export def get-project-root [] {
   echo (git rev-parse --show-toplevel)
 }
@@ -69,13 +24,22 @@ def "main activate" [] {
   direnv allow
 }
 
-# Add environments to the project
-export def "main add" [...environments: string] {
-  if not (".environments.toml" | path exists) {
-    {environments: []}
-    | to toml
-    | save .environments.toml
+def initialize [] {
+  try {
+    if not (".environments.toml" | path exists) {
+      cp $"($env.ENVIRONMENTS)/generic/.environments.toml" .
+    }
+
+    cp $"($env.ENVIRONMENTS)/generic/flake.nix" .
+    chmod +w flake.nix
   }
+}
+
+# Add environments to the project
+export def "main add" [
+  ...environments: string # Environments to add
+] {
+  initialize
 
   open .environments.toml
   | update environments (
@@ -91,8 +55,8 @@ export def "main add" [...environments: string] {
 
 # List environments and files
 def "main list" [
-  environment?: string
-  path?: string
+  environment?: string # An environment whose files to lise
+  path?: string # An environment path whose files to list
 ] {
   if ($environment | is-empty) {
     ls --short-names $env.ENVIRONMENTS
@@ -112,22 +76,37 @@ def "main list" [
 }
 
 # List installed environments
-def "main list installed" [] {
+def "main list installed" [
+  --all # Show all installed environments
+  --default # Show only default installed environments
+  --user # Show only user installed environments [default]
+] {
   # TODO: show local environments
-  (open .environments.toml).environments
+  let default_environments = (
+    open $"($env.ENVIRONMENTS)/generic/.environments.toml"
+  ).environments
+
+  let environments = (open .environments.toml).environments
+
+  let environments = if $all {
+    $environments
+  } else if $default {
+    $environments
+    | where {$in in $default_environments}
+  } else {
+    $environments
+    | where {$in not-in $default_environments}
+  }
+
+  $environments
   | str join "\n"
 }
 
 # Remove environments from the project
 def "main remove" [
-  ...environments: string
-  --reactivate
+  ...environments: string # Environments to remove
 ] {
-  if not (".environments.toml" | path exists) {
-    {environments: []}
-    | to toml
-    | save .environments.toml
-  }
+  initialize
 
   open .environments.toml
   | update environments (
@@ -139,10 +118,10 @@ def "main remove" [
   main activate
 }
 
-# View the contents of a remote environment file
+# View the contents of an environment file
 def "main source" [
-  environment: string
-  file: string
+  environment: string # The environment whose file to view
+  file: string # The file to view
 ] {
   # TODO: make env and file optional and use fzf in those cases
   let files = (^fd $file $"($env.ENVIRONMENTS)/($environment)")
@@ -187,9 +166,19 @@ def "main test" [
 
 # Update environment dependencies
 def "main update" [] {
+  let remote_url = (
+    "https://raw.githubusercontent.com/tymbalodeon/environments/trunk"
+  )
+
+  let project_root = (git rev-parse --show-toplevel)
+
+  http get $"($remote_url)/src/generic/flake.nix"
+  | save --force $"($project_root)/flake.nix"
+
   nix flake update
+  main activate
 }
 
 def main [] {
-  main list installed
+  help main
 }

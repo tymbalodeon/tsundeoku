@@ -1,1 +1,8 @@
-environments = ["rust"]
+environments = [
+    "generic",
+    "git",
+    "nix",
+    "rust",
+    "toml",
+    "yaml",
+]
