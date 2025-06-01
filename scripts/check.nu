@@ -55,6 +55,9 @@ export def main [
     main update
   }
 
-  main flake
+  if ($hooks | is-empty) {
+    main flake
+  }
+
   main pre-commit $hooks
 }

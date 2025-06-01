@@ -1,0 +1,34 @@
+default_mode "locked"
+
+layout {
+    tab name="src" {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+
+        pane {
+            command "hx"
+            args "src/main.rs"
+        }
+
+        pane size=2 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+    }
+
+    tab name="clippy" {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+
+        pane {
+            command "cargo"
+            args "clippy"
+        }
+
+        pane size=2 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+    }
+
+}
