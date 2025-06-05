@@ -24,10 +24,15 @@ def "main activate" [] {
   direnv allow
 }
 
+def copy-environments-toml [] {
+  cp $"($env.ENVIRONMENTS)/generic/.environments.toml" .
+  chmod +w .environments.toml
+}
+
 def initialize [] {
   try {
     if not (".environments.toml" | path exists) {
-      cp $"($env.ENVIRONMENTS)/generic/.environments.toml" .
+      copy-environments-toml
     }
 
     cp $"($env.ENVIRONMENTS)/generic/flake.nix" .
@@ -120,12 +125,16 @@ def "main remove" [
 ] {
   initialize
 
-  open .environments.toml
-  | update environments (
-      (open .environments.toml).environments
-      | where {$in not-in $environments}
-    )
-  | save --force .environments.toml
+  if ($environments | is-empty) {
+    copy-environments-toml
+  } else {
+    open .environments.toml
+    | update environments (
+        (open .environments.toml).environments
+        | where {$in not-in $environments}
+      )
+    | save --force .environments.toml
+  }
 
   main activate
 }
@@ -177,7 +186,9 @@ def "main test" [
 }
 
 # Update environment dependencies
-def "main update" [] {
+def "main update" [
+  --all # Update all flake inputs
+] {
   let remote_url = (
     "https://raw.githubusercontent.com/tymbalodeon/environments/trunk"
   )
@@ -187,7 +198,12 @@ def "main update" [] {
   http get $"($remote_url)/src/generic/flake.nix"
   | save --force $"($project_root)/flake.nix"
 
-  nix flake update
+  if $all {
+    nix flake update
+  } else {
+    nix flake update environments
+  }
+
   main activate
 }
 
