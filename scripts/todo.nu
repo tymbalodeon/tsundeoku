@@ -41,7 +41,7 @@ def get-todos [
   sort_by_tag: bool
   path?: string
 ] {
-  let pattern = "# (FIXME|NOTE|TODO)"
+  let pattern = "(#|%|--|//) (FIXME|NOTE|TODO)"
 
   let matches = if ($path | is-empty) {
     rg $pattern --json

@@ -61,8 +61,8 @@
           (getFilenames ./nix);
 
         pkgs = import nixpkgs {
-          config.allowUnfree = true;
           inherit system;
+          config.allowUnfree = true;
         };
       in {
         default = pkgs.mkShellNoCC ({
