@@ -26,11 +26,11 @@ def main [
     mut args = [$find $replace $file]
 
     if $preview {
-      $args = ($args | prepend "--preview") 
+      $args = ($args | prepend "--preview")
     }
 
     if $fixed_strings {
-      $args = ($args | prepend "--fixed-strings") 
+      $args = ($args | prepend "--fixed-strings")
     }
 
     sd ...$args

@@ -9,7 +9,7 @@ def "main list" [] {
 
 # Create a new release
 def main [
-  --preview # Preview changes without altering anything 
+  --preview # Preview changes without altering anything
 ] {
   if not $preview {
     if (
