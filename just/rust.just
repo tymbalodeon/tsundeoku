@@ -1,49 +1,49 @@
 set working-directory := ".."
 
 # View help text
-@help *recipe:
-    ./scripts/rust/help.nu {{ recipe }}
+@help *args:
+    ./scripts/rust/help.nu {{ args }}
 
 # Add dependencies
-@add *dependencies:
-    ./scripts/rust/add.nu {{ dependencies }}
+@add *args:
+    ./scripts/rust/add.nu {{ args }}
 
 # Build the application
-@build *release:
-    ./scripts/rust/build.nu {{ release }}
+@build *args:
+    ./scripts/rust/build.nu {{ args }}
 
 # Remove generated files
-@clean *help:
-    ./scripts/rust/clean.nu {{ help }}
+@clean *args:
+    ./scripts/rust/clean.nu {{ args }}
 
 # Run clippy
-@clippy *help:
-    ./scripts/rust/clippy.nu {{ help }}
+@clippy *args:
+    ./scripts/rust/clippy.nu {{ args }}
 
 # Show application dependencies
-@deps *help:
-    ./scripts/rust/deps.nu {{ help }}
+@deps *args:
+    ./scripts/rust/deps.nu {{ args }}
 
 # Open a pre-configured development environment
-@dev *help:
-    ./scripts/rust/dev.nu {{ help }}
+@dev *args:
+    ./scripts/rust/dev.nu {{ args }}
 
 # Install the application
-@install *help:
-    ./scripts/rust/install.nu {{ help }}
+@install *args:
+    ./scripts/rust/install.nu {{ args }}
 
 # Remove dependencies
-@remove *dependencies:
-    ./scripts/rust/remove.nu {{ dependencies }}
+@remove *args:
+    ./scripts/rust/remove.nu {{ args }}
 
 # Run the application, with any provided <args>.
 @run *args:
     ./scripts/rust/run.nu {{ args }}
 
 # Run the tests
-@test *package:
-    ./scripts/rust/test.nu {{ package }}
+@test *args:
+    ./scripts/rust/test.nu {{ args }}
 
 # Update dependencies
-@update *help:
-    ./scripts/rust/update.nu {{ help }}
+@update *args:
+    ./scripts/rust/update.nu {{ args }}

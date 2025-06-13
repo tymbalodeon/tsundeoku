@@ -46,7 +46,7 @@ def main [
     cog bump --auto --dry-run
   } else {
     cog bump --auto
-    prettier CHANGELOG.md
+    prettier --write CHANGELOG.md
     jj describe --message "chore: format CHANGELOG.md after release"
     jj new; jj bookmark set trunk --to @-; jj git push
   }

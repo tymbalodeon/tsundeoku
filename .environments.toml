@@ -1,1 +1,6 @@
-environments = ["generic", "git", "nix", "rust", "toml", "yaml"]
+[[environments]]
+name = "git"
+features = ["release"]
+
+[[environments]]
+name = "rust"

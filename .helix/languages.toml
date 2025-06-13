@@ -3,11 +3,13 @@ name = "just"
 auto-format = true
 formatter = { command = "just", args = ["--justfile", "/dev/stdin", "--dump"] }
 
+# nix
 [[language]]
 name = "nix"
 auto-format = true
 formatter = { command = "alejandra" }
 
+# toml
 [[language]]
 name = "toml"
 auto-format = true
