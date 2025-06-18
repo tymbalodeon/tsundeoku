@@ -1,6 +1,4 @@
 .direnv
 .env
 .envrc
-
-# rust
 target

@@ -1,8 +1,5 @@
 #!/usr/bin/env nu
 
-# TODO: move this to its own module? Since not every generic project has
-# "releases"
-
 def "main list" [] {
   jj tag list
 }

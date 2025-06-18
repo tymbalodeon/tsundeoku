@@ -64,7 +64,6 @@ repos:
       - id: conventional-pre-commit
         stages:
           - commit-msg
-  # rust
   - repo: https://github.com/doublify/pre-commit-rust
     rev: v1.0
     hooks:
