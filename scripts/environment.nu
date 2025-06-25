@@ -52,11 +52,13 @@ def validate-environments [environments: list<string>] {
   )
 
   if ($unrecognized_environments | is-not-empty) {
-    print-error $"Urecognized environments:\n(
+    print-error $"Unrecognized environments:"
+
+    print-error (
       $unrecognized_environments
       | each {|environment| $'- ($environment)'}
       | to text --no-newline
-    )"
+    )
 
     exit 1
   }
@@ -106,7 +108,7 @@ def validate-features [
   features: list<string>
 ] {
   if ($environment not-in (get-available-environments)) {
-    print-error $"Urecognized environment: ($environment)"
+    print-error $"Unrecognized environment: ($environment)"
     exit 1
   }
 
@@ -172,7 +174,22 @@ export def "main add features" [
       }
   } else {
     $environments
-    | append {name: $environment.name features: $features}
+    | each {
+        |environment|
+
+        {
+          name: $environment.name
+
+          features: (
+            if features in ($environment | columns) {
+              $environment.features
+            } else {
+              []
+            }
+          )
+        }
+      }
+    | append {name: $environment features: $features}
   }
   | each {
       |environment|
@@ -185,7 +202,7 @@ export def "main add features" [
       }
     }
 
-  {environments: $environments}
+  {environments: ($environments | sort-by name)}
   | to toml
   | save --force .environments.toml
 
