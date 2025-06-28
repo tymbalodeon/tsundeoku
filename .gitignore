@@ -1,4 +1,5 @@
 .direnv
 .env
 .envrc
+.helix/config.toml
 target

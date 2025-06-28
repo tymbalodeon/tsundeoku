@@ -49,6 +49,10 @@ alias find := find-recipe
 
 alias todos := todo
 
+# Set helix theme
+@theme *args:
+    ./scripts/theme.nu {{ args }}
+
 # View the source code for a recipe
 @view-source *args:
     ./scripts/view-source.nu {{ args }}
