@@ -263,59 +263,80 @@ def get-available-environments [] {
   | get name
 }
 
-def validate-features [
-  environment: string
-  features: list<string>
-] {
-  if ($environment not-in (get-available-environments)) {
-    print-error $"Unrecognized environment: ($environment)"
-    exit 1
-  }
-
-  mut unrecognized_features = []
-
-  for feature in $features {
-    if not (
-      get-environment-path $"($environment)/features/($feature)"
-      | path exists
-    ) {
-      $unrecognized_features = ($unrecognized_features | append $feature)
-    }
-  }
-
-  for feature in $unrecognized_features {
-    print-error $"Unrecognized feature: ($feature)"
-  }
-
-  if ($unrecognized_features | is-not-empty) {
-    exit 1
-  }
-}
-
-def list-environments [
-  features: bool
-  environment?: string
-  path?: string
-] {
-  if ($environment | is-empty) {
-    get-available-environments
-  } else if ($path | is-empty) {
-    fd --type file "" (get-environment-path $environment)
-    | lines
-    | each {|file| $file | split row $"src/($environment)/" | last}
-  } else {
-    ls --short-names (get-environment-path $"($environment)/($path)")
-    | get name
-  }
-}
-
 # List environments and files
 export def "main list" [
   environment?: string # An environment whose files to lise
   path?: string # An environment path whose files to list
+  --feature: string # List files for $feature only (requires $environment)
   --features # Show features
 ] {
-  list-environments $features $environment $path
+  let environments = if ($environment | is-empty) {
+    let environments = (get-available-environments)
+
+    if $features {
+      $environments
+      | each {
+        |environment|
+
+        let features_path = (get-environment-path $"($environment)/features")
+
+        let features = if ($features_path | path exists) {
+          ls --short-names (get-environment-path $"($environment)/features")
+          | get name
+          | each {$"+($in)"}
+          | str join " "
+        } else {
+          ""
+        }
+
+        [$environment $features "\n"]
+        | str join " "
+      }
+      | to text
+      | column -t
+    } else {
+      $environments
+    }
+  } else if ($path | is-empty) {
+    let files = if ($feature | is-not-empty) {
+      fd --hidden --type file "" (
+        get-environment-path $"($environment)/features/($feature)"
+      )
+    } else {
+      fd --hidden --type file "" (get-environment-path $environment)
+    }
+
+    let remove_path = if ($feature | is-empty) {
+      $"src/($environment)/"
+    } else {
+      $"src/($environment)/features/($feature)/"
+    }
+
+    let files = (
+      $files
+      | lines
+      | each {|file| $file | split row $remove_path | last}
+    )
+
+    if ($feature | is-not-empty) or $features {
+      $files
+    } else {
+      $files
+      | where {not ($in | str starts-with features)}
+      | to text --no-newline
+    }
+  } else {
+    let base_path = if ($feature | is-empty) {
+      $"($environment)"
+    } else {
+      $"($environment)/features/($feature)"
+    }
+
+    ls --short-names (get-environment-path $"($base_path)/($path)")
+    | get name
+  }
+
+  $environments
   | str join "\n"
 }
 
@@ -324,6 +345,24 @@ def get-local-environment-name [directory: string] {
   | get name
   | path parse
   | get stem
+}
+
+def get-default-environments [] {
+  [
+    generic
+    git
+    just
+    markdown
+    nix
+    toml
+    yaml
+  ]
+  | each {
+    {
+      name: $in
+      features: []
+    }
+  }
 }
 
 # List installed environments
@@ -349,29 +388,18 @@ def "main list active" [
         get-local-environment-name nix
       )
     | uniq
-    | where {$in not-in (list-environments false)}
+    | where {$in not-in (get-available-environments)}
     | each {|environment| {name: $environment}}
   } else {
     []
   }
 
-  let default_environments = (
-    [
-      generic
-      git
-      nix
-      toml
-      yaml
-    ]
-    | each {|environment| {name: $environment}}
-  )
-
   let environments = if $all {
     $environments
     | append $local_environments
-    | append $default_environments
+    | append (get-default-environments)
   } else if $default {
-    $default_environments
+    get-default-environments
   } else if $local {
     $local_environments
   } else {
@@ -384,13 +412,16 @@ def "main list active" [
     | each {
         |environment|
 
-        let features = if features in ($environment| columns) {
+        let features = if features in ($environment | columns) {
           $environment.features
         } else {
           []
         }
 
-        {name: $environment.name features: $features}
+        {
+          name: $environment.name
+          features: $features
+        }
       }
   } else {
     $environments.name
@@ -422,7 +453,7 @@ def "main list active" [
 
         let features = (
           $environment.features
-          | each {|feature| $"+($feature)"}
+          | each {$"+($in)"}
           | str join " "
         )
 
@@ -469,13 +500,23 @@ def get-environment-files [
 # Remove features with <environment-name>[+<feature>...], e.g. "python+build"
 def "main remove" [
   ...environments: string # Environments to remove
+  --force # Force removal even if environment(s) not currently active
 ] {
-  if not (".environments.toml" | path exists) {
+  if not $force and (
+    not (".environments.toml" | path exists) or (
+      $environments | is-empty
+    )
+  ) {
+    return
+  }
+
+  let environments = (parse-environments $environments)
+
+  if ($environments | is-empty) {
     return
   }
 
   let existing_environments = (open .environments.toml).environments
-  let environments = (parse-environments $environments)
 
   let environments_to_remove = (
     $existing_environments
@@ -555,6 +596,21 @@ def "main remove" [
       taplo format .helix/languages.toml
     }
 
+    for hook_file in (
+      get-environment-path $"($environment.name)/hook.nu"
+      | append (
+          ls (get-environment-path $"($environment.name)/features")
+          | get name
+          | each {
+              get-environment-path $"($environment.name)/features/($in)/hook.nu"
+            }
+        )
+      | flatten
+      | where {path exists}
+    ) {
+      nu $hook_file remove
+    }
+
     if (".pre-commit-config.yaml" | path exists) {
       {
         repos: (
@@ -574,7 +630,7 @@ def "main remove" [
   }
 
   if ($environments_to_remove | is-not-empty) {
-    convert-to-toml (
+    let user_environments = (
       $existing_environments
       | where name not-in (
           $environments_to_remove
@@ -597,12 +653,61 @@ def "main remove" [
           } else {
             $environment
           }
-      }
+        }
+      | where {
+          not (
+            (
+              ("features" not-in ($in | columns)) or (
+                $in.features | is-empty
+              )
+            ) and ($in in (get-default-environments))
+          )
+        }
     )
-    | save --force .environments.toml
+
+    if ($user_environments | is-not-empty) {
+      convert-to-toml $user_environments
+      | save --force .environments.toml
+    } else {
+      rm .environments.toml
+    }
 
     main activate
   }
+}
+
+def list-short-names [directory: string file?: string] {
+  let search = if ($file | is-not-empty) {
+    $file
+  } else {
+    ""
+  }
+
+  let files = (
+    fd --hidden --type file $search $directory
+    | lines
+  )
+
+  $files
+  | wrap path
+  | merge (
+      $files
+      | str replace $"($directory)/" ""
+      | wrap name
+    )
+}
+
+def select-file [files: table<path: string, name: string>] {
+  let name = (
+    $files.name
+    | to text
+    | fzf
+  )
+
+  $files
+  | where name == $name
+  | get path
+  | first
 }
 
 # View the contents of an environment file
@@ -625,38 +730,17 @@ def "main source" [
   }
 
   let file = if ($file | is-empty) {
-    let files = (
-      fd --type file "" $environment_path
-      | lines
-      | wrap path
-      | merge (
-          fd --type file "" $environment_path
-          | lines
-          | str replace $"($environment_path)/" ""
-          | wrap name
-        )
-    )
-
-    let name = (
-      $files.name
-      | to text
-      | fzf
-    )
-
-    $files
-    | where name == $name
-    | get path
-    | first
+    select-file (list-short-names $environment_path)
   } else {
-    let files = (
-      fd $file $environment_path
-      | lines
-    )
+    let files = (list-short-names $environment_path $file)
 
     if ($files | length) > 1 {
-      $files
-      | fzf
+      select-file $files
     } else {
+      if ($files | is-empty) {
+        return
+      }
+
       $files
       | first
     }

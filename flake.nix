@@ -63,6 +63,7 @@
                 ++ [
                   "generic"
                   "git"
+                  "markdown"
                   "nix"
                   "toml"
                   "yaml"
