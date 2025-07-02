@@ -593,7 +593,7 @@ def "main remove" [
       | into record
       | save --force .helix/languages.toml
 
-      taplo format .helix/languages.toml
+      taplo format .helix/languages.toml out+err> /dev/null
     }
 
     for hook_file in (

@@ -84,7 +84,8 @@
 
                     ${pre-commit}/bin/pre-commit install \
                       --hook-type commit-msg \
-                      --overwrite
+                      --overwrite \
+                      >/dev/null
                   ''
                 ]
                 ++ mergeModuleAttrs {
