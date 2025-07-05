@@ -1,6 +1,6 @@
 [private]
 @default:
-    just help --default
+    just help
 
 # View full help text, or for a specific recipe
 @help *args:

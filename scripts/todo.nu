@@ -24,7 +24,7 @@ def "main open" [
       $todos
     } else {
       $todos
-      | fzf --tac
+      | fzf
     }
 
     $todo
