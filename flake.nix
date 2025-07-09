@@ -51,7 +51,9 @@
               ((
                   if builtins.pathExists ./.environments.toml
                   then let
-                    environments = builtins.fromTOML (builtins.readFile ./.environments.toml);
+                    environments =
+                      builtins.fromTOML
+                      (builtins.readFile ./.environments.toml);
                   in
                     if builtins.hasAttr "environments" environments
                     then

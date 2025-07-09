@@ -7,6 +7,7 @@ use ../help.nu display-just-help
 def main [
   recipe?: string # View help text for recipe
   ...subcommands: string  # View help for a recipe subcommand
+  --color = "always" # When to use colored output
 ] {
   let environment = "rust"
 
@@ -14,6 +15,7 @@ def main [
     display-just-help
       $recipe
       $subcommands
+      --color $color
       --environment $environment
       --justfile (get-project-path $"just/($environment).just")
   )

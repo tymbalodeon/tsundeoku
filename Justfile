@@ -63,6 +63,10 @@ alias src := view-source
 @release *args:
     ./scripts/release.nu  {{ args }}
 
+[private]
+@rs *args:
+    just rust {{ args }}
+
 mod rust "just/rust.just"
 
 alias add := rust::add
