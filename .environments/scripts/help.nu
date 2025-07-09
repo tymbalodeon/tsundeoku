@@ -43,8 +43,8 @@ def append-main-aliases [
     }
   }
 
-  let environment_aliases = if ("just" | path exists) {
-    ls just
+  let environment_aliases = if (".environments/just" | path exists) {
+    ls .environments/just
     | get name
     | each {
         |file|
@@ -61,6 +61,8 @@ def append-main-aliases [
         if ($alias_file | path exists)  {
           open $alias_file
           | lines
+          | uniq
+          | sort
           | each {
               {
                 alias: $in
@@ -72,30 +74,37 @@ def append-main-aliases [
     | flatten
   }
 
+
   let lines = (
     $help_text.item
     | each {
         |line|
 
-        mut environment_line = $line
+        mut matching_environment = null
 
-        for environment in $environment_aliases {
+        for environment in $environment_aliases.environment {
           if (
             $line
             | str trim
-            | str starts-with $"($environment.environment):"
+            | str starts-with $"($environment):"
           ) {
-            let alias = $environment.alias
-
-            $environment_line = (
-              $"($line) (ansi magenta)[alias: ($alias)](ansi reset)"
-            )
-
+            $matching_environment = $environment
             break
           }
         }
 
-        $environment_line
+        if ($matching_environment | is-not-empty) {
+          let aliases = (
+            $environment_aliases
+            | where environment == $matching_environment
+            | get alias
+            | str join ", "
+          )
+
+          $"($line) (ansi magenta)[alias: ($aliases)](ansi reset)"
+        } else {
+          $line
+        }
     }
   )
 
