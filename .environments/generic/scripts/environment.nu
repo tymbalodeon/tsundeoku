@@ -284,7 +284,7 @@ def get-available-environments [] {
   | each {
       |environment|
 
-      let alias_file = (get-environment-path $"($environment)/alias")
+      let alias_file = (get-environment-path $"($environment)/aliases")
 
       let aliases = if ($alias_file | path exists) {
         open $alias_file

@@ -1,0 +1,49 @@
+set working-directory := "../.."
+
+# View help text
+@help *args:
+    .environments/rust/scripts/help.nu {{ args }}
+
+# Add dependencies
+@add *args:
+    .environments/rust/scripts/add.nu {{ args }}
+
+# Build the application
+@build *args:
+    .environments/rust/scripts/build.nu {{ args }}
+
+# Remove generated files
+@clean *args:
+    .environments/rust/scripts/clean.nu {{ args }}
+
+# Run clippy
+@clippy *args:
+    .environments/rust/scripts/clippy.nu {{ args }}
+
+# Show application dependencies
+@deps *args:
+    .environments/rust/scripts/deps.nu {{ args }}
+
+# Open a pre-configured development environment
+@dev *args:
+    .environments/rust/scripts/dev.nu {{ args }}
+
+# Install the application
+@install *args:
+    .environments/rust/scripts/install.nu {{ args }}
+
+# Remove dependencies
+@remove *args:
+    .environments/rust/scripts/remove.nu {{ args }}
+
+# Run the application, with any provided <args>.
+@run *args:
+    .environments/rust/scripts/run.nu {{ args }}
+
+# Run the tests
+@test *args:
+    .environments/rust/scripts/test.nu {{ args }}
+
+# Update dependencies
+@update *args:
+    .environments/rust/scripts/update.nu {{ args }}
