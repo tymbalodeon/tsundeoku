@@ -4,7 +4,7 @@ use ../../default/scripts/help.nu display-aliases
 use ../../default/scripts/help.nu display-just-help
 
 def get-environment-justfile [ ] {
-  ".environments/rust/Justfile"
+  ".environments/nix/Justfile"
 }
 
 # View module aliases
@@ -35,7 +35,7 @@ def main [
       $recipe
       $subcommands
       --color $color
-      --environment rust
+      --environment nix
       --justfile (get-environment-justfile)
   )
 }
