@@ -25,8 +25,10 @@ set working-directory := "../.."
     .environments/rust/scripts/deps.nu {{ args }}
 
 # Open a pre-configured development environment
-@dev *args:
-    .environments/rust/scripts/dev.nu {{ args }}
+@develop *args:
+    .environments/rust/scripts/develop.nu {{ args }}
+
+alias dev := develop
 
 # Install the application
 @install *args:

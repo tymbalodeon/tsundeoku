@@ -16,13 +16,6 @@
 
 alias env := environment
 
-# Search available `just` recipes
-[no-exit-message]
-@find-recipe *args:
-    .environments/default/scripts/find-recipe.nu {{ args }}
-
-alias find := find-recipe
-
 # View project history
 @history *args:
     .environments/default/scripts/history.nu {{ args }}
@@ -30,6 +23,14 @@ alias find := find-recipe
 # View issues
 @issue *args:
     .environments/default/scripts/issue.nu {{ args }}
+
+# View README file
+@readme *args:
+    .environments/default/scripts/readme.nu  {{ args }}
+
+# View or open recipes
+@recipe *args:
+    .environments/default/scripts/recipe.nu  {{ args }}
 
 # View remote repository
 @remote *args:
@@ -53,12 +54,6 @@ alias todos := todo
 @theme *args:
     .environments/default/scripts/theme.nu {{ args }}
 
-# View the source code for a recipe
-@view-source *args:
-    .environments/default/scripts/view-source.nu {{ args }}
-
-alias src := view-source
-
 # Create a new release
 @release *args:
     .environments/git/scripts/release.nu  {{ args }}
@@ -75,7 +70,8 @@ alias build := rust::build
 alias clean := rust::clean
 alias clippy := rust::clippy
 alias deps := rust::deps
-alias dev := rust::dev
+alias dev := rust::develop
+alias develop := rust::develop
 alias install := rust::install
 alias remove := rust::remove
 alias run := rust::run

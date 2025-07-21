@@ -1,26 +1,31 @@
 #!/usr/bin/env nu
 
+export def use-colors [color: string] {
+  $color == "always" or (
+    $color != "never"
+  ) and (
+    is-terminal --stdout
+  )
+}
+
 # Activate installed environments
 def "main activate" [] {
   if (which direnv | is-empty) {
-    print "Direnv (https://direnv.net/) is not installed."
-    print "Please install and try again."
+    nix develop
+  } else {
+    "use flake"
+    | save --force .envrc
 
-    exit 1
+    direnv allow
   }
-
-  "use flake"
-  | save --force .envrc
-
-  direnv allow
 }
 
 export def print-error [message: string] {
-  print $"(ansi red_bold)error(ansi reset): ($message)"
+  print --stderr $"(ansi red_bold)error(ansi reset): ($message)"
 }
 
 export def print-warning [message: string] {
-  print $"(ansi yellow_bold)warning(ansi reset): ($message)"
+  print --stderr $"(ansi yellow_bold)warning(ansi reset): ($message)"
 }
 
 def get-features [
@@ -49,6 +54,7 @@ export def get-environment-path [path?: string] {
 
 def validate-environments [
   environments: list<record<name: string, features: list<string>>>
+  quiet: bool
 ] {
   let valid_environments = (get-available-environments)
   mut invalid_environments = []
@@ -65,7 +71,9 @@ def validate-environments [
         | update valid-name false
       )
 
-      print-warning $"unrecognized environment: ($environment.name)"
+      if not $quiet {
+        print-warning $"unrecognized environment: ($environment.name)"
+      }
     }
 
     mut invalid_features = []
@@ -139,7 +147,7 @@ def validate-environments [
     }
 }
 
-def parse-environments [environments: list<string>] {
+export def parse-environments [environments: list<string> quiet = false] {
   let environments = (
     $environments
     | str downcase
@@ -180,7 +188,7 @@ def parse-environments [environments: list<string>] {
     }
   }
 
-  validate-environments $unique_environments
+  validate-environments $unique_environments $quiet
 }
 
 def convert-to-toml [environments: list<record>] {
@@ -254,10 +262,29 @@ export def "main add" [
     }
   }
 
+  mkdir .environments
+
   convert-to-toml $environments
   | save --force .environments/environments.toml
 
   main activate
+}
+
+# Open local shell(s) in $EDITOR
+def "main edit shell" [] {
+  let shells = (fd --extension nix shell .environments | lines)
+
+  let shell = if ($shells | length) > 1 {
+    $shells
+    | to text
+    | fzf
+  } else {
+    $shells
+    | first
+  }
+
+
+  ^$env.EDITOR $shell
 }
 
 # Open .environments/environments.toml file
@@ -274,24 +301,57 @@ def "main inputs" [] {
   | to text --no-newline
 }
 
-def get-available-environments [] {
-  ls --short-names (get-environment-path)
-  | where type == dir
-  | get name
+export def get-aliases-files [environment: string] {
+  let aliases_file = $"($environment)/aliases"
+
+  [
+    (get-environment-path $aliases_file)
+    $".environments/($aliases_file)"
+  ]
   | each {
-      |environment|
+      |file|
 
-      let alias_file = (get-environment-path $"($environment)/aliases")
-
-      let aliases = if ($alias_file | path exists) {
-        open $alias_file
+      if ($file | path exists) {
+        open $file
         | lines
       } else {
         []
       }
+    }
+  | flatten
+  | uniq
+  | sort
+}
+
+export def get-available-environments [--exclude-local] {
+  let environments = (
+    ls --short-names (get-environment-path)
+    | where type == dir
+    | get name
+  )
+
+  let environments = if $exclude_local {
+    $environments
+  } else {
+    $environments
+    | append (
+        if (".environments" | path exists) {
+          ls --short-names .environments
+          | where type == dir
+          | get name
+        } else {
+          []
+        }
+      )
+  }
+
+  $environments
+  | uniq
+  | each {
+      |environment|
 
       {
-        aliases: $aliases
+        aliases: (get-aliases-files $environment)
         name: $environment
       }
   }
@@ -313,49 +373,88 @@ def append-aliases [environment: record<name: string aliases: list<string>>] {
   }
 }
 
+def highlight-text [
+  line: string
+  regex: string
+  color: string
+] {
+  let alias = try {
+    $line
+    | rg --only-matching $regex
+  }
+
+  if ($alias | is-empty) {
+    $line
+  } else {
+    let highlighted_text = $"(ansi $color)($alias)(ansi reset)"
+
+    $line
+    | str replace $alias $highlighted_text
+  }
+}
+
+def highlight-alias []: string -> string {
+  highlight-text $in '\[alias: [a-zA-Z, ]+\]' magenta
+}
+
+def highlight-feature []: string -> string {
+  highlight-text $in '\+[a-zA-Z]+\b' cyan
+}
+
 # List environments and files
 export def "main list" [
   environment?: string # An environment whose files to lise
   path?: string # An environment path whose files to list
   --aliases # Show environment aliases
+  --color = "auto" # When to use colored output {always|auto|never}
   --feature: string # List files for $feature only (requires $environment)
   --features # Show features
 ] {
   let environments = if ($environment | is-empty) {
     let environments = (get-available-environments)
 
-    if $features {
-      $environments
-      | each {
-        |environment|
+    let text = if $features {
+      let text = (
+        $environments
+        | each {
+          |environment|
 
-        let features_path = (
-          get-environment-path $"($environment.name)/features"
-        )
+          let features_path = (
+            get-environment-path $"($environment.name)/features"
+          )
 
-        let features = if ($features_path | path exists) {
-          ls --short-names $features_path
-          | get name
-          | each {$"+($in)"}
-          | str join " • "
-        } else {
-          ""
+          let features = if ($features_path | path exists) {
+            ls --short-names $features_path
+            | get name
+            | each {$"+($in)"}
+            | str join " • "
+          } else {
+            ""
+          }
+
+          let environment = if $aliases and (
+            $environment.aliases
+            | is-not-empty
+          ) {
+            append-aliases $environment
+          } else {
+            $environment.name
+          }
+
+          [$environment • $features "\n"]
+          | str join " "
         }
+        | to text
+        | column -t -s •
+        | lines
+      )
 
-        let environment = if $aliases and (
-          $environment.aliases
-          | is-not-empty
-        ) {
-          append-aliases $environment
-        } else {
-          $environment.name
-        }
-
-        [$environment • $features "\n"]
-        | str join " "
+      if (use-colors $color) {
+        $text
+        | each {highlight-feature}
+      } else {
+        $text
       }
-      | to text
-      | column -t -s •
     } else {
       if $aliases {
         $environments
@@ -364,7 +463,23 @@ export def "main list" [
         $environments.name
       }
     }
+
+    if $aliases and (use-colors $color) {
+      $text
+      | each {highlight-alias}
+      | to text
+    } else {
+      $text
+    }
   } else if ($path | is-empty) {
+    let environment = (parse-environments [$environment])
+
+    if ($environment | is-empty) {
+      return
+    }
+
+    let environment = ($environment | first | get name)
+
     let files = if ($feature | is-not-empty) {
       fd --hidden --type file "" (
         get-environment-path $"($environment)/features/($feature)"
@@ -382,7 +497,7 @@ export def "main list" [
     let files = (
       $files
       | lines
-      | each {|file| $file | split row $remove_path | last}
+      | each {split row $remove_path | last}
     )
 
     if ($feature | is-not-empty) or $features {
@@ -425,21 +540,23 @@ def get-default-environments [] {
   }
 }
 
-# List installed environments
+# List active environments
 def "main list active" [
   --aliases # Show environment aliases
-  --all # Show all installed environments
-  --default # Show only default installed environments
+  --color = "auto" # When to use colored output {always|auto|never}
+  --default # Show only default active environments
   --features # Show active features
   --local # Show local environments
-  --user # Show only user installed environments [default]
+  --user # Show only user active environments
 ] {
   if not (".environments/environments.toml" | path exists) {
     return
   }
 
   let environments = (open .environments/environments.toml).environments
-  let valid_environments = (get-available-environments)
+  let valid_environments = (get-available-environments --exclude-local)
+
+  let all = [$default $local $user] | all {not $in}
 
   let local_environments = if $all or $user or not (
     [$all $default $user]
@@ -553,30 +670,57 @@ def "main list active" [
       }
     }
 
-    $unique_environments
-    | each {
-        |environment|
+    let text = (
+      $unique_environments
+      | each {
+          |environment|
 
-        let features = (
-          $environment.features
-          | each {$"+($in)"}
+          let features = (
+            $environment.features
+            | each {$"+($in)"}
+            | str join " "
+          )
+
+          $environment.name
+          | append •
+          | append $features
           | str join " "
-        )
+        }
+    )
 
-        $environment.name
-        | append •
-        | append $features
-        | str join " "
-      }
+    if (use-colors $color) {
+      $text
+      | each {highlight-feature}
+    } else {
+      $text
+    }
   } else {
     $environments
   }
 
-  $environments
-  | uniq
-  | sort
-  | to text
-  | column -t -s •
+  let text = (
+    $environments
+    | uniq
+    | sort
+    | to text
+    | column -t -s •
+  )
+
+  if $aliases and (use-colors $color) {
+    $text
+    | lines
+    | each {highlight-alias}
+    | to text
+  } else {
+    $text
+  }
+}
+
+
+# List default environments
+def "main list default" [] {
+  (get-default-environments).name
+  | to text --no-newline
 }
 
 def get-environment-files [
@@ -925,7 +1069,7 @@ def "main test" [
 }
 
 # Update environment dependencies
-def "main update" [
+export def "main update" [
   ...inputs: string # The name of the input(s) to update (leave blank to update all)
 ] {
   let update_environments = [environments env] | any {$in in $inputs}

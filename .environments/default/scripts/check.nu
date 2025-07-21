@@ -11,12 +11,52 @@ def "main flake" [] {
 }
 
 export def get-pre-commit-hook-names [config: record<repos: list<any>>] {
-  $config
-  | get repos.hooks
-  | each {get id}
-  | flatten
-  | sort
-  | to text --no-newline
+  let hooks = (
+    $config
+    | get repos.hooks
+    | flatten
+  )
+
+  mut names = {}
+
+  for hook in $hooks {
+    let name = (
+      if types in ($hook | columns) {
+        $hook.types
+      }
+    )
+
+    if ($name | is-not-empty) {
+      $names = (
+        $names
+        | upsert $hook.id (
+            if $hook.id in ($names | columns) {
+              $names
+              | get $hook.id
+              | append $name
+            } else {
+              $name
+            }
+          )
+      )
+    } else {
+      $names = ($names | upsert $hook.id $hook.id)
+    }
+  }
+
+  $names
+  | transpose id types
+  | sort-by id
+  | each {
+      |hook|
+
+      if $hook.id == $hook.types {
+        $hook.id
+      } else {
+        $"($hook.id) [($hook.types | str join ', ')]"
+      }
+    }
+  | to text
 }
 
 # List hook ids
