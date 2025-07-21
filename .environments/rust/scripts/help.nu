@@ -28,10 +28,9 @@ def main [
 ] {
   (
     display-just-help
+      rust
       $recipe
       $subcommands
       --color $color
-      --environment rust
-      --justfile .environments/rust/Justfile
   )
 }
