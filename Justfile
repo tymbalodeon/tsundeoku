@@ -75,6 +75,7 @@ alias develop := rust::develop
 alias install := rust::install
 alias remove := rust::remove
 alias run := rust::run
+alias sh := nix::shell
 alias shell := nix::shell
 alias test := rust::test
 alias update := rust::update

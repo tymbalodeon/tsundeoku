@@ -22,7 +22,7 @@ fn get_tag_or_unknown(tags: &[Tag], tag_name: StandardTagKey) -> String {
         .collect::<Vec<&Tag>>()
         .first()
         .map(|tag| &**tag)
-        .map_or("Unknown".to_string(), |tag| tag.value.to_string())
+        .map_or_else(|| "Unknown".to_string(), |tag| tag.value.to_string())
 }
 
 fn get_parent_directory(path: &Path) -> Result<PathBuf> {

@@ -270,9 +270,60 @@ export def "main add" [
   main activate
 }
 
+# Open a local recipe in $EDITOR
+def "main edit recipe" [recipe?: string] {
+  let default_environments = (
+    get-available-environments --exclude-local
+    | get name
+  )
+
+  let recipes = (
+    fd --extension nu "" .environments
+    | lines
+    | where {
+        (
+          $in
+          | path split
+          | get 1
+        ) not-in $default_environments
+      }
+  )
+
+  let recipe = if ($recipe | is-empty) {
+    $recipes
+    | to text
+    | fzf
+  } else {
+    let recipe = (
+      $recipes
+      | find --no-highlight $recipe
+    )
+
+    if ($recipe | is-empty) {
+      return
+    }
+
+    if ($recipe | length) > 1 {
+      $recipe
+      | to text
+      | fzf
+    } else {
+      $recipe
+      | first
+    }
+  }
+
+  ^$env.EDITOR $recipe
+}
+
 # Open local shell(s) in $EDITOR
 def "main edit shell" [] {
   let shells = (fd --extension nix shell .environments | lines)
+
+  if ($shells | is-empty) {
+    # TODO: should this create the file instead of returning?
+    return
+  }
 
   let shell = if ($shells | length) > 1 {
     $shells
@@ -283,13 +334,13 @@ def "main edit shell" [] {
     | first
   }
 
-
   ^$env.EDITOR $shell
 }
 
 # Open .environments/environments.toml file
 def "main edit" [] {
   ^$env.EDITOR .environments/environments.toml
+  main activate
 }
 
 # List flake inputs
@@ -826,10 +877,19 @@ def "main remove" [
       | each {
           |column|
 
-          {
-            $column: (
-              $languages
+          let values = (
+            $languages
             | get $column
+          )
+
+          let values = if ($values | describe --detailed | get type) != list {
+            [$values]
+          } else {
+            $values
+          }
+
+          let values = (
+            $values
             | where {
                 let environment_languages = (
                   get-environment-files $environment languages.toml
@@ -839,9 +899,13 @@ def "main remove" [
                   $in not-in ($environment_languages | get $column)
                 )
               }
-            )
+          )
+
+          if ($values | is-not-empty) {
+            {$column: $values}
           }
         }
+      | where {is-not-empty}
       | into record
       | save --force .helix/languages.toml
 
@@ -933,6 +997,8 @@ def "main remove" [
     main activate
   }
 }
+
+alias "main rm" = main remove
 
 def list-short-names [directory: string file?: string] {
   let search = if ($file | is-not-empty) {
@@ -1068,7 +1134,7 @@ def "main test" [
   nu --commands $command --include-path $env.NUTEST
 }
 
-# Update environment dependencies
+# Update environment inputs (see `environment inputs`)
 export def "main update" [
   ...inputs: string # The name of the input(s) to update (leave blank to update all)
 ] {

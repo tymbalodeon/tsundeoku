@@ -220,7 +220,7 @@ pub fn config(
     match command {
         Config::Edit => {
             Command::new(
-                var("EDITOR").map_or("vim".to_string(), |editor| editor),
+                var("EDITOR").unwrap_or_else(|_| "vim".to_string()),
             )
             .arg(config_path)
             .status()?;

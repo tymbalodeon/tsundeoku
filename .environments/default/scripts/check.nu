@@ -5,6 +5,8 @@ def "main clean" [] {
   pre-commit clean
 }
 
+export alias clean = main clean
+
 # Run `nix flake check`
 def "main flake" [] {
   nix flake check
@@ -56,12 +58,12 @@ export def get-pre-commit-hook-names [config: record<repos: list<any>>] {
         $"($hook.id) [($hook.types | str join ', ')]"
       }
     }
-  | to text
 }
 
 # List hook ids
 def "main list" [] {
   get-pre-commit-hook-names (open .pre-commit-config.yaml)
+  | to text
 }
 
 # Run pre-commit hooks
@@ -77,9 +79,11 @@ def "main pre-commit" [hooks?: list<string>] {
 
 # Update all pre-commit hooks
 def "main update" [] {
-  pre-commit run pre-commit-update --all-files
+  ^pre-commit run pre-commit-update --all-files
   yamlfmt .pre-commit-config.yaml
 }
+
+export alias update = main update
 
 # Check flake and run pre-commit hooks
 export def main [

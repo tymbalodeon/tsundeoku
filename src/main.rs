@@ -177,7 +177,7 @@ pub fn log(
             LogLevel::Warning => Some("warning".yellow().to_string()),
             LogLevel::Error => Some("error".red().to_string()),
         }
-        .map_or(message.to_string(), |level_label| {
+        .map_or_else(|| message.to_string(), |level_label| {
             format!("{level_label}: {message}")
         });
 
