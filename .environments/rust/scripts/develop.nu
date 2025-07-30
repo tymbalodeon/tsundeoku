@@ -1,5 +1,5 @@
 #!/usr/bin/env nu
 
 def main [] {
-  zellij --layout rust-layout.kdl
+  zellij --layout $"($env.ENVIRONMENTS)/rust/layout.kdl"
 }

@@ -270,6 +270,18 @@ export def "main add" [
   main activate
 }
 
+# TODO: is it possible to alias this as "main edit languages"?
+
+# Open local helix configuration in $EDITOR
+def "main edit helix languages" [] {
+  ^$env.EDITOR .helix/languages.toml
+}
+
+# Open local helix configuration in $EDITOR
+def "main edit helix" [] {
+  ^$env.EDITOR .helix
+}
+
 # Open a local recipe in $EDITOR
 def "main edit recipe" [recipe?: string] {
   let default_environments = (
@@ -819,7 +831,10 @@ def "main remove" [
     return
   }
 
-  let existing_environments = (open .environments/environments.toml).environments
+  let existing_environments = (
+    open .environments/environments.toml
+    | get environments
+  )
 
   let environments_to_remove = (
     $existing_environments
@@ -870,43 +885,59 @@ def "main remove" [
     }
 
     if (".helix/languages.toml" | path exists) {
-      let languages = (open .helix/languages.toml)
+      let local_languages = (open .helix/languages.toml)
+
+      let environment_languages = (
+        get-environment-files $environment languages.toml
+      )
+
+      # TODO: keep if there are extra fields not in the environment definition
+      let language = if language in ($local_languages | columns) {
+        $local_languages.language
+        | where name != $environment.name
+      }
+
+      # TODO: keep if there are extra fields not in the environment definition
+      let language_server = if language-server in ($local_languages | columns) {
+        if language-server not-in ($environment_languages | columns) {
+          $local_languages.language-server
+        } else {
+            mut language_servers = {}
+
+            let columns = (
+              $local_languages.language-server
+              | columns
+              | where {$in not-in ($environment_languages.language-server | columns)}
+            )
+
+            for column in $columns {
+              $language_servers = (
+                $language_servers
+                | insert $column (
+                    $local_languages.language-server
+                    | get $column
+                  )
+              )
+            }
+
+            $language_servers
+        }
+      }
+
+      mut languages = {}
+
+      if ($language | is-not-empty) {
+        $languages = ($languages | insert language $language)
+      }
+
+      if ($language_server | is-not-empty) {
+        $languages = (
+          $languages
+          | insert language-server $language_server
+        )
+      }
 
       $languages
-      | columns
-      | each {
-          |column|
-
-          let values = (
-            $languages
-            | get $column
-          )
-
-          let values = if ($values | describe --detailed | get type) != list {
-            [$values]
-          } else {
-            $values
-          }
-
-          let values = (
-            $values
-            | where {
-                let environment_languages = (
-                  get-environment-files $environment languages.toml
-                )
-
-                $column not-in ($environment_languages | columns) or (
-                  $in not-in ($environment_languages | get $column)
-                )
-              }
-          )
-
-          if ($values | is-not-empty) {
-            {$column: $values}
-          }
-        }
-      | where {is-not-empty}
-      | into record
       | save --force .helix/languages.toml
 
       taplo format .helix/languages.toml out+err> /dev/null
@@ -931,23 +962,6 @@ def "main remove" [
       | where {path exists}
     ) {
       nu $hook_file remove
-    }
-
-    if (".pre-commit-config.yaml" | path exists) {
-      {
-        repos: (
-          open .pre-commit-config.yaml
-          | get repos
-          | where {
-              $in not-in (
-                get-environment-files $environment .pre-commit-config.yaml
-              )
-            }
-        )
-      }
-      | save --force .pre-commit-config.yaml
-
-      yamlfmt .pre-commit-config.yaml
     }
   }
 

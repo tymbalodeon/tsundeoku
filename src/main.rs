@@ -177,9 +177,10 @@ pub fn log(
             LogLevel::Warning => Some("warning".yellow().to_string()),
             LogLevel::Error => Some("error".red().to_string()),
         }
-        .map_or_else(|| message.to_string(), |level_label| {
-            format!("{level_label}: {message}")
-        });
+        .map_or_else(
+            || message.to_string(),
+            |level_label| format!("{level_label}: {message}"),
+        );
 
         if matches!(level, LogLevel::Info) {
             let message = if message.contains("Imported") {
