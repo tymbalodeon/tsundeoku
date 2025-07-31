@@ -38,13 +38,8 @@ def main [
     | where {is-not-empty}
   )
 
-  let paths = if ($paths | is-empty) {
-    ["."]
-  } else {
-    $paths
-  }
-
   for justfile in $justfiles {
+    print $"Formatting ($justfile | path split | get 1) files..."
     just --justfile $justfile format ...$paths
   }
 }

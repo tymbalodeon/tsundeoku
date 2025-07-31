@@ -2,12 +2,9 @@
 
 use ../../default/scripts/paths.nu get-paths
 
+# Lint markdown files
 def main [
   ...paths: string # Files or directories to format
 ] {
-  let result = (alejandra --check ...(get-paths $paths) | complete)
-
-  if $result.exit_code != 0 {
-    print $result.stderr
-  }
+  markdownlint-cli2 ...(get-paths $paths) out> /dev/null
 }

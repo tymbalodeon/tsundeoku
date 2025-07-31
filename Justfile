@@ -1,6 +1,5 @@
 [private]
-@default:
-    just help
+@default: help
 
 # View full help text, or for a specific recipe
 @help *args:
@@ -19,6 +18,8 @@ alias env := environment
 # Format files
 @format *args:
     .environments/default/scripts/format.nu {{ args }}
+
+alias fmt := format
 
 # View project history
 @history *args:
@@ -63,11 +64,23 @@ alias todos := todo
     .environments/git/scripts/release.nu  {{ args }}
 
 [private]
+@md *args:
+    just markdown {{ args }}
+
+[private]
 @rs *args:
     just rust {{ args }}
 
+[private]
+@yml *args:
+    just yaml {{ args }}
+
+mod git ".environments/git/Justfile"
+mod just ".environments/just/Justfile"
+mod markdown ".environments/markdown/Justfile"
 mod nix ".environments/nix/Justfile"
 mod rust ".environments/rust/Justfile"
+mod yaml ".environments/yaml/Justfile"
 
 alias add := rust::add
 alias build := rust::build
@@ -77,7 +90,7 @@ alias deps := rust::deps
 alias dev := rust::develop
 alias develop := rust::develop
 alias install := rust::install
-alias lint := nix::lint
+alias leaks := git::leaks
 alias remove := rust::remove
 alias run := rust::run
 alias sh := nix::shell
