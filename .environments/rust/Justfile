@@ -12,6 +12,10 @@ set working-directory := "../.."
 @build *args:
     .environments/rust/scripts/build.nu {{ args }}
 
+# Check rust files
+@check *args:
+    .environments/rust/scripts/check.nu {{ args }}
+
 # Remove generated files
 @clean *args:
     .environments/rust/scripts/clean.nu {{ args }}
@@ -29,6 +33,12 @@ set working-directory := "../.."
     .environments/rust/scripts/develop.nu {{ args }}
 
 alias dev := develop
+
+# Format rust files
+@format *args:
+    .environments/rust/scripts/format.nu {{ args }}
+
+alias fmt := format
 
 # Install the application
 @install *args:

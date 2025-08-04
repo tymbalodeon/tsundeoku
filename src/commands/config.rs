@@ -219,11 +219,9 @@ pub fn config(
 
     match command {
         Config::Edit => {
-            Command::new(
-                var("EDITOR").unwrap_or_else(|_| "vim".to_string()),
-            )
-            .arg(config_path)
-            .status()?;
+            Command::new(var("EDITOR").unwrap_or_else(|_| "vim".to_string()))
+                .arg(config_path)
+                .status()?;
         }
 
         Config::Path => {
