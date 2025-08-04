@@ -1,5 +1,5 @@
 [private]
-@default: help
+@_: help
 
 # View full help text, or for a specific recipe
 @help *args:
@@ -28,6 +28,10 @@ alias fmt := format
 # View issues
 @issue *args:
     .environments/default/scripts/issue.nu {{ args }}
+
+# Lint files
+@lint *args:
+    .environments/default/scripts/lint.nu {{ args }}
 
 # View README file
 @readme *args:

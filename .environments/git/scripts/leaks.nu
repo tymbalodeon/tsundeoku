@@ -1,6 +1,6 @@
 #!/usr/bin/env nu
 
 # Check for leaked secrets
-def main [] {
+export def main [] {
   gitleaks git
 }
