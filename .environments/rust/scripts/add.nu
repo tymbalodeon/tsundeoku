@@ -1,7 +1,5 @@
 #!/usr/bin/env nu
 
-def main [
-  ...dependencies # Dependencies to add
-] {
-  cargo add ...$dependencies
+def --wrapped main [...args: string] {
+  cargo add ...$args
 }

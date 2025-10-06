@@ -20,10 +20,6 @@ set working-directory := "../.."
 @clean *args:
     .environments/rust/scripts/clean.nu {{ args }}
 
-# Run clippy
-@clippy *args:
-    .environments/rust/scripts/clippy.nu {{ args }}
-
 # Show application dependencies
 @deps *args:
     .environments/rust/scripts/deps.nu {{ args }}
@@ -43,6 +39,10 @@ alias fmt := format
 # Install the application
 @install *args:
     .environments/rust/scripts/install.nu {{ args }}
+
+# Lint rust files
+@lint *args:
+    .environments/rust/scripts/lint.nu {{ args }}
 
 # Remove dependencies
 @remove *args:

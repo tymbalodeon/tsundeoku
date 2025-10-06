@@ -9,11 +9,11 @@
       },
       "locked": {
         "dir": "src",
-        "lastModified": 1754272480,
-        "narHash": "sha256-W4YH5UJaDMmtac7Apcd86CrA1SsoJJ+HLnP1DdlD5rg=",
+        "lastModified": 1759627561,
+        "narHash": "sha256-a8xkdBFsLqOr3Lh3BOpJXaPvlOdJfJ76e+tQQ9jLmIY=",
         "owner": "tymbalodeon",
         "repo": "environments",
-        "rev": "44fec3de1f4b1a3b63131a7a2444f6dc26b02c9c",
+        "rev": "adbac6c5ec8cfe08a925f72d213097f833c82800",
         "type": "github"
       },
       "original": {
@@ -41,11 +41,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1753939845,
-        "narHash": "sha256-K2ViRJfdVGE8tpJejs8Qpvvejks1+A4GQej/lBk5y7I=",
+        "lastModified": 1759381078,
+        "narHash": "sha256-gTrEEp5gEspIcCOx9PD8kMaF1iEmfBcTbO0Jag2QhQs=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "94def634a20494ee057c76998843c015909d6311",
+        "rev": "7df7ff7d8e00218376575f0acdcc5d66741351ee",
         "type": "github"
       },
       "original": {
@@ -58,11 +58,11 @@
     "nutest": {
       "flake": false,
       "locked": {
-        "lastModified": 1753544174,
-        "narHash": "sha256-sDwN+QmyPyhQRoTuDiF+woNxt75tX1QqtEgI6FXzaDM=",
+        "lastModified": 1755204809,
+        "narHash": "sha256-I8fkOw25kYMnIpIFpY/f9aFhwepFjga4VTy8S6gHAoQ=",
         "owner": "vyadh",
         "repo": "nutest",
-        "rev": "c63f6c29f4a92ee82e94d97c2f3d0eb4bc436f8e",
+        "rev": "667d77d6208e2a0def6ace7a545282c4e0feb9e3",
         "type": "github"
       },
       "original": {
@@ -84,11 +84,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1754189623,
-        "narHash": "sha256-fstu5eb30UYwsxow0aQqkzxNxGn80UZjyehQVNVHuBk=",
+        "lastModified": 1759631821,
+        "narHash": "sha256-V8A1L0FaU/aSXZ1QNJScxC12uP4hANeRBgI4YdhHeRM=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "c582ff7f0d8a7ea689ae836dfb1773f1814f472a",
+        "rev": "1d7cbdaad90f8a5255a89a6eddd8af24dc89cafe",
         "type": "github"
       },
       "original": {
@@ -107,8 +107,9 @@
         "type": "github"
       },
       "original": {
-        "id": "systems",
-        "type": "indirect"
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
       }
     }
   },
