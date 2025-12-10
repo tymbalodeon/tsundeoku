@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.95"
-bat = "0.25.0"
+bat = "0.26.1"
 chrono = "0.4.39"
 clap = { version = "4.5.31", features = ["derive", "string"] }
 colored = "3.0.0"
