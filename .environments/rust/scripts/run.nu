@@ -1,6 +1,6 @@
 #!/usr/bin/env nu
 
 # Run the application, with any provided <args>.
-def main [...args: string] {
+def --wrapped main [...args: string] {
   cargo run -- ...$args
 }
