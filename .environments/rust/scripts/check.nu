@@ -1,5 +1,5 @@
 #!/usr/bin/env nu
 
 def main [] {
-  cargo check
+  cargo check --color always
 }
