@@ -125,7 +125,7 @@
           src = ./.;
         };
       in
-        cargoNix.workspaceMembers.src.build;
+        cargoNix.rootCrate.build;
     });
   };
 }
