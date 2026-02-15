@@ -1,5 +1,10 @@
 {
   inputs = {
+    crate2nix = {
+      inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:nix-community/crate2nix";
+    };
+
     environments = {
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:tymbalodeon/environments/trunk?dir=src";
@@ -16,13 +21,16 @@
   };
 
   outputs = {
+    crate2nix,
     environments,
     nixpkgs,
     nutest,
     systems,
     ...
-  }: {
-    devShells = nixpkgs.lib.genAttrs (import systems) (
+  }: let
+    inherit (nixpkgs.lib) genAttrs;
+  in {
+    devShells = genAttrs (import systems) (
       system: let
         mergeModuleAttrs = {
           attr,
@@ -109,5 +117,15 @@
             modules));
       }
     );
+
+    packages = genAttrs (import systems) (system: {
+      default = let
+        cargoNix = crate2nix.tools.${system}.appliedCargoNix {
+          name = "tsundeoku";
+          src = ./.;
+        };
+      in
+        cargoNix.workspaceMembers.src.build;
+    });
   };
 }
