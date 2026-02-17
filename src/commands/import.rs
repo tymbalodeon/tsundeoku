@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::string::ToString;
 use std::vec::Vec;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use colored::Colorize;
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
@@ -60,7 +60,7 @@ fn get_file_stem(path: &Path) -> Result<&str> {
 
 fn copy_file(
     file: &PathBuf,
-    local_directory: PathBuf,
+    local_directory: Option<PathBuf>,
     imported_files_log: &mut File,
     log_file: Option<&File>,
     dry_run: bool,
@@ -126,71 +126,80 @@ fn copy_file(
     if dry_run {
         println!("{}", file.display());
     } else {
-        log(
-            &format!("{} {}", "Importing".green(), file.display()),
-            &LogLevel::Info,
-            log_file,
-            is_scheduled,
-        );
+        match local_directory {
+            Some(local_directory) => {
+                log(
+                    &format!("{} {}", "Importing".green(), file.display()),
+                    &LogLevel::Info,
+                    log_file,
+                    is_scheduled,
+                );
 
-        let file_name = get_file_name(file)?;
-        let mut new_file = local_directory;
+                let file_name = get_file_name(file)?;
+                let mut new_file = local_directory;
 
-        new_file.push(artist);
-        new_file.push(album);
-        new_file.push(file_name);
+                new_file.push(artist);
+                new_file.push(album);
+                new_file.push(file_name);
 
-        let parent = get_parent_directory(&new_file)?;
+                let parent = get_parent_directory(&new_file)?;
 
-        let latest_version_number = WalkDir::new(&parent)
-            .into_iter()
-            .filter_map(Result::ok)
-            .filter(|existing_file| {
-                matches_file_name(existing_file.path(), &new_file)
-                    .unwrap_or_else(|_| {
-                        panic!(
-                            "failed to compare {} to {}",
-                            existing_file.path().display(),
-                            new_file.display()
+                let latest_version_number = WalkDir::new(&parent)
+                    .into_iter()
+                    .filter_map(Result::ok)
+                    .filter(|existing_file| {
+                        matches_file_name(existing_file.path(), &new_file)
+                            .unwrap_or_else(|_| {
+                                panic!(
+                                    "failed to compare {} to {}",
+                                    existing_file.path().display(),
+                                    new_file.display()
+                                )
+                            })
+                    })
+                    .filter_map(|existing_file| {
+                        get_file_stem(existing_file.path()).ok().and_then(
+                            |stem| {
+                                if stem.contains("__") {
+                                    stem.split("__").last().and_then(
+                                        |number| number.parse::<usize>().ok(),
+                                    )
+                                } else {
+                                    None
+                                }
+                            },
                         )
                     })
-            })
-            .filter_map(|existing_file| {
-                get_file_stem(existing_file.path()).ok().and_then(|stem| {
-                    if stem.contains("__") {
-                        stem.split("__")
-                            .last()
-                            .and_then(|number| number.parse::<usize>().ok())
-                    } else {
-                        None
-                    }
-                })
-            })
-            .max()
-            .unwrap_or_default();
+                    .max()
+                    .unwrap_or_default();
 
-        new_file = parent.join(format!(
-            "{}__{}.{}",
-            get_file_stem(&new_file)?,
-            latest_version_number + 1,
-            new_file
-                .extension()
-                .with_context(|| get_invalid_path_error(&new_file))?
-                .to_str()
-                .with_context(|| get_invalid_path_error(&new_file))?
-        ));
+                new_file = parent.join(format!(
+                    "{}__{}.{}",
+                    get_file_stem(&new_file)?,
+                    latest_version_number + 1,
+                    new_file
+                        .extension()
+                        .with_context(|| get_invalid_path_error(&new_file))?
+                        .to_str()
+                        .with_context(|| get_invalid_path_error(&new_file))?
+                ));
 
-        create_dir_all(&parent)?;
-        File::create_new(&new_file)?;
+                create_dir_all(&parent)?;
+                File::create_new(&new_file)?;
 
-        let copied = copy(file, &new_file);
+                let copied = copy(file, &new_file);
 
-        if copied.is_ok() {
-            imported_files_log
-                .write_all(format!("{}\n", file.display()).as_bytes())?;
+                if copied.is_ok() {
+                    imported_files_log.write_all(
+                        format!("{}\n", file.display()).as_bytes(),
+                    )?;
+                }
+
+                return Ok(Some(copied?));
+            }
+
+            None => return Ok(None),
         }
-
-        return Ok(Some(copied?));
     }
 
     Ok(None)
@@ -299,66 +308,99 @@ pub fn import(
 ) -> Result<()> {
     let config = get_config(config_file)?;
 
-    let shared_directories = get_config_value(
-        shared_directories,
-        Some(&config.shared_directories),
-    )?;
+    let shared_directories =
+        get_config_value(shared_directories, Some(&config.shared_directories));
 
-    if shared_directories.is_empty() {
-        return Err(anyhow!("shared-directories is not set"));
-    }
+    match shared_directories {
+        Some(shared_directories) => {
+            if shared_directories.is_empty() {
+                log(
+                    "shared-directories is not set",
+                    &LogLevel::Warning,
+                    log_file,
+                    is_scheduled,
+                );
 
-    let ignored_paths =
-        get_config_value(ignored_paths, Some(&config.ignored_paths))?;
+                return Ok(());
+            }
 
-    let local_directory =
-        get_config_value(local_directory, config.local_directory.as_ref())?;
+            let ignored_paths =
+                get_config_value(ignored_paths, Some(&config.ignored_paths));
 
-    let imported_files_path = get_imported_files_path()?;
+            let local_directory = get_config_value(
+                local_directory,
+                config.local_directory.as_ref(),
+            );
 
-    let files = get_files_to_import(
-        shared_directories,
-        ignored_paths,
-        &imported_files_path,
-        force,
-    )?;
+            let imported_files_path = get_imported_files_path()?;
 
-    let mut imported_files_log = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(imported_files_path)?;
+            let ignored_paths = if let Some(ignored_paths) = ignored_paths { ignored_paths } else {
+                log(
+                    "failed to read ignored-paths value",
+                    &LogLevel::Warning,
+                    log_file,
+                    is_scheduled,
+                );
 
-    let mut imported = false;
+                if dry_run {
+                    &vec![]
+                } else {
+                    return Ok(());
+                }
+            };
 
-    for file in files {
-        match copy_file(
-            &file,
-            local_directory.to_owned(),
-            &mut imported_files_log,
-            log_file,
-            dry_run,
-            is_scheduled,
-        ) {
-            Ok(copied) => {
-                if copied.is_some() {
-                    imported = true;
+            let files = get_files_to_import(
+                shared_directories,
+                ignored_paths,
+                &imported_files_path,
+                force,
+            )?;
+
+            let mut imported_files_log = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(imported_files_path)?;
+
+            let mut imported = false;
+
+            for file in files {
+                match copy_file(
+                    &file,
+                    local_directory.cloned(),
+                    &mut imported_files_log,
+                    log_file,
+                    dry_run,
+                    is_scheduled,
+                ) {
+                    Ok(copied) => {
+                        if copied.is_some() {
+                            imported = true;
+                        }
+                    }
+
+                    Err(error) => {
+                        log(
+                            &format!("{error}: {}", file.as_path().display()),
+                            &LogLevel::Error,
+                            log_file,
+                            is_scheduled,
+                        );
+                    }
                 }
             }
 
-            Err(error) => {
+            if !dry_run && !imported {
                 log(
-                    &format!("{error}: {}", file.as_path().display()),
-                    &LogLevel::Error,
+                    "nothing to import",
+                    &LogLevel::Info,
                     log_file,
                     is_scheduled,
                 );
             }
+
+            Ok(())
         }
-    }
 
-    if !dry_run && !imported {
-        log("nothing to import", &LogLevel::Info, log_file, is_scheduled);
+        None => Ok(()),
     }
-
-    Ok(())
 }

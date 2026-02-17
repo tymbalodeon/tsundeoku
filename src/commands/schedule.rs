@@ -126,6 +126,15 @@ fn get_plist(
 </plist>")
 }
 
+fn log_failed_schedule_interval() {
+    log(
+        "failed to read schedule interval",
+        &LogLevel::Warning,
+        None,
+        false,
+    );
+}
+
 fn on(
     config_file: Option<&PathBuf>,
     schedule_interval: Option<&cron::Schedule>,
@@ -133,89 +142,103 @@ fn on(
 ) -> Result<()> {
     let config = get_config(config_file)?;
 
-    let schedule = get_config_value(
-        schedule_interval,
-        config.schedule_interval.as_ref(),
-    )?;
+    let schedule =
+        get_config_value(schedule_interval, config.schedule_interval.as_ref());
 
-    let minutes =
-        get_time_unit_values(schedule.minutes(), &CalendarInterval::Minute);
+    if let Some(schedule) = schedule {
+            let minutes = get_time_unit_values(
+                schedule.minutes(),
+                &CalendarInterval::Minute,
+            );
 
-    let hours =
-        get_time_unit_values(schedule.hours(), &CalendarInterval::Hour);
+            let hours = get_time_unit_values(
+                schedule.hours(),
+                &CalendarInterval::Hour,
+            );
 
-    let days_of_month =
-        get_time_unit_values(schedule.days_of_month(), &CalendarInterval::Day);
+            let days_of_month = get_time_unit_values(
+                schedule.days_of_month(),
+                &CalendarInterval::Day,
+            );
 
-    let days_of_week = get_time_unit_values(
-        schedule.days_of_week(),
-        &CalendarInterval::Weekday,
-    );
+            let days_of_week = get_time_unit_values(
+                schedule.days_of_week(),
+                &CalendarInterval::Weekday,
+            );
 
-    let months =
-        get_time_unit_values(schedule.months(), &CalendarInterval::Month);
+            let months = get_time_unit_values(
+                schedule.months(),
+                &CalendarInterval::Month,
+            );
 
-    let calendar_interval =
-        [minutes, hours, days_of_month, days_of_week, months]
-            .iter()
-            .filter_map(|value| {
-                value.as_ref().map(std::string::ToString::to_string)
-            })
-            .collect::<Vec<String>>()
-            .join("\n\n      ");
+            let calendar_interval =
+                [minutes, hours, days_of_month, days_of_week, months]
+                    .iter()
+                    .filter_map(|value| {
+                        value.as_ref().map(std::string::ToString::to_string)
+                    })
+                    .collect::<Vec<String>>()
+                    .join("\n\n      ");
 
-    let app_plist_file_name = get_app_plist_file_name();
-    let rotate_plist_file_name = get_rotate_plist_file_name();
+            let app_plist_file_name = get_app_plist_file_name();
+            let rotate_plist_file_name = get_rotate_plist_file_name();
 
-    let app_plist = get_plist(
-        &app_plist_file_name,
-        &calendar_interval,
-        &[
-            &get_binary_path()?.display().to_string(),
-            "import",
-            "--is-scheduled",
-        ],
-    );
+            let app_plist = get_plist(
+                &app_plist_file_name,
+                &calendar_interval,
+                &[
+                    &get_binary_path()?.display().to_string(),
+                    "import",
+                    "--is-scheduled",
+                ],
+            );
 
-    let rotate_plist = get_plist(
-        &rotate_plist_file_name,
-        "<key>Day</key>
+            let rotate_plist = get_plist(
+                &rotate_plist_file_name,
+                "<key>Day</key>
     <integer>1</integer>",
-        &[
-            "truncate",
-            "-s",
-            "0",
-            get_log_path()?.to_str().context("failed to get log path")?,
-        ],
-    );
+                &[
+                    "truncate",
+                    "-s",
+                    "0",
+                    get_log_path()?
+                        .to_str()
+                        .context("failed to get log path")?,
+                ],
+            );
 
-    let app_plist_file = &get_plist_path(&app_plist_file_name)?;
-    let rotate_plist_file = &get_plist_path(&rotate_plist_file_name)?;
+            let app_plist_file = &get_plist_path(&app_plist_file_name)?;
+            let rotate_plist_file = &get_plist_path(&rotate_plist_file_name)?;
 
-    off()?;
+            off()?;
 
-    for (file, contents) in [
-        (app_plist_file, app_plist),
-        (rotate_plist_file, rotate_plist),
-    ] {
-        fs::write(
-            file.to_str().context("failed to get plist path")?,
-            &contents,
-        )?;
+            for (file, contents) in [
+                (app_plist_file, app_plist),
+                (rotate_plist_file, rotate_plist),
+            ] {
+                fs::write(
+                    file.to_str().context("failed to get plist path")?,
+                    &contents,
+                )?;
 
-        Command::new("launchctl").arg("load").arg(file).status()?;
+                Command::new("launchctl").arg("load").arg(file).status()?;
+            }
+
+            match get_description_cron(schedule.source()) {
+                Ok(schedule_description) => println!(
+                    "import schedule for {}",
+                    schedule_description.to_lowercase()
+                ),
+
+                Err(error) => log(&error.s, &LogLevel::Error, log_file, false),
+            }
+
+            Ok(())
+        } else {
+        log_failed_schedule_interval();
+
+        Ok(())
     }
-
-    match get_description_cron(schedule.source()) {
-        Ok(schedule_description) => println!(
-            "import schedule for {}",
-            schedule_description.to_lowercase()
-        ),
-
-        Err(error) => log(&error.s, &LogLevel::Error, log_file, false),
-    }
-
-    Ok(())
 }
 
 fn off() -> Result<()> {
@@ -269,15 +292,28 @@ fn next(
     let config = get_config(config_file)?;
 
     let schedule =
-        get_config_value(schedule, config.schedule_interval.as_ref())?;
+        get_config_value(schedule, config.schedule_interval.as_ref());
 
-    if let Some(next) = schedule.upcoming(Local::now().timezone()).next() {
-        let period = if next.hour12().0 { "pm" } else { "am" };
+    if let Some(schedule) = schedule {
+        if let Some(next) =
+            schedule.upcoming(Local::now().timezone()).next()
+        {
+            let period = if next.hour12().0 { "pm" } else { "am" };
 
-        println!("{:02}:{:02}{}", next.hour12().1, next.minute(), period);
+            println!(
+                "{:02}:{:02}{}",
+                next.hour12().1,
+                next.minute(),
+                period
+            );
+        }
+
+        Ok(())
+    } else {
+        log_failed_schedule_interval();
+
+        Ok(())
     }
-
-    Ok(())
 }
 
 fn status() -> Result<()> {

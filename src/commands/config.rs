@@ -45,10 +45,8 @@ fn get_cron_description(expression: &str) -> Result<String> {
 pub fn get_config_value<'a, T>(
     override_value: Option<&'a T>,
     config_value: Option<&'a T>,
-) -> Result<&'a T> {
-    let value = override_value.map_or_else(|| config_value, Some);
-
-    value.map_or_else(|| Err(anyhow!("failed to read config value")), Ok)
+) -> Option<&'a T> {
+    override_value.map_or_else(|| config_value, Some)
 }
 
 fn get_path_vector_display(vector: &[PathBuf]) -> String {

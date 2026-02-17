@@ -1,10 +1,8 @@
-use std::fs::{read_to_string, File};
+use std::fs::read_to_string;
 
-use anyhow::{anyhow, Result};
+use crate::get_imported_files_path;
 
-use crate::{get_imported_files_path, log, LogLevel};
-
-pub fn get_imported_files() -> Result<Vec<String>> {
+pub fn get_imported_files() -> Vec<String> {
     let imported_files =
         get_imported_files_path()
             .ok()
@@ -16,32 +14,25 @@ pub fn get_imported_files() -> Result<Vec<String>> {
                 }
             });
 
-    imported_files.map_or_else(
-        || Err(anyhow!("failed to read imported files")),
-        |imported_files| {
-            let mut lines: Vec<String> = imported_files
-                .trim()
-                .lines()
-                .map(std::string::ToString::to_string)
-                .collect();
+    imported_files.map_or(vec![], |imported_files| {
+        let mut lines: Vec<String> = imported_files
+            .trim()
+            .lines()
+            .map(std::string::ToString::to_string)
+            .collect();
 
-            if !lines.is_empty() {
-                lines.sort_unstable();
-            }
+        if !lines.is_empty() {
+            lines.sort_unstable();
+        }
 
-            Ok(lines)
-        },
-    )
+        lines
+    })
 }
 
-pub fn imported(log_file: Option<&File>) {
-    match get_imported_files() {
-        Ok(imported_files) => {
-            println!("{}", imported_files.join("\n"));
-        }
+pub fn imported() {
+    let imported_files = get_imported_files();
 
-        Err(error) => {
-            log(&error.to_string(), &LogLevel::Error, log_file, false);
-        }
+    if !imported_files.is_empty() {
+        println!("{}", imported_files.join("\n"));
     }
 }

@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use anyhow::Result;
@@ -8,6 +8,7 @@ use figment::{
     Figment,
 };
 use serde::{Deserialize, Serialize};
+use shellexpand::tilde;
 
 use crate::log;
 
@@ -45,6 +46,16 @@ pub fn get_config_path() -> Option<String> {
     })
 }
 
+fn tilde_expand_path(path: &Path) -> PathBuf {
+    PathBuf::from(tilde(&path.to_string_lossy()).to_string())
+}
+fn tilde_expand_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
+    paths
+        .iter()
+        .map(|path| tilde_expand_path(path))
+        .collect::<Vec<PathBuf>>()
+}
+
 pub fn get_config(config_file: Option<&PathBuf>) -> Result<Config> {
     let config = Figment::from(Serialized::defaults(Config::default()));
 
@@ -56,7 +67,7 @@ pub fn get_config(config_file: Option<&PathBuf>) -> Result<Config> {
         config
     };
 
-    let config: Config =
+    let mut config: Config =
         config.merge(Env::prefixed("TSUNDEOKU_")).extract()?;
 
     for path in &config.ignored_paths {
@@ -72,6 +83,12 @@ pub fn get_config(config_file: Option<&PathBuf>) -> Result<Config> {
             );
         }
     }
+
+    config.shared_directories = tilde_expand_paths(&config.shared_directories);
+    config.ignored_paths = tilde_expand_paths(&config.ignored_paths);
+
+    config.local_directory =
+        config.local_directory.map(|path| tilde_expand_path(&path));
 
     Ok(config)
 }

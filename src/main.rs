@@ -218,6 +218,7 @@ pub fn log(
     }
 }
 
+// TODO use dirs
 fn get_state_directory() -> Result<PathBuf> {
     let state_directory = get_home_directory()?
         .join(".local/state")
@@ -295,7 +296,7 @@ fn main() {
         ),
 
         Some(Commands::Imported) => {
-            imported(log_file.as_ref());
+            imported();
             Ok(())
         }
 
