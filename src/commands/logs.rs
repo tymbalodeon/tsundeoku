@@ -4,9 +4,9 @@ use anyhow::Result;
 use bat::PrettyPrinter;
 use clap::Subcommand;
 
-use super::config::ConfigFile;
 use crate::{
-    get_log_path, log, warn_about_missing_shared_directories, LogLevel,
+    config::get_config, get_log_path, log,
+    warn_about_missing_shared_directories, LogLevel,
 };
 
 #[derive(Subcommand, Debug)]
@@ -75,13 +75,12 @@ fn show(log_file: Option<&File>, imported: bool) {
 }
 
 pub fn logs(
-    config_values: &ConfigFile,
     command: Option<&LogCommand>,
     log_file: Option<&File>,
     imported: bool,
     is_scheduled: bool,
 ) {
-    warn_about_missing_shared_directories(config_values, is_scheduled);
+    warn_about_missing_shared_directories(&get_config(), is_scheduled);
 
     match command {
         Some(LogCommand::Clear) => clear(log_file),

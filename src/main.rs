@@ -18,19 +18,19 @@ use home::home_dir;
 use path_dedot::ParseDot;
 
 use crate::commands::config::config;
-use crate::commands::config::Config;
-use crate::commands::config::ConfigFile;
+use crate::commands::config::ConfigCommand;
 use crate::commands::import::import;
 use crate::commands::imported::imported;
 use crate::commands::logs::logs;
 use crate::commands::schedule::{schedule, Schedule};
+use crate::config::Config;
 
 #[derive(Subcommand)]
 enum Commands {
     /// Show config values
     Config {
         #[command(subcommand)]
-        command: Option<Config>,
+        command: Option<ConfigCommand>,
     },
 
     /// Import newly added audio files from shared folders to a local folder
@@ -239,10 +239,10 @@ fn get_log_path() -> Result<PathBuf> {
 }
 
 pub fn warn_about_missing_shared_directories(
-    config_values: &ConfigFile,
+    config: &Config,
     is_scheduled: bool,
 ) {
-    if config_values.shared_directories.is_empty() {
+    if config.shared_directories.is_empty() {
         log(
             "shared-directories is not set",
             &LogLevel::Warning,
@@ -268,136 +268,70 @@ fn main() {
         },
     );
 
-    if let Ok(config_path) = get_config_file(cli.config_file.as_ref()) {
-        let config_path = Path::new(&config_path);
+    if let Err(error) = match &cli.command {
+        Some(Commands::Config {
+            command: Some(command),
+        }) => config(command, log_file.as_ref(), false),
 
-        let Ok(config_values) = ConfigFile::from_file(config_path) else {
-            log(
-                "failed to read config file",
-                &LogLevel::Error,
-                log_file.as_ref(),
-                matches!(
-                    &cli.command,
-                    Some(Commands::Import {
-                        shared_directories: _,
-                        ignored_paths: _,
-                        local_directory: _,
-                        dry_run: _,
-                        no_reformat: _,
-                        force: _,
-                        is_scheduled: _
-                    })
-                ),
-            );
+        Some(Commands::Import {
+            shared_directories,
+            ignored_paths,
+            local_directory,
+            dry_run,
+            no_reformat: _,
+            force,
+            is_scheduled,
+        }) => import(
+            shared_directories.as_ref(),
+            ignored_paths.as_ref(),
+            local_directory.as_ref(),
+            log_file.as_ref(),
+            *dry_run,
+            *force,
+            *is_scheduled,
+        ),
 
-            return;
-        };
+        Some(Commands::Imported) => {
+            imported(log_file.as_ref(), false);
 
-        if let Err(error) = match &cli.command {
-            Some(Commands::Config {
-                command: Some(command),
-            }) => config(
-                command,
-                config_path,
-                &config_values,
-                log_file.as_ref(),
-                false,
-            ),
-
-            Some(Commands::Import {
-                shared_directories,
-                ignored_paths,
-                local_directory,
-                dry_run,
-                no_reformat: _,
-                force,
-                is_scheduled,
-            }) => import(
-                &config_values,
-                shared_directories.as_ref(),
-                ignored_paths.as_ref(),
-                local_directory.as_ref(),
-                log_file.as_ref(),
-                *dry_run,
-                *force,
-                *is_scheduled,
-            ),
-
-            Some(Commands::Imported) => {
-                imported(&config_values, log_file.as_ref(), false);
-
-                Ok(())
-            }
-
-            Some(Commands::Logs { command, imported }) => {
-                logs(
-                    &config_values,
-                    command.as_ref(),
-                    log_file.as_ref(),
-                    *imported,
-                    false,
-                );
-
-                Ok(())
-            }
-
-            Some(Commands::Schedule { command }) => schedule(
-                &config_values,
-                command.as_ref(),
-                log_file.as_ref(),
-                false,
-            ),
-
-            Some(Commands::SharedFiles {
-                shared_directories,
-                ignored_paths,
-                local_directory,
-            }) => import(
-                &config_values,
-                shared_directories.as_ref(),
-                ignored_paths.as_ref(),
-                local_directory.as_ref(),
-                log_file.as_ref(),
-                true,
-                true,
-                false,
-            ),
-
-            Some(Commands::Config { command: None }) => {
-                show(&config_values, log_file.as_ref(), None)
-            }
-
-            None => Ok(()),
-        } {
-            log(
-                &error.to_string(),
-                &LogLevel::Error,
-                log_file.as_ref(),
-                false,
-            );
+            Ok(())
         }
-    } else {
-        let message = cli.config_file.map_or_else(
-            || "invalid value for `--config-file`".to_string(),
-            |config_file| format!("{config_file} does not exist"),
-        );
 
+        Some(Commands::Logs { command, imported }) => {
+            logs(command.as_ref(), log_file.as_ref(), *imported, false);
+
+            Ok(())
+        }
+
+        Some(Commands::Schedule { command }) => {
+            schedule(command.as_ref(), log_file.as_ref(), false)
+        }
+
+        Some(Commands::SharedFiles {
+            shared_directories,
+            ignored_paths,
+            local_directory,
+        }) => import(
+            shared_directories.as_ref(),
+            ignored_paths.as_ref(),
+            local_directory.as_ref(),
+            log_file.as_ref(),
+            true,
+            true,
+            false,
+        ),
+
+        Some(Commands::Config { command: None }) => {
+            show(log_file.as_ref(), None)
+        }
+
+        None => Ok(()),
+    } {
         log(
-            &message,
+            &error.to_string(),
             &LogLevel::Error,
             log_file.as_ref(),
-            matches!(
-                &cli.command,
-                Some(Commands::Import {
-                    shared_directories: _,
-                    ignored_paths: _,
-                    local_directory: _,
-                    dry_run: _,
-                    no_reformat: _,
-                    force: _,
-                    is_scheduled: _
-                })
-            ),
+            false,
         );
     }
 }

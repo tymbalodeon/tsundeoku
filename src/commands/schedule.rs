@@ -10,7 +10,8 @@ use cron::TimeUnitSpec;
 use cron_descriptor::cronparser::cron_expression_descriptor::get_description_cron;
 use serde::Deserialize;
 
-use crate::commands::config::{get_config_value, ConfigFile};
+use crate::commands::config::get_config_value;
+use crate::config::get_config;
 use crate::{
     get_app_name, get_binary_path, get_home_directory, get_log_path, log,
     warn_about_missing_shared_directories, LogLevel,
@@ -126,12 +127,13 @@ fn get_plist(
 }
 
 fn on(
-    config_values: &ConfigFile,
     schedule_interval: Option<&cron::Schedule>,
     log_file: Option<&File>,
 ) -> Result<()> {
+    let config_schedule_interval = get_config().schedule_interval.unwrap();
+
     let schedule =
-        get_config_value(schedule_interval, &config_values.schedule_interval);
+        get_config_value(schedule_interval, &config_schedule_interval);
 
     let minutes =
         get_time_unit_values(schedule.minutes(), &CalendarInterval::Minute);
@@ -257,9 +259,13 @@ struct ScheduledImport {
     start_calendar_interval: StartCalendarInterval,
 }
 
-fn next(config_values: &ConfigFile, schedule: Option<&cron::Schedule>) {
-    let schedule =
-        get_config_value(schedule, &config_values.schedule_interval);
+fn next(schedule: Option<&cron::Schedule>) {
+    let config = get_config();
+
+    let schedule = get_config_value(
+        schedule,
+        config.schedule_interval.as_ref().unwrap(),
+    );
 
     if let Some(next) = schedule.upcoming(Local::now().timezone()).next() {
         let period = if next.hour12().0 { "pm" } else { "am" };
@@ -301,23 +307,24 @@ fn status() -> Result<()> {
 }
 
 pub fn schedule(
-    config_values: &ConfigFile,
     command: Option<&Schedule>,
     log_file: Option<&File>,
     is_scheduled: bool,
 ) -> Result<()> {
-    warn_about_missing_shared_directories(config_values, is_scheduled);
+    let config = get_config();
+
+    warn_about_missing_shared_directories(&config, is_scheduled);
 
     match command {
         Some(Schedule::On { interval }) => {
-            on(config_values, interval.as_ref(), log_file)?;
+            on(interval.as_ref(), log_file)?;
         }
 
         Some(Schedule::Off) => off()?,
         Some(Schedule::Status) | None => status()?,
 
         Some(Schedule::Next { interval }) => {
-            next(config_values, interval.as_ref());
+            next(interval.as_ref());
         }
     }
 

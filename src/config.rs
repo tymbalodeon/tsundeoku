@@ -1,54 +1,54 @@
 use std::path::PathBuf;
+use std::str::FromStr;
 
-use dirs::{config_dir, home_dir};
+use anyhow::Result;
+use dirs::config_dir;
 use figment::{
     providers::{Env, Format, Serialized, Toml},
     Figment,
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
-    pub host: Option<String>,
-    pub owner: Option<String>,
-    pub root_directory: Option<PathBuf>,
+    pub shared_directories: Vec<PathBuf>,
+    pub ignored_paths: Vec<PathBuf>,
+    pub local_directory: Option<PathBuf>,
+    pub schedule_interval: Option<cron::Schedule>,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        let mut username = get_git_config_user("github");
-
-        username =
-            username.map_or_else(|| get_git_config_user("gitlab"), Some);
-
         Self {
-            root_directory: home_dir().map(|home_dir| home_dir.join("src")),
-            host: Some("github.com".to_string()),
-            owner: username,
+            shared_directories: vec![],
+            ignored_paths: vec![],
+            local_directory: None,
+            schedule_interval: cron::Schedule::from_str("0 0 * * * *").ok(),
         }
     }
 }
 
-/// # Errors
-///
-/// Will return `SrcRepoError` if it fails to parse the config file path
-pub fn get_config_path() -> Result<String, SrcRepoError> {
-    Ok(config_dir()
-        .ok_or(SrcRepoError::Config)?
-        .join("src/config.toml")
-        .to_str()
-        .ok_or(SrcRepoError::Config)?
-        .to_string())
+impl Config {
+    pub fn to_toml(&self) -> Result<String> {
+        Ok(toml::to_string(&self)?)
+    }
 }
 
-/// # Errors
-///
-/// Will return `SrcRepoError` if it fails to merge configuration from the file
-/// and the environment
-pub fn get_config() -> Result<Config, SrcRepoError> {
+pub fn get_config_path() -> String {
+    let message = "failed to determine $XDG_CONFIG_HOME";
+
+    config_dir()
+        .expect(message)
+        .join("tsundeoku/config.toml")
+        .to_str()
+        .expect(message)
+        .to_string()
+}
+
+pub fn get_config() -> Config {
     Figment::from(Serialized::defaults(Config::default()))
-        .merge(Toml::file(get_config_path()?))
-        .merge(Env::prefixed("SRC_"))
+        .merge(Toml::file(get_config_path()))
+        .merge(Env::prefixed("TSUNDEOKU_"))
         .extract()
-        .map_or(Err(SrcRepoError::Config), Ok)
+        .expect("failed to read configuration")
 }

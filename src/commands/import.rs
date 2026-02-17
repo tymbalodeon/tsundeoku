@@ -13,7 +13,8 @@ use symphonia::core::meta::{MetadataOptions, StandardTagKey, Tag};
 use symphonia::core::probe::Hint;
 use walkdir::WalkDir;
 
-use crate::commands::config::{get_config_value, ConfigFile};
+use crate::commands::config::get_config_value;
+use crate::config::get_config;
 use crate::{get_imported_files_path, log, LogLevel};
 
 fn get_tag_or_unknown(tags: &[Tag], tag_name: StandardTagKey) -> String {
@@ -221,7 +222,6 @@ fn sync_imported_files(
 }
 
 pub fn import(
-    config_values: &ConfigFile,
     shared_directories: Option<&Vec<PathBuf>>,
     ignored_paths: Option<&Vec<PathBuf>>,
     local_directory: Option<&PathBuf>,
@@ -230,6 +230,8 @@ pub fn import(
     force: bool,
     is_scheduled: bool,
 ) -> Result<()> {
+    let config_values = get_config();
+
     let shared_directories = get_config_value(
         shared_directories,
         &config_values.shared_directories,
@@ -246,8 +248,10 @@ pub fn import(
     let ignored_paths =
         get_config_value(ignored_paths, &config_values.ignored_paths);
 
-    let local_directory =
-        get_config_value(local_directory, &config_values.local_directory);
+    let local_directory = get_config_value(
+        local_directory,
+        config_values.local_directory.as_ref().unwrap(),
+    );
 
     let mut files: Vec<PathBuf> = shared_directories
         .iter()
