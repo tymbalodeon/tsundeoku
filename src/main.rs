@@ -247,7 +247,7 @@ fn main() {
     if let Err(error) = match &cli.command {
         Some(Commands::Config {
             command: Some(command),
-        }) => config(command, log_file.as_ref(), false),
+        }) => config(command, log_file.as_ref()),
 
         Some(Commands::Import {
             shared_directories,

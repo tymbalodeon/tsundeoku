@@ -10,7 +10,7 @@ use cron_descriptor::cronparser::cron_expression_descriptor::get_description_cro
 
 use crate::config::{get_config, get_config_path, Config};
 use crate::log;
-use crate::{warn_about_missing_shared_directories, LogLevel};
+use crate::LogLevel;
 
 #[derive(Clone, Debug, ValueEnum)]
 pub enum ConfigKey {
@@ -119,15 +119,7 @@ pub fn show(log_file: Option<&File>, key: Option<&ConfigKey>) -> Result<()> {
     Ok(())
 }
 
-pub fn config(
-    command: &ConfigCommand,
-    log_file: Option<&File>,
-    is_scheduled: bool,
-) -> Result<()> {
-    let config = get_config();
-
-    warn_about_missing_shared_directories(&config, is_scheduled);
-
+pub fn config(command: &ConfigCommand, log_file: Option<&File>) -> Result<()> {
     let config_path = get_config_path();
 
     match command {
