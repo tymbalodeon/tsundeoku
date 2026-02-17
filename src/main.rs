@@ -21,6 +21,7 @@ use crate::commands::import::import;
 use crate::commands::imported::imported;
 use crate::commands::logs::logs;
 use crate::commands::schedule::{schedule, Schedule};
+use crate::commands::status::status;
 use crate::config::Config;
 
 #[derive(Subcommand)]
@@ -82,7 +83,7 @@ enum Commands {
     },
 
     /// Show all files in shared directories
-    SharedFiles {
+    Shared {
         #[arg(long)]
         #[arg(num_args(0..))]
         #[arg(value_name = "DIR")]
@@ -97,6 +98,28 @@ enum Commands {
         #[arg(long)]
         #[arg(value_name = "DIR")]
         local_directory: Option<PathBuf>,
+    },
+
+    /// Show whether or not the local directory is up to date with the shared directories
+    Status {
+        #[arg(long)]
+        #[arg(num_args(0..))]
+        #[arg(value_name = "DIR")]
+        shared_directories: Option<Vec<PathBuf>>,
+
+        // TODO allow wildcards
+        #[arg(long)]
+        #[arg(num_args(0..))]
+        #[arg(value_name = "PATH")]
+        ignored_paths: Option<Vec<PathBuf>>,
+
+        #[arg(long)]
+        #[arg(short)]
+        list_unimported: bool,
+
+        #[arg(long)]
+        #[arg(short)]
+        force: bool,
     },
 }
 
@@ -272,25 +295,22 @@ fn main() {
         ),
 
         Some(Commands::Imported) => {
-            imported(cli.config_file.as_ref(), log_file.as_ref(), false)
+            imported(log_file.as_ref());
+            Ok(())
         }
 
-        Some(Commands::Logs { command, imported }) => logs(
-            cli.config_file.as_ref(),
-            command.as_ref(),
-            log_file.as_ref(),
-            *imported,
-            false,
-        ),
+        Some(Commands::Logs { command, imported }) => {
+            logs(command.as_ref(), log_file.as_ref(), *imported);
+            Ok(())
+        }
 
         Some(Commands::Schedule { command }) => schedule(
             cli.config_file.as_ref(),
             command.as_ref(),
             log_file.as_ref(),
-            false,
         ),
 
-        Some(Commands::SharedFiles {
+        Some(Commands::Shared {
             shared_directories,
             ignored_paths,
             local_directory,
@@ -303,6 +323,19 @@ fn main() {
             true,
             true,
             false,
+        ),
+
+        Some(Commands::Status {
+            shared_directories,
+            ignored_paths,
+            list_unimported,
+            force,
+        }) => status(
+            cli.config_file.as_ref(),
+            shared_directories.as_ref(),
+            ignored_paths.as_ref(),
+            *list_unimported,
+            *force,
         ),
 
         None => Ok(()),

@@ -14,7 +14,7 @@ use crate::commands::config::get_config_value;
 use crate::config::get_config;
 use crate::{
     get_app_name, get_binary_path, get_home_directory, get_log_path, log,
-    warn_about_missing_shared_directories, LogLevel,
+    LogLevel,
 };
 
 #[derive(Subcommand, Debug)]
@@ -316,12 +316,7 @@ pub fn schedule(
     config_file: Option<&PathBuf>,
     command: Option<&Schedule>,
     log_file: Option<&File>,
-    is_scheduled: bool,
 ) -> Result<()> {
-    let config = get_config(config_file)?;
-
-    warn_about_missing_shared_directories(&config, is_scheduled);
-
     match command {
         Some(Schedule::On { interval }) => {
             on(config_file, interval.as_ref(), log_file)?;

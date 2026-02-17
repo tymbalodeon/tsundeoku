@@ -1,24 +1,10 @@
-use std::{
-    fs::{read_to_string, File},
-    path::PathBuf,
-};
+use std::fs::{read_to_string, File};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
-use crate::{
-    config::get_config, get_imported_files_path, log,
-    warn_about_missing_shared_directories, LogLevel,
-};
+use crate::{get_imported_files_path, log, LogLevel};
 
-pub fn imported(
-    config_file: Option<&PathBuf>,
-    log_file: Option<&File>,
-    is_scheduled: bool,
-) -> Result<()> {
-    let config = get_config(config_file)?;
-
-    warn_about_missing_shared_directories(&config, is_scheduled);
-
+pub fn get_imported_files() -> Result<Vec<String>> {
     let imported_files =
         get_imported_files_path()
             .ok()
@@ -30,24 +16,32 @@ pub fn imported(
                 }
             });
 
-    match imported_files {
-        Some(imported_files) => {
-            let mut lines: Vec<&str> = imported_files.trim().lines().collect();
+    imported_files.map_or_else(
+        || Err(anyhow!("failed to read imported files")),
+        |imported_files| {
+            let mut lines: Vec<String> = imported_files
+                .trim()
+                .lines()
+                .map(std::string::ToString::to_string)
+                .collect();
 
             if !lines.is_empty() {
                 lines.sort_unstable();
-
-                println!("{}", lines.join("\n"));
             }
+
+            Ok(lines)
+        },
+    )
+}
+
+pub fn imported(log_file: Option<&File>) {
+    match get_imported_files() {
+        Ok(imported_files) => {
+            println!("{}", imported_files.join("\n"));
         }
 
-        None => log(
-            "failed to get imported files",
-            &LogLevel::Error,
-            log_file,
-            false,
-        ),
+        Err(error) => {
+            log(&error.to_string(), &LogLevel::Error, log_file, false);
+        }
     }
-
-    Ok(())
 }

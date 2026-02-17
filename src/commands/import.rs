@@ -221,6 +221,72 @@ fn sync_imported_files(
     Ok(current_imported_files)
 }
 
+pub fn get_files_to_import(
+    shared_directories: &[PathBuf],
+    ignored_paths: &Vec<PathBuf>,
+    imported_files_path: &Path,
+    force: bool,
+) -> Result<Vec<PathBuf>> {
+    let mut files: Vec<PathBuf> = shared_directories
+        .iter()
+        .flat_map(|directory| {
+            WalkDir::new(directory)
+                .into_iter()
+                .filter_map(Result::ok)
+                .filter(|dir_entry| {
+                    if Path::is_file(dir_entry.path()) {
+                        let mut include = true;
+
+                        dir_entry.path().to_str().map_or(include, |path| {
+                            if path.ends_with(".DS_Store") {
+                                include = false;
+                            } else {
+                                for ignored_path in ignored_paths {
+                                    if let Some(ignored_path) =
+                                        ignored_path.to_str()
+                                    {
+                                        include = !path.contains(ignored_path);
+
+                                        if !include {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            include
+                        })
+                    } else {
+                        false
+                    }
+                })
+                .map(|dir_entry| dir_entry.path().to_path_buf())
+                .collect::<Vec<PathBuf>>()
+        })
+        .collect();
+
+    let imported_files: Option<Vec<PathBuf>> = if force {
+        None
+    } else {
+        Some(sync_imported_files(&files, imported_files_path)?)
+    };
+
+    files = files
+        .iter()
+        .filter(|path| {
+            force
+                || imported_files.as_ref().is_some_and(|imported_files| {
+                    !imported_files.contains(path)
+                })
+        })
+        .cloned()
+        .collect::<Vec<PathBuf>>();
+
+    files.sort();
+
+    Ok(files)
+}
+
 pub fn import(
     config_file: Option<&PathBuf>,
     shared_directories: Option<&Vec<PathBuf>>,
@@ -239,11 +305,7 @@ pub fn import(
     )?;
 
     if shared_directories.is_empty() {
-        let error_message = "shared-directories is not set";
-
-        log(error_message, &LogLevel::Error, log_file, is_scheduled);
-
-        return Err(anyhow!(error_message));
+        return Err(anyhow!("shared-directories is not set"));
     }
 
     let ignored_paths =
@@ -252,64 +314,14 @@ pub fn import(
     let local_directory =
         get_config_value(local_directory, config.local_directory.as_ref())?;
 
-    let mut files: Vec<PathBuf> = shared_directories
-        .iter()
-        .flat_map(|directory| {
-            WalkDir::new(directory)
-                .into_iter()
-                .filter_map(Result::ok)
-                .filter(|dir_entry| {
-                    if Path::is_file(dir_entry.path()) {
-                        let mut include = true;
-
-                        dir_entry.path().to_str().map_or(include, |path| {
-                            if path.ends_with(".DS_Store") {
-                                include = false
-                            } else {
-                                for ignored_path in ignored_paths {
-                                    if let Some(ignored_path) =
-                                        ignored_path.to_str()
-                                    {
-                                        include = !path.contains(ignored_path);
-
-                                        if !include {
-                                            break;
-                                        }
-                                    }
-                                }
-                            };
-
-                            include
-                        })
-                    } else {
-                        false
-                    }
-                })
-                .map(|dir_entry| dir_entry.path().to_path_buf())
-                .collect::<Vec<PathBuf>>()
-        })
-        .collect();
-
     let imported_files_path = get_imported_files_path()?;
 
-    let imported_files: Option<Vec<PathBuf>> = if force {
-        None
-    } else {
-        Some(sync_imported_files(&files, &imported_files_path)?)
-    };
-
-    files = files
-        .iter()
-        .filter(|path| {
-            force
-                || imported_files.as_ref().is_some_and(|imported_files| {
-                    !imported_files.contains(path)
-                })
-        })
-        .cloned()
-        .collect::<Vec<PathBuf>>();
-
-    files.sort();
+    let files = get_files_to_import(
+        shared_directories,
+        ignored_paths,
+        &imported_files_path,
+        force,
+    )?;
 
     let mut imported_files_log = OpenOptions::new()
         .create(true)

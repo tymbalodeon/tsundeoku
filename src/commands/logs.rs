@@ -1,16 +1,10 @@
-use std::{
-    fs::{read_to_string, File},
-    path::PathBuf,
-};
+use std::fs::{read_to_string, File};
 
 use anyhow::Result;
 use bat::PrettyPrinter;
 use clap::Subcommand;
 
-use crate::{
-    config::get_config, get_log_path, log,
-    warn_about_missing_shared_directories, LogLevel,
-};
+use crate::{get_log_path, log, LogLevel};
 
 #[derive(Subcommand, Debug)]
 pub enum LogCommand {
@@ -78,21 +72,12 @@ fn show(log_file: Option<&File>, imported: bool) {
 }
 
 pub fn logs(
-    config_file: Option<&PathBuf>,
     command: Option<&LogCommand>,
     log_file: Option<&File>,
     imported: bool,
-    is_scheduled: bool,
-) -> Result<()> {
-    warn_about_missing_shared_directories(
-        &get_config(config_file)?,
-        is_scheduled,
-    );
-
+) {
     match command {
         Some(LogCommand::Clear) => clear(log_file),
         None | Some(LogCommand::Show) => show(log_file, imported),
     }
-
-    Ok(())
 }

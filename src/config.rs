@@ -9,6 +9,8 @@ use figment::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::log;
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     pub shared_directories: Vec<PathBuf>,
@@ -54,5 +56,22 @@ pub fn get_config(config_file: Option<&PathBuf>) -> Result<Config> {
         config
     };
 
-    Ok(config.merge(Env::prefixed("TSUNDEOKU_")).extract()?)
+    let config: Config =
+        config.merge(Env::prefixed("TSUNDEOKU_")).extract()?;
+
+    for path in &config.ignored_paths {
+        if !path.exists() {
+            log(
+                &format!(
+                    "{:?} has been removed from the shared folder",
+                    path.to_string_lossy()
+                ),
+                &crate::LogLevel::Warning,
+                None,
+                false,
+            );
+        }
+    }
+
+    Ok(config)
 }
