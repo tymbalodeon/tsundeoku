@@ -334,7 +334,9 @@ pub fn import(
 
             let imported_files_path = get_imported_files_path()?;
 
-            let ignored_paths = if let Some(ignored_paths) = ignored_paths { ignored_paths } else {
+            let ignored_paths = if let Some(ignored_paths) = ignored_paths {
+                ignored_paths
+            } else {
                 log(
                     "failed to read ignored-paths value",
                     &LogLevel::Warning,

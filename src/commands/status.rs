@@ -32,22 +32,23 @@ pub fn status(
             let ignored_paths =
                 get_config_value(ignored_paths, Some(&config.ignored_paths));
 
-            let ignored_paths = if let Some(ignored_paths) = ignored_paths {
-                ignored_paths
-            } else {
-                log(
-                    "failed to read ignored-paths value",
-                    &LogLevel::Warning,
-                    None,
-                    false,
-                );
+            let ignored_paths = ignored_paths.map_or_else(
+                || {
+                    log(
+                        "failed to read ignored-paths value",
+                        &LogLevel::Warning,
+                        None,
+                        false,
+                    );
 
-                &vec![]
-            };
+                    vec![]
+                },
+                std::borrow::ToOwned::to_owned,
+            );
 
             let files_to_import: HashSet<String> = get_files_to_import(
                 shared_directories,
-                ignored_paths,
+                &ignored_paths,
                 &get_imported_files_path()?,
                 force,
             )?
