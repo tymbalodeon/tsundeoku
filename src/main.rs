@@ -3,19 +3,17 @@ mod config;
 
 use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use std::path::PathBuf;
 use std::string::ToString;
 use std::vec::Vec;
 
-use anyhow::{Context, Error, Result};
+use anyhow::{Context, Result};
 use chrono::Local;
 use clap::{Parser, Subcommand};
 use colored::Colorize;
 use commands::config::show;
 use commands::logs::LogCommand;
 use home::home_dir;
-use path_dedot::ParseDot;
 
 use crate::commands::config::config;
 use crate::commands::config::ConfigCommand;
@@ -195,28 +193,6 @@ pub fn log(
             eprintln!("{message}");
         }
     }
-}
-
-fn get_config_file(config_file: Option<&String>) -> Result<PathBuf> {
-    config_file.map_or_else(
-        || {
-            Ok::<PathBuf, Error>(
-                get_home_directory()?
-                    .join(".config")
-                    .join(get_app_name())
-                    .join(format!("{}.toml", get_app_name())),
-            )
-        },
-        |config_path| {
-            Ok(PathBuf::from_str(
-                Path::new(config_path)
-                    .parse_dot()
-                    .context("failed to parse config path")?
-                    .to_str()
-                    .context("failed to get config path")?,
-            )?)
-        },
-    )
 }
 
 fn get_state_directory() -> Result<PathBuf> {

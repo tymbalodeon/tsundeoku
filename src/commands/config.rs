@@ -2,14 +2,11 @@ use std::env::var;
 use std::fs::File;
 use std::path::{absolute, PathBuf};
 use std::process::Command;
-use std::str::FromStr;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use bat::PrettyPrinter;
 use clap::{Subcommand, ValueEnum};
 use cron_descriptor::cronparser::cron_expression_descriptor::get_description_cron;
-use english_to_cron::str_cron_syntax;
-use toml::{Table, Value};
 
 use crate::config::{get_config, get_config_path, Config};
 use crate::log;
@@ -38,33 +35,6 @@ pub enum ConfigCommand {
         // Show the value for a particular key
         key: Option<ConfigKey>,
     },
-}
-
-fn expand_path(path: &Value) -> Result<PathBuf> {
-    Ok(PathBuf::from_str(&shellexpand::tilde(
-        path.as_str()
-            .context(format!("failed to parse path {path}"))?,
-    ))?)
-}
-
-fn get_paths(config_items: &Table, key: &str) -> Result<Option<Vec<PathBuf>>> {
-    if let Some(paths) = config_items.get(key) {
-        Ok(Some(
-            paths
-                .as_array()
-                .context(format!("failed to parse {key} values"))?
-                .iter()
-                .filter_map(|path| expand_path(path).ok())
-                .collect::<Vec<PathBuf>>(),
-        ))
-    } else {
-        Ok(None)
-    }
-}
-
-fn get_cron_expression(description: &str) -> Result<String> {
-    str_cron_syntax(description.to_string().as_str())
-        .map_or_else(|_| Err(anyhow!("invalid cron description")), Ok)
 }
 
 fn get_cron_description(expression: &str) -> Result<String> {
