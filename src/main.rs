@@ -112,7 +112,7 @@ struct Cli {
     #[arg(global = true)]
     #[arg(long)]
     #[arg(value_name = "FILE")]
-    config_file: Option<String>,
+    config_file: Option<PathBuf>,
 }
 
 fn get_home_directory() -> Result<PathBuf> {
@@ -245,9 +245,12 @@ fn main() {
     );
 
     if let Err(error) = match &cli.command {
-        Some(Commands::Config {
-            command: Some(command),
-        }) => config(command, log_file.as_ref()),
+        Some(Commands::Config { command }) => command.as_ref().map_or_else(
+            || show(cli.config_file.as_ref(), log_file.as_ref(), None),
+            |command| {
+                config(cli.config_file.as_ref(), command, log_file.as_ref())
+            },
+        ),
 
         Some(Commands::Import {
             shared_directories,
@@ -258,6 +261,7 @@ fn main() {
             force,
             is_scheduled,
         }) => import(
+            cli.config_file.as_ref(),
             shared_directories.as_ref(),
             ignored_paths.as_ref(),
             local_directory.as_ref(),
@@ -268,26 +272,30 @@ fn main() {
         ),
 
         Some(Commands::Imported) => {
-            imported(log_file.as_ref(), false);
-
-            Ok(())
+            imported(cli.config_file.as_ref(), log_file.as_ref(), false)
         }
 
-        Some(Commands::Logs { command, imported }) => {
-            logs(command.as_ref(), log_file.as_ref(), *imported, false);
+        Some(Commands::Logs { command, imported }) => logs(
+            cli.config_file.as_ref(),
+            command.as_ref(),
+            log_file.as_ref(),
+            *imported,
+            false,
+        ),
 
-            Ok(())
-        }
-
-        Some(Commands::Schedule { command }) => {
-            schedule(command.as_ref(), log_file.as_ref(), false)
-        }
+        Some(Commands::Schedule { command }) => schedule(
+            cli.config_file.as_ref(),
+            command.as_ref(),
+            log_file.as_ref(),
+            false,
+        ),
 
         Some(Commands::SharedFiles {
             shared_directories,
             ignored_paths,
             local_directory,
         }) => import(
+            cli.config_file.as_ref(),
             shared_directories.as_ref(),
             ignored_paths.as_ref(),
             local_directory.as_ref(),
@@ -296,10 +304,6 @@ fn main() {
             true,
             false,
         ),
-
-        Some(Commands::Config { command: None }) => {
-            show(log_file.as_ref(), None)
-        }
 
         None => Ok(()),
     } {

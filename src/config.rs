@@ -34,21 +34,25 @@ impl Config {
     }
 }
 
-pub fn get_config_path() -> String {
-    let message = "failed to determine $XDG_CONFIG_HOME";
-
-    config_dir()
-        .expect(message)
-        .join("tsundeoku/config.toml")
-        .to_str()
-        .expect(message)
-        .to_string()
+pub fn get_config_path() -> Option<String> {
+    config_dir().and_then(|config_dir| {
+        config_dir
+            .join("tsundeoku/config.toml")
+            .to_str()
+            .map(std::string::ToString::to_string)
+    })
 }
 
-pub fn get_config() -> Config {
-    Figment::from(Serialized::defaults(Config::default()))
-        .merge(Toml::file(get_config_path()))
-        .merge(Env::prefixed("TSUNDEOKU_"))
-        .extract()
-        .expect("failed to read configuration")
+pub fn get_config(config_file: Option<&PathBuf>) -> Result<Config> {
+    let config = Figment::from(Serialized::defaults(Config::default()));
+
+    let config = if let Some(config_file) = config_file {
+        config.merge(Toml::file(config_file))
+    } else if let Some(config_path) = get_config_path() {
+        config.merge(Toml::file(config_path))
+    } else {
+        config
+    };
+
+    Ok(config.merge(Env::prefixed("TSUNDEOKU_")).extract()?)
 }

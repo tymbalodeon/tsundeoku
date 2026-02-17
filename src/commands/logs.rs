@@ -1,4 +1,7 @@
-use std::fs::{read_to_string, File};
+use std::{
+    fs::{read_to_string, File},
+    path::PathBuf,
+};
 
 use anyhow::Result;
 use bat::PrettyPrinter;
@@ -75,15 +78,21 @@ fn show(log_file: Option<&File>, imported: bool) {
 }
 
 pub fn logs(
+    config_file: Option<&PathBuf>,
     command: Option<&LogCommand>,
     log_file: Option<&File>,
     imported: bool,
     is_scheduled: bool,
-) {
-    warn_about_missing_shared_directories(&get_config(), is_scheduled);
+) -> Result<()> {
+    warn_about_missing_shared_directories(
+        &get_config(config_file)?,
+        is_scheduled,
+    );
 
     match command {
         Some(LogCommand::Clear) => clear(log_file),
         None | Some(LogCommand::Show) => show(log_file, imported),
     }
+
+    Ok(())
 }

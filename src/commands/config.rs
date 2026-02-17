@@ -44,9 +44,11 @@ fn get_cron_description(expression: &str) -> Result<String> {
 
 pub fn get_config_value<'a, T>(
     override_value: Option<&'a T>,
-    config_value: &'a T,
-) -> &'a T {
-    override_value.map_or(config_value, |value| value)
+    config_value: Option<&'a T>,
+) -> Result<&'a T> {
+    let value = override_value.map_or_else(|| config_value, Some);
+
+    value.map_or_else(|| Err(anyhow!("failed to read config value")), Ok)
 }
 
 fn get_path_vector_display(vector: &[PathBuf]) -> String {
@@ -73,19 +75,22 @@ pub fn get_config_value_display(
         ConfigKey::LocalDirectory => config
             .local_directory
             .as_ref()
-            .unwrap()
-            .display()
-            .to_string(),
+            .map_or_else(String::new, |local_directory| {
+                local_directory.display().to_string()
+            }),
 
         ConfigKey::ScheduleInterval => config
             .schedule_interval
             .as_ref()
-            .unwrap()
-            .source()
-            .to_string(),
+            .map_or_else(String::new, |schedule_interval| {
+                schedule_interval.source().to_string()
+            }),
 
         ConfigKey::ScheduleIntervalDescription => get_cron_description(
-            config.schedule_interval.as_ref().unwrap().source(),
+            config.schedule_interval.as_ref().map_or_else(
+                || "",
+                |schedule_interval| schedule_interval.source(),
+            ),
         )?,
     })
 }
@@ -94,8 +99,12 @@ pub fn print_config(pretty_printer: &mut PrettyPrinter) -> Result<bool> {
     Ok(pretty_printer.theme("ansi").language("toml").print()?)
 }
 
-pub fn show(log_file: Option<&File>, key: Option<&ConfigKey>) -> Result<()> {
-    let config = get_config();
+pub fn show(
+    config_file: Option<&PathBuf>,
+    log_file: Option<&File>,
+    key: Option<&ConfigKey>,
+) -> Result<()> {
+    let config = get_config(config_file)?;
 
     if let Some(key) = key {
         let display = get_config_value_display(&config, key)?;
@@ -119,21 +128,33 @@ pub fn show(log_file: Option<&File>, key: Option<&ConfigKey>) -> Result<()> {
     Ok(())
 }
 
-pub fn config(command: &ConfigCommand, log_file: Option<&File>) -> Result<()> {
+pub fn config(
+    config_file: Option<&PathBuf>,
+    command: &ConfigCommand,
+    log_file: Option<&File>,
+) -> Result<()> {
     let config_path = get_config_path();
 
     match command {
         ConfigCommand::Edit => {
-            Command::new(var("EDITOR").unwrap_or_else(|_| "vim".to_string()))
+            if let Some(config_path) = config_path {
+                Command::new(
+                    var("EDITOR").unwrap_or_else(|_| "vim".to_string()),
+                )
                 .arg(config_path)
                 .status()?;
+            }
         }
 
         ConfigCommand::Path => {
-            println!("{}", absolute(&config_path)?.display());
+            if let Some(config_path) = config_path {
+                println!("{}", absolute(&config_path)?.display());
+            }
         }
 
-        ConfigCommand::Show { key } => show(log_file, key.as_ref())?,
+        ConfigCommand::Show { key } => {
+            show(config_file, log_file, key.as_ref())?;
+        }
     }
 
     Ok(())

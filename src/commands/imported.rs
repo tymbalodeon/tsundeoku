@@ -1,14 +1,23 @@
-use std::fs::{read_to_string, File};
+use std::{
+    fs::{read_to_string, File},
+    path::PathBuf,
+};
+
+use anyhow::Result;
 
 use crate::{
     config::get_config, get_imported_files_path, log,
     warn_about_missing_shared_directories, LogLevel,
 };
 
-pub fn imported(log_file: Option<&File>, is_scheduled: bool) {
-    let config_values = get_config();
+pub fn imported(
+    config_file: Option<&PathBuf>,
+    log_file: Option<&File>,
+    is_scheduled: bool,
+) -> Result<()> {
+    let config = get_config(config_file)?;
 
-    warn_about_missing_shared_directories(&config_values, is_scheduled);
+    warn_about_missing_shared_directories(&config, is_scheduled);
 
     let imported_files =
         get_imported_files_path()
@@ -39,4 +48,6 @@ pub fn imported(log_file: Option<&File>, is_scheduled: bool) {
             false,
         ),
     }
+
+    Ok(())
 }

@@ -126,6 +126,13 @@ fn copy_file(
     if dry_run {
         println!("{}", file.display());
     } else {
+        log(
+            &format!("{} {}", "Importing".green(), file.display()),
+            &LogLevel::Info,
+            log_file,
+            is_scheduled,
+        );
+
         let file_name = get_file_name(file)?;
         let mut new_file = local_directory;
 
@@ -183,13 +190,6 @@ fn copy_file(
                 .write_all(format!("{}\n", file.display()).as_bytes())?;
         }
 
-        log(
-            &format!("{} {}", "Imported".green(), file.display()),
-            &LogLevel::Info,
-            log_file,
-            is_scheduled,
-        );
-
         return Ok(Some(copied?));
     }
 
@@ -222,6 +222,7 @@ fn sync_imported_files(
 }
 
 pub fn import(
+    config_file: Option<&PathBuf>,
     shared_directories: Option<&Vec<PathBuf>>,
     ignored_paths: Option<&Vec<PathBuf>>,
     local_directory: Option<&PathBuf>,
@@ -230,12 +231,12 @@ pub fn import(
     force: bool,
     is_scheduled: bool,
 ) -> Result<()> {
-    let config_values = get_config();
+    let config = get_config(config_file)?;
 
     let shared_directories = get_config_value(
         shared_directories,
-        &config_values.shared_directories,
-    );
+        Some(&config.shared_directories),
+    )?;
 
     if shared_directories.is_empty() {
         let error_message = "shared-directories is not set";
@@ -246,12 +247,10 @@ pub fn import(
     }
 
     let ignored_paths =
-        get_config_value(ignored_paths, &config_values.ignored_paths);
+        get_config_value(ignored_paths, Some(&config.ignored_paths))?;
 
-    let local_directory = get_config_value(
-        local_directory,
-        config_values.local_directory.as_ref().unwrap(),
-    );
+    let local_directory =
+        get_config_value(local_directory, config.local_directory.as_ref())?;
 
     let mut files: Vec<PathBuf> = shared_directories
         .iter()
@@ -264,17 +263,21 @@ pub fn import(
                         let mut include = true;
 
                         dir_entry.path().to_str().map_or(include, |path| {
-                            for ignored_path in ignored_paths {
-                                if let Some(ignored_path) =
-                                    ignored_path.to_str()
-                                {
-                                    include = !path.contains(ignored_path);
+                            if path.ends_with(".DS_Store") {
+                                include = false
+                            } else {
+                                for ignored_path in ignored_paths {
+                                    if let Some(ignored_path) =
+                                        ignored_path.to_str()
+                                    {
+                                        include = !path.contains(ignored_path);
 
-                                    if !include {
-                                        break;
+                                        if !include {
+                                            break;
+                                        }
                                     }
                                 }
-                            }
+                            };
 
                             include
                         })

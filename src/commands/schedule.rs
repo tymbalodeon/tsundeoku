@@ -127,13 +127,16 @@ fn get_plist(
 }
 
 fn on(
+    config_file: Option<&PathBuf>,
     schedule_interval: Option<&cron::Schedule>,
     log_file: Option<&File>,
 ) -> Result<()> {
-    let config_schedule_interval = get_config().schedule_interval.unwrap();
+    let config = get_config(config_file)?;
 
-    let schedule =
-        get_config_value(schedule_interval, &config_schedule_interval);
+    let schedule = get_config_value(
+        schedule_interval,
+        config.schedule_interval.as_ref(),
+    )?;
 
     let minutes =
         get_time_unit_values(schedule.minutes(), &CalendarInterval::Minute);
@@ -259,19 +262,22 @@ struct ScheduledImport {
     start_calendar_interval: StartCalendarInterval,
 }
 
-fn next(schedule: Option<&cron::Schedule>) {
-    let config = get_config();
+fn next(
+    config_file: Option<&PathBuf>,
+    schedule: Option<&cron::Schedule>,
+) -> Result<()> {
+    let config = get_config(config_file)?;
 
-    let schedule = get_config_value(
-        schedule,
-        config.schedule_interval.as_ref().unwrap(),
-    );
+    let schedule =
+        get_config_value(schedule, config.schedule_interval.as_ref())?;
 
     if let Some(next) = schedule.upcoming(Local::now().timezone()).next() {
         let period = if next.hour12().0 { "pm" } else { "am" };
 
         println!("{:02}:{:02}{}", next.hour12().1, next.minute(), period);
     }
+
+    Ok(())
 }
 
 fn status() -> Result<()> {
@@ -307,24 +313,25 @@ fn status() -> Result<()> {
 }
 
 pub fn schedule(
+    config_file: Option<&PathBuf>,
     command: Option<&Schedule>,
     log_file: Option<&File>,
     is_scheduled: bool,
 ) -> Result<()> {
-    let config = get_config();
+    let config = get_config(config_file)?;
 
     warn_about_missing_shared_directories(&config, is_scheduled);
 
     match command {
         Some(Schedule::On { interval }) => {
-            on(interval.as_ref(), log_file)?;
+            on(config_file, interval.as_ref(), log_file)?;
         }
 
         Some(Schedule::Off) => off()?,
         Some(Schedule::Status) | None => status()?,
 
         Some(Schedule::Next { interval }) => {
-            next(interval.as_ref());
+            next(config_file, interval.as_ref())?;
         }
     }
 
