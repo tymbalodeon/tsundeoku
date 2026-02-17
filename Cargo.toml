@@ -11,7 +11,9 @@ clap = { version = "4.5.31", features = ["derive", "string"] }
 colored = "3.0.0"
 cron = { version = "0.15.0", features = ["serde"] }
 cron-descriptor = "0.1.1"
+dirs = "6.0.0"
 english-to-cron = "0.1.2"
+figment = { version = "0.10.19", features = ["env", "toml"] }
 home = "0.5.11"
 path-dedot = "3.1.1"
 plist = "1.7.0"

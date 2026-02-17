@@ -1,4 +1,5 @@
 mod commands;
+mod config;
 
 use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::Write;
