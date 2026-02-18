@@ -1,6 +1,6 @@
 use std::{collections::HashSet, path::PathBuf};
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 
 use crate::{
     commands::{
@@ -26,7 +26,14 @@ pub fn status(
     match shared_directories {
         Some(shared_directories) => {
             if shared_directories.is_empty() {
-                return Err(anyhow!("shared-directories is not set"));
+                log(
+                    "shared-directories is not set",
+                    &LogLevel::Warning,
+                    None,
+                    false,
+                );
+
+                return Ok(());
             }
 
             let ignored_paths =
