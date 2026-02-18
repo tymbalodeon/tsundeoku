@@ -37,7 +37,7 @@ fn clear(log_file: Option<&File>) {
 
 fn show(log_file: Option<&File>, imported: bool) {
     get_log_path().map_or_else(
-        |error| log(&error.to_string(), &LogLevel::Error, log_file, false),
+        |error| log(&error.to_string(), &LogLevel::Warning, log_file, false),
         |log_path| {
             read_to_string(&log_path).map_or_else(
                 |_| {
