@@ -21,6 +21,7 @@ use crate::commands::import::import;
 use crate::commands::imported::imported;
 use crate::commands::logs::logs;
 use crate::commands::schedule::{schedule, Schedule};
+use crate::commands::set_imported::set_imported;
 use crate::commands::status::status;
 use crate::config::Config;
 
@@ -92,6 +93,21 @@ enum Commands {
     Set {
         #[command(subcommand)]
         command: SetCommand,
+
+        #[arg(long)]
+        #[arg(num_args(0..))]
+        #[arg(value_name = "DIR")]
+        shared_directories: Option<Vec<PathBuf>>,
+
+        // TODO allow wildcards
+        #[arg(long)]
+        #[arg(num_args(0..))]
+        #[arg(value_name = "PATH")]
+        ignored_paths: Option<Vec<PathBuf>>,
+
+        #[arg(long)]
+        #[arg(short)]
+        force: bool,
     },
 
     /// Show all files in shared directories
@@ -319,11 +335,17 @@ fn main() {
             Ok(())
         }
 
-        Some(Commands::Set { command: _ }) => {
-            println!("marking imported");
-
-            Ok(())
-        }
+        Some(Commands::Set {
+            command: _,
+            shared_directories,
+            ignored_paths,
+            force,
+        }) => set_imported(
+            cli.config_file.as_ref(),
+            shared_directories.as_ref(),
+            ignored_paths.as_ref(),
+            *force,
+        ),
 
         Some(Commands::Schedule { command }) => schedule(
             cli.config_file.as_ref(),

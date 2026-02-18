@@ -40,10 +40,7 @@ pub enum Schedule {
 fn get_plist_path(file_name: &str) -> Result<PathBuf> {
     home_dir()
         .map(|home_dir| home_dir.join("Library/LaunchAgents").join(file_name))
-        .map_or_else(
-            || Err(anyhow!("failed to get plist path")),
-            Ok,
-        )
+        .map_or_else(|| Err(anyhow!("failed to get plist path")), Ok)
 }
 
 fn get_plist_file_name(name: &str) -> String {
