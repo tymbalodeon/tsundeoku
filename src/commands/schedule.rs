@@ -3,19 +3,17 @@ use std::process::{Command, Stdio};
 use std::{fs, str};
 use std::{fs::remove_file, path::PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use chrono::{Local, Timelike};
 use clap::Subcommand;
 use cron::TimeUnitSpec;
 use cron_descriptor::cronparser::cron_expression_descriptor::get_description_cron;
+use dirs::home_dir;
 use serde::Deserialize;
 
 use crate::commands::config::get_config_value;
 use crate::config::get_config;
-use crate::{
-    get_app_name, get_binary_path, get_home_directory, get_log_path, log,
-    LogLevel,
-};
+use crate::{get_app_name, get_binary_path, get_log_path, log, LogLevel};
 
 #[derive(Subcommand, Debug)]
 #[command(arg_required_else_help = true)]
@@ -40,9 +38,12 @@ pub enum Schedule {
 }
 
 fn get_plist_path(file_name: &str) -> Result<PathBuf> {
-    Ok(get_home_directory()?
-        .join("Library/LaunchAgents")
-        .join(file_name))
+    home_dir()
+        .map(|home_dir| home_dir.join("Library/LaunchAgents").join(file_name))
+        .map_or_else(
+            || Err(anyhow!("failed to get plist path")),
+            Ok,
+        )
 }
 
 fn get_plist_file_name(name: &str) -> String {

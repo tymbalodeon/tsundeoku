@@ -7,13 +7,13 @@ use std::path::PathBuf;
 use std::string::ToString;
 use std::vec::Vec;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Result};
 use chrono::Local;
 use clap::{Parser, Subcommand};
 use colored::Colorize;
 use commands::config::show;
 use commands::logs::LogCommand;
-use home::home_dir;
+use dirs::{home_dir, state_dir};
 
 use crate::commands::config::config;
 use crate::commands::config::ConfigCommand;
@@ -23,6 +23,12 @@ use crate::commands::logs::logs;
 use crate::commands::schedule::{schedule, Schedule};
 use crate::commands::status::status;
 use crate::config::Config;
+
+#[derive(Subcommand)]
+pub enum SetCommand {
+    /// Mark all shared files as already imported
+    Imported,
+}
 
 #[derive(Subcommand)]
 enum Commands {
@@ -82,6 +88,12 @@ enum Commands {
         command: Option<Schedule>,
     },
 
+    /// Mark all shared files as already imported
+    Set {
+        #[command(subcommand)]
+        command: SetCommand,
+    },
+
     /// Show all files in shared directories
     Shared {
         #[arg(long)]
@@ -138,16 +150,15 @@ struct Cli {
     config_file: Option<PathBuf>,
 }
 
-fn get_home_directory() -> Result<PathBuf> {
-    home_dir().context("failed to get $HOME directory")
-}
-
 const fn get_app_name() -> &'static str {
     "tsundeoku"
 }
 
+// TODO use `which tsu` instead?
 fn get_binary_path() -> Result<PathBuf> {
-    Ok(get_home_directory()?.join(".cargo").join("bin").join("tsu"))
+    home_dir()
+        .map(|home_dir| home_dir.join(".cargo").join("bin").join("tsu"))
+        .map_or_else(|| Err(anyhow!("failed to get binary path")), Ok)
 }
 
 #[derive(Debug)]
@@ -218,15 +229,16 @@ pub fn log(
     }
 }
 
-// TODO use dirs
 fn get_state_directory() -> Result<PathBuf> {
-    let state_directory = get_home_directory()?
-        .join(".local/state")
-        .join(get_app_name());
+    match state_dir().map(|state_dir| state_dir.join(get_app_name())) {
+        Some(state_directory) => {
+            create_dir_all(&state_directory)?;
 
-    create_dir_all(&state_directory)?;
+            Ok(state_directory)
+        }
 
-    Ok(state_directory)
+        None => Err(anyhow!("failed to get state directory")),
+    }
 }
 
 fn get_imported_files_path() -> Result<PathBuf> {
@@ -297,11 +309,19 @@ fn main() {
 
         Some(Commands::Imported) => {
             imported();
+
             Ok(())
         }
 
         Some(Commands::Logs { command, imported }) => {
             logs(command.as_ref(), log_file.as_ref(), *imported);
+
+            Ok(())
+        }
+
+        Some(Commands::Set { command: _ }) => {
+            println!("marking imported");
+
             Ok(())
         }
 
