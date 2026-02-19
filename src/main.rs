@@ -253,7 +253,12 @@ fn get_state_directory() -> Result<PathBuf> {
             Ok(state_directory)
         }
 
-        None => Err(anyhow!("failed to get state directory")),
+        None => match home_dir().and_then(|home_dir| {
+            Some(home_dir.join(".local/state").join(get_app_name()))
+        }) {
+            Some(home_dir) => Ok(home_dir),
+            None => Err(anyhow!("failed to get state dir")),
+        },
     }
 }
 
