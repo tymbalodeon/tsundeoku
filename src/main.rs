@@ -1,6 +1,7 @@
 mod commands;
 mod config;
 
+use std::env::current_exe;
 use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
@@ -170,11 +171,8 @@ const fn get_app_name() -> &'static str {
     "tsundeoku"
 }
 
-// TODO use `which tsu` instead?
 fn get_binary_path() -> Result<PathBuf> {
-    home_dir()
-        .map(|home_dir| home_dir.join(".cargo").join("bin").join("tsu"))
-        .map_or_else(|| Err(anyhow!("failed to get binary path")), Ok)
+    Ok(current_exe()?)
 }
 
 #[derive(Debug)]
@@ -253,12 +251,12 @@ fn get_state_directory() -> Result<PathBuf> {
             Ok(state_directory)
         }
 
-        None => match home_dir().and_then(|home_dir| {
-            Some(home_dir.join(".local/state").join(get_app_name()))
-        }) {
-            Some(home_dir) => Ok(home_dir),
-            None => Err(anyhow!("failed to get state dir")),
-        },
+        None => home_dir()
+            .map(|home_dir| home_dir.join(".local/state").join(get_app_name()))
+            .map_or_else(
+                || Err(anyhow!("failed to get state dir")),
+                Ok,
+            ),
     }
 }
 
