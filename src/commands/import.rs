@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::string::ToString;
 use std::vec::Vec;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use colored::Colorize;
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::{MediaSourceStream, MediaSourceStreamOptions};
@@ -331,6 +331,13 @@ pub fn import(
                 local_directory,
                 config.local_directory.as_ref(),
             );
+
+            if !dry_run
+                && local_directory
+                    .is_none_or(|local_directory| !local_directory.exists())
+                {
+                    return Err(anyhow!("local-directory does not exist"));
+                }
 
             let imported_files_path = get_imported_files_path()?;
 
