@@ -72,6 +72,7 @@ pub fn set_imported(
             let mut imported_files_log = OpenOptions::new()
                 .create(true)
                 .truncate(true)
+                .write(true)
                 .open(get_imported_files_path()?)?;
 
             imported_files_log

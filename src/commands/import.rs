@@ -335,9 +335,9 @@ pub fn import(
             if !dry_run
                 && local_directory
                     .is_none_or(|local_directory| !local_directory.exists())
-                {
-                    return Err(anyhow!("local-directory does not exist"));
-                }
+            {
+                return Err(anyhow!("local-directory does not exist"));
+            }
 
             let imported_files_path = get_imported_files_path()?;
 
@@ -366,8 +366,8 @@ pub fn import(
             )?;
 
             let mut imported_files_log = OpenOptions::new()
-                .create(true)
                 .append(true)
+                .create(true)
                 .open(imported_files_path)?;
 
             let mut imported = false;
