@@ -35,19 +35,21 @@ pub fn set_imported(
                 return Ok(());
             }
 
-            let ignored_paths = ignored_paths.map_or_else(
-                || {
-                    log(
-                        "failed to read ignored-paths value",
-                        &LogLevel::Warning,
-                        None,
-                        false,
-                    );
+            let ignored_paths =
+                get_config_value(ignored_paths, Some(&config.ignored_paths))
+                    .map_or_else(
+                        || {
+                            log(
+                                "failed to read ignored-paths value",
+                                &LogLevel::Warning,
+                                None,
+                                false,
+                            );
 
-                    vec![]
-                },
-                std::clone::Clone::clone,
-            );
+                            vec![]
+                        },
+                        std::clone::Clone::clone,
+                    );
 
             let mut imported_files = get_imported_files();
 
